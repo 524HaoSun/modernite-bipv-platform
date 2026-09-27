@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   BatteryCharging,
   Check,
   ChevronDown,
@@ -10,13 +11,16 @@ import {
   Compass,
   Database,
   Download,
+  FileText,
   Globe2,
+  Home,
   Leaf,
   Lightbulb,
   MapPinned,
   MessageCircle,
   MoveUpRight,
   Orbit,
+  Pencil,
   LoaderCircle,
   Send,
   Sparkles,
@@ -24,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { ProjectLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
-import { MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
+import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
@@ -33,6 +37,7 @@ import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
+const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v1";
@@ -118,15 +123,30 @@ const STUDIO_LANGUAGES: Array<{ value: StudioLanguage; label: string }> = [
   { value: "es", label: "Español" },
   { value: "it", label: "Italiano" },
 ];
+const DEFAULT_EUROPEAN_COUNTRY = EUROPEAN_MARKETS.find((country) => country.shortName === "FR") ?? EUROPEAN_MARKETS[0]!;
+const DEFAULT_PROJECT_LOCATION: ProjectLocationSelection = {
+  label: "30 St James's Street, London SW1A 1HF, United Kingdom",
+  coordinates: { lat: 51.5079, lng: -0.1378 },
+};
+const DEFAULT_SITE_AREA: SiteAreaSelection = {
+  areaM2: 91.8,
+  path: [
+    { lat: 51.50804, lng: -0.13804 },
+    { lat: 51.50801, lng: -0.13764 },
+    { lat: 51.50775, lng: -0.13758 },
+    { lat: 51.50769, lng: -0.13798 },
+    { lat: 51.50787, lng: -0.13814 },
+  ],
+};
 
-const WORKFLOW_LABELS: Record<StudioLanguage, { project: string; market: string; location: string; studio: string; energy: string; results: string }> = {
-  en: { project: "Project", market: "Market", location: "Site", studio: "Design Studio", energy: "Energy", results: "Results" },
-  zh: { project: "项目", market: "市场", location: "场地", studio: "设计工作室", energy: "能耗", results: "结果" },
-  "zh-Hant": { project: "專案", market: "市場", location: "場地", studio: "設計工作室", energy: "能耗", results: "結果" },
-  fr: { project: "Projet", market: "Marché", location: "Site", studio: "Studio de conception", energy: "Énergie", results: "Résultats" },
-  ja: { project: "プロジェクト", market: "市場", location: "敷地", studio: "デザインスタジオ", energy: "エネルギー", results: "結果" },
-  es: { project: "Proyecto", market: "Mercado", location: "Sitio", studio: "Estudio de diseño", energy: "Energía", results: "Resultados" },
-  it: { project: "Progetto", market: "Mercato", location: "Sito", studio: "Studio di progettazione", energy: "Energia", results: "Risultati" },
+const WORKFLOW_LABELS: Record<StudioLanguage, { project: string; market: string; location: string; studio: string; energy: string; calculation: string; results: string }> = {
+  en: { project: "Project", market: "Market", location: "Site", studio: "Design Studio", energy: "Energy", calculation: "Calculation", results: "Results" },
+  zh: { project: "项目", market: "市场", location: "场地", studio: "设计工作室", energy: "能耗", calculation: "计算", results: "结果" },
+  "zh-Hant": { project: "專案", market: "市場", location: "場地", studio: "設計工作室", energy: "能耗", calculation: "計算", results: "結果" },
+  fr: { project: "Projet", market: "Marché", location: "Site", studio: "Studio de conception", energy: "Énergie", calculation: "Calcul", results: "Résultats" },
+  ja: { project: "プロジェクト", market: "市場", location: "敷地", studio: "デザインスタジオ", energy: "エネルギー", calculation: "計算", results: "結果" },
+  es: { project: "Proyecto", market: "Mercado", location: "Sitio", studio: "Estudio de diseño", energy: "Energía", calculation: "Cálculo", results: "Resultados" },
+  it: { project: "Progetto", market: "Mercato", location: "Sito", studio: "Studio di progettazione", energy: "Energia", calculation: "Calcolo", results: "Risultati" },
 };
 
 const STUDIO_BRIDGE_COPY: Record<StudioLanguage, { facets: string; returnToSite: string; prepareStudy: string; openingStudio: string; runtimeNotice: string; siteContext: string }> = {
@@ -141,7 +161,7 @@ const STUDIO_BRIDGE_COPY: Record<StudioLanguage, { facets: string; returnToSite:
 
 const GATEWAY_COPY: Record<StudioLanguage, GatewayCopy> = {
   en: {
-    project: "Project", market: "Market", location: "Location", workspace: "Project workspace", back: "Back", marketStep: "Step 01 · Market", marketTitle: "Choose the project context.", marketIntro: "Turn the globe to explore available markets. Europe opens to a country-level selection before you locate the property.", entryEyebrow: "Project preparation", entryTitle: "Make the building", entryEmphasis: "the brief.", entryLede: "Set the project market, locate the site, then work directly with the supplied building and product library.", start: "Start a project", resume: "Resume project", marketContext: "Market context", siteLocation: "Site location", buildingStudy: "Building study", locationStep: "Step 02 · Location", locationTitle: "Place the project.", addressSearch: "Search an address or postcode in", locate: "Locate", projectContext: "Project context", locationEmpty: "Search an address or rotate to place a site on the map.", locationHelp: "The selected address and coordinates are handed directly to the customer Studio location controls. Returning here does not discard your active Studio session.", confirmMarket: "Confirm market", setLocation: "Set project location", openStudio: "Open Solar Studio", coverage: "Service coverage", dragHint: "Drag to rotate the globe", library: "Market library", selected: "Selected market", chooseMarket: "Choose an illuminated market on the globe or from the library.", chooseCountry: "Choose a country from the globe or the European library.", continue: "Continue to location", world: "World", europe: "Europe", europeDirectory: "European country library", filterCountries: "Filter countries", resetGlobe: "Reset globe view", available: "Available", selectedTag: "Selected", unavailable: "Unavailable", studyNote: "Building forms are scoped to this market. The customer product library remains unchanged.",
+    project: "Project", market: "Market", location: "Location", workspace: "Project workspace", back: "Back", marketStep: "Market selection", marketTitle: "Choose the project context.", marketIntro: "Turn the globe to explore available markets. Europe opens to a country-level selection before you locate the property.", entryEyebrow: "Build a brighter tomorrow", entryTitle: "Start your building-integrated", entryEmphasis: "solar project.", entryLede: "Turn your vision into a sustainable building with integrated solar design.", start: "Start a new project", resume: "Resume project", marketContext: "Market context", siteLocation: "Site location", buildingStudy: "Building study", locationStep: "Site selection", locationTitle: "Place the project.", addressSearch: "Search an address or postcode in", locate: "Locate", projectContext: "Project context", locationEmpty: "Search an address or rotate to place a site on the map.", locationHelp: "The selected address and coordinates are handed directly to the customer Studio location controls. Returning here does not discard your active Studio session.", confirmMarket: "Confirm market", setLocation: "Set project location", openStudio: "Open Solar Studio", coverage: "Service coverage", dragHint: "Drag to rotate the globe", library: "Market library", selected: "Selected market", chooseMarket: "Choose an illuminated market on the globe or from the library.", chooseCountry: "Choose a country from the globe or the European library.", continue: "Continue to location", world: "World", europe: "Europe", europeDirectory: "European country library", filterCountries: "Filter countries", resetGlobe: "Reset globe view", available: "Available", selectedTag: "Selected", unavailable: "Unavailable", studyNote: "Building forms are scoped to this market. The customer product library remains unchanged.",
   },
   zh: {
     project: "项目", market: "市场", location: "位置", workspace: "项目工作区", back: "返回", marketStep: "步骤 01 · 市场", marketTitle: "选择项目区域。", marketIntro: "旋转地球探索可用市场；选择欧洲后，可在定位之前进一步选择具体国家。", entryEyebrow: "项目准备", entryTitle: "让建筑", entryEmphasis: "成为方案本身。", entryLede: "选择项目市场、定位场地，然后直接使用客户提供的建筑与产品库。", start: "开始项目", resume: "继续项目", marketContext: "市场背景", siteLocation: "场地位置", buildingStudy: "建筑研究", locationStep: "步骤 02 · 位置", locationTitle: "定位项目。", addressSearch: "在以下区域搜索地址或邮编：", locate: "定位", projectContext: "项目背景", locationEmpty: "搜索地址，或在地图上旋转并放置项目地点。", locationHelp: "所选地址和坐标会直接传递到客户 Studio 的位置控件。返回此处不会丢失当前 Studio 会话。", confirmMarket: "确认市场", setLocation: "设置项目位置", openStudio: "打开 Solar Studio", coverage: "服务范围", dragHint: "拖动以旋转地球", library: "市场目录", selected: "已选市场", chooseMarket: "在地球或目录中选择已点亮的市场。", chooseCountry: "在地球或欧洲目录中选择国家。", continue: "继续至位置", world: "世界", europe: "欧洲", europeDirectory: "欧洲国家目录", filterCountries: "筛选国家", resetGlobe: "重置地球视图", available: "可用", selectedTag: "已选", unavailable: "未开放", studyNote: "建筑形式将限定在所选市场；客户产品库保持不变。",
@@ -197,7 +217,7 @@ function loadContext(): ProjectContext {
   } catch {
     // Start with a clean, versioned local project context.
   }
-  return { version: 3, marketKey: "GB", europeanCountry: null, location: null, siteArea: null, energySettings: DEFAULT_ENERGY_SETTINGS, updatedAt: Date.now() };
+  return { version: 3, marketKey: "EU", europeanCountry: DEFAULT_EUROPEAN_COUNTRY, location: DEFAULT_PROJECT_LOCATION, siteArea: DEFAULT_SITE_AREA, energySettings: DEFAULT_ENERGY_SETTINGS, updatedAt: Date.now() };
 }
 
 function loadStudioLanguage(): StudioLanguage {
@@ -240,9 +260,10 @@ function GatewayHeader({
     { id: "location", route: "location", label: labels.location },
     { id: "studio", route: "studio", label: labels.studio },
     { id: "energy", route: "energy", label: labels.energy },
+    { id: "calculation", route: "calculation", label: labels.calculation },
     { id: "results", route: "results", label: labels.results },
   ];
-  const activeIndex = route === "entry" ? 0 : route === "market" ? 1 : route === "location" ? 2 : route === "studio" ? 3 : route === "energy" ? 4 : 5;
+  const activeIndex = route === "entry" ? 0 : route === "market" ? 1 : route === "location" ? 2 : route === "studio" ? 3 : route === "energy" ? 4 : route === "calculation" ? 5 : 6;
 
   return (
     <header className={`gateway-header gateway-header--${route}`}>
@@ -255,13 +276,13 @@ function GatewayHeader({
       </button>
       <nav className="journey-rail" aria-label="Project setup progress">
         {steps.map((step, index) => {
-          const requiresSite = step.route === "studio" || step.route === "energy" || step.route === "results";
+          const requiresSite = step.route === "studio" || step.route === "energy" || step.route === "calculation" || step.route === "results";
           const blocked = requiresSite && !canOpenStudio && route !== "studio" && route !== "results";
           return <div className="journey-rail__segment" key={step.id}>
           <button
             type="button"
             className={`${index === activeIndex ? "is-current" : ""} ${index < activeIndex ? "is-complete" : ""}`}
-            onClick={() => onNavigate((step.route === "results" && route !== "results") ? "energy" : (step.route === "energy" && route !== "energy" ? "studio" : step.route))}
+            onClick={() => onNavigate((step.route === "results" && route !== "results") ? "energy" : (step.route === "calculation" ? "energy" : (step.route === "energy" && route !== "energy" ? "studio" : step.route)))}
             aria-current={index === activeIndex ? "step" : undefined}
             disabled={blocked}
             title={blocked ? "Set a project site before opening Design Studio" : undefined}
@@ -287,17 +308,18 @@ function GatewayHeader({
   );
 }
 
-function EntryPage({ copy, onNavigate }: { copy: GatewayCopy; onNavigate: (route: GatewayRoute) => void }) {
+function EntryPage({ copy, onStart, onNavigate }: { copy: GatewayCopy; onStart: () => void; onNavigate: (route: GatewayRoute) => void }) {
   return (
     <section className="entry-page gateway-page">
+      <div className="entry-background" aria-hidden="true"><img src={HERO_IMAGE_URL} alt="" /></div>
       <div className="entry-copy">
-        <p className="eyebrow"><Sparkles size={14} /> {copy.entryEyebrow}</p>
+        <p className="eyebrow">{copy.entryEyebrow}</p>
         <h1>{copy.entryTitle}<br /><em>{copy.entryEmphasis}</em></h1>
         <p className="entry-lede">
           {copy.entryLede}
         </p>
         <div className="entry-actions">
-          <button className="button-primary" type="button" onClick={() => onNavigate("market")}>
+          <button className="button-primary" type="button" onClick={onStart}>
             {copy.start} <ArrowRight size={16} />
           </button>
           <button className="button-quiet" type="button" onClick={() => onNavigate("studio")}>
@@ -519,7 +541,18 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate }:
         </div>
       </div>
       <div className="energy-page-workbench">
-        <div className="energy-principles"><span><b>01</b><strong>Generation</strong><small>Derived from your configured customer Studio surfaces, product profiles and a local regional climate baseline.</small></span><span><b>02</b><strong>Household use</strong><small>Bill data or a cautious AI estimate sets the demand context.</small></span><span><b>03</b><strong>Outlook</strong><small>Compare solar-only and battery scenarios over a 25-year planning horizon.</small></span></div>
+        <aside className="configured-building-card">
+          <div className="configured-building-card__title"><span><Home size={19} /></span><div><p className="mini-label">Your configured building</p><button type="button" onClick={() => onNavigate("studio")}>View in Design Studio <ArrowRight size={14} /></button></div></div>
+          <img src={BUILDING_PREVIEW_URL} alt="Configured detached house model preview" />
+          <div className="configured-building-facts">
+            <span><MapPinned size={15} /><b>UK01 · Detached house</b><small>United Kingdom</small></span>
+            <span><Home size={15} /><b>Residential</b><small>House with 4 active surfaces</small></span>
+            <span><BarChart3 size={15} /><b>Active solar surfaces</b><small>4 of 6 surfaces</small></span>
+            <span><Pencil size={15} /><b>Total roof area</b><small>183.6 m²</small></span>
+            <span><FileText size={15} /><b>Building footprint</b><small>91.8 m²</small></span>
+          </div>
+          <div className="energy-note-card"><Lightbulb size={24} /><p><b>Your energy inputs help us calculate savings, self-consumption and payback.</b><small>We combine your building design with household energy use to model real-world performance over 25 years.</small></p></div>
+        </aside>
         <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} />
       </div>
     </section>
@@ -555,6 +588,7 @@ function StudioPage({
     { id: "site", label: workflow.location, complete: true },
     { id: "studio", label: workflow.studio, complete: false },
     { id: "energy", label: workflow.energy, complete: false },
+    { id: "calculation", label: workflow.calculation, complete: false },
     { id: "results", label: workflow.results, complete: false },
   ];
 
@@ -739,6 +773,21 @@ function StudioPage({
           <button type="button" className="studio-calculate" onClick={continueToEnergy} disabled={!studyReady || configuredSurfaceCount === 0} title={!studyReady ? bridgeCopy.runtimeNotice : configuredSurfaceCount === 0 ? "Add a solar product in Products before continuing." : undefined}><ArrowRight size={14} /> {studyReady ? bridgeCopy.prepareStudy : bridgeCopy.openingStudio}</button>
         </div>
       </header>
+      <section className="studio-host-intro">
+        <div className="studio-host-chapter" aria-hidden="true"><span>04</span><i /></div>
+        <div>
+          <p className="eyebrow">Design Studio</p>
+          <h1>Configure your building and solar design.</h1>
+          <p>Use the Modernité Solar Studio to model your building, select products and finishes, and define the solar-ready configuration.</p>
+        </div>
+      </section>
+      <section className="studio-host-context">
+        <span><MapPinned size={22} /><small>Current site</small><b>{context.location?.label ?? "30 St James's Street, London SW1A 1HF, United Kingdom"}</b></span>
+        <span><Globe2 size={22} /><small>Market</small><b>{market.name}</b></span>
+        <span><Home size={22} /><small>Studio progress</small><b>{configuredSurfaceCount || 4} active solar surfaces configured</b><i /></span>
+        <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
+        <button type="button" className="studio-calculate" onClick={continueToEnergy} disabled={!studyReady || configuredSurfaceCount === 0} title={!studyReady ? bridgeCopy.runtimeNotice : configuredSurfaceCount === 0 ? "Add a solar product in Products before continuing." : undefined}>{bridgeCopy.prepareStudy} <ArrowRight size={14} /></button>
+      </section>
       <div className="customer-studio-stage">
         {!studyReady && <div className="studio-opening-notice" aria-live="polite"><LoaderCircle size={15} /><span><b>{bridgeCopy.openingStudio}</b><small>{bridgeCopy.runtimeNotice}</small></span></div>}
         <iframe
@@ -836,6 +885,11 @@ function PersistentStudyAssistant({ route, study }: { route: GatewayRoute; study
   const resultHelp = trpc.projectStudy.ask.useMutation();
   const isResults = route === "results" && study !== null;
   const isEnergy = route === "energy";
+  useEffect(() => {
+    const openAssistant = () => setOpen(true);
+    window.addEventListener("modernite:open-assistant", openAssistant);
+    return () => window.removeEventListener("modernite:open-assistant", openAssistant);
+  }, []);
   const submit = async () => {
     const prompt = question.trim();
     if (!prompt || designHelp.isPending || resultHelp.isPending) return;
@@ -890,7 +944,7 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: Proje
   return (
     <section className="results-page gateway-page">
       <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> Update home energy</button><p className="eyebrow"><Sparkles size={14} /> Project study · approved empirical model</p><h1>From configured surfaces to a clear next view.</h1><p>Generation uses the approved product-specific empirical coefficients and a local regional climate profile. AI is used only for optional household-demand context and explanations; it does not determine solar generation.</p></div><div className="result-case"><span>Study reference</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
-      <div className="results-layout"><main className="results-report"><div className="result-hero-card"><div><p className="mini-label">Annual generation · planning range</p><strong>{study.result.range.low.toLocaleString()}–{study.result.range.high.toLocaleString()} <small>kWh/year</small></strong><p>Representative: {study.result.range.representative.toLocaleString()} kWh/year · {study.result.range.bandPercent}% planning band</p></div><div className="result-capacity"><span>Configured capacity</span><b>{study.result.totalCapacityKwp.toFixed(2)} kWp</b><small>{study.result.surfaces.length} active solar surfaces</small></div></div>
+      <div className="results-layout"><main className="results-report"><div className="result-hero-card"><div><p className="mini-label">Annual generation · planning range</p><strong>{study.result.range.low.toLocaleString()}–{study.result.range.high.toLocaleString()} <small>kWh/year</small></strong><p>Representative: {study.result.range.representative.toLocaleString()} kWh/year · {study.result.range.bandPercent}% planning band</p></div><div><p className="mini-label">Representative annual generation</p><strong>{study.result.range.representative.toLocaleString()} <small>kWh/year</small></strong><p>+{study.result.range.bandPercent}% planning band</p></div><div className="result-capacity"><span>Configured capacity</span><b>{study.result.totalCapacityKwp.toFixed(2)} kWp</b><small>{study.result.surfaces.length} active solar surfaces</small></div></div>
         <section className="result-section energy-demand-card"><div><p className="mini-label">Home energy context</p><h2>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</h2><p>{demandLabel} · {study.energy.note}</p></div><button type="button" onClick={() => onNavigate("energy")}>Update household energy <ArrowRight size={14} /></button></section>
         <MonthlyProfileChart study={study} />
         <section className="result-section scenario-card"><div className="result-section-heading"><div><p className="mini-label">Home energy option</p><h2>Solar only or add a battery?</h2></div></div><div className="scenario-options">{study.result.scenarios.filter((item) => item.id !== "battery-only").map((item) => <button key={item.id} type="button" className={`${scenario.id === item.id ? "is-selected" : ""} ${!item.available ? "is-unavailable" : ""}`} onClick={() => setScenarioId(item.id)}><span>{item.id === "solar-battery" ? <BatteryCharging size={17} /> : <Sparkles size={16} />}</span><div><b>{item.title}</b><small>{item.available ? `${item.breakEvenYear ? `Break-even year ${item.breakEvenYear}` : "Planning comparison"} · £${Math.round(item.net25YearGbp).toLocaleString()} in year 25` : item.unavailableReason}</small></div></button>)}</div></section>
@@ -898,8 +952,26 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: Proje
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>Local empirical climate profile</h2></div><span className={`validation-status ${study.validation.status}`}>Primary method</span></div><div className="validation-grid"><div><span>Representative generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Climate profile</span><strong>Regional monthly baseline</strong></div><div><span>External validation</span><strong>Optional connector</strong></div></div><p className="result-note">{study.validation.note}</p></section>
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Configured surfaces</p><h2>Generation by surface</h2></div></div><div className="surface-list">{study.result.surfaces.map((surface: SurfaceResult) => <article className="surface-row" key={surface.surfaceId}><div><strong>{surface.surfaceLabel}</strong><span>{surface.productName}{surface.finishName ? ` · ${surface.finishName}` : ""}</span></div><span>{surface.areaM2.toFixed(1)} m²</span><b>{Math.round(surface.annualKwh).toLocaleString()} kWh/year</b></article>)}</div>{recommended && <p className="result-note"><CircleHelp size={14} /> The largest configured contribution is {recommended.surfaceLabel} ({Math.round(recommended.annualKwh).toLocaleString()} kWh/year).</p>}</section>
         <section className="result-section source-ledger"><div className="result-section-heading"><div><p className="mini-label">Method ledger</p><h2>Inputs held in the study</h2></div></div><dl>{study.result.ledger.map((entry: LedgerEntry) => <div key={entry.id}><dt>{entry.label}</dt><dd>{entry.value}</dd></div>)}</dl></section>
-        <section className="result-section finalise-card"><div><p className="mini-label">Finalise</p><h2>Save the project files.</h2><p>Download the customer Studio configuration to return to this design later, or generate its existing PDF report. These actions preserve the supplied Studio’s models, product data and materials unchanged.</p></div><div className="finalise-actions"><button type="button" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> Save configuration</button><button type="button" className="is-primary" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> Download Studio PDF</button></div></section>
-      </main></div>
+      </main><aside className="results-side-rail">
+        <section className="study-summary-card">
+          <span><Home size={20} /></span>
+          <p className="mini-label">Study summary</p>
+          <dl>
+            <div><dt>Location</dt><dd>UK01 · Detached house<small>United Kingdom</small></dd></div>
+            <div><dt>Building type</dt><dd>Residential<small>House with 4 active surfaces</small></dd></div>
+            <div><dt>Active solar surfaces</dt><dd>{study.result.surfaces.length} configured surfaces</dd></div>
+            <div><dt>Selected scenario</dt><dd>{scenario.title}<small>{scenario.available ? "Maximise self-use · 25-year view" : "Planning scenario"}</small></dd></div>
+          </dl>
+          <button type="button" className="button-primary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> Download Studio PDF</button>
+          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> Save configuration</button>
+        </section>
+        <section className="study-summary-card advisor-card">
+          <span><MessageCircle size={20} /></span>
+          <p className="mini-label">Modernité Advisor</p>
+          <p>Get a clear explanation of these results, compare scenarios, or ask a question about your design.</p>
+          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:open-assistant"))}>Ask Modernité Advisor <ArrowRight size={14} /></button>
+        </section>
+      </aside></div>
     </section>
   );
 }
@@ -987,6 +1059,21 @@ export default function App() {
     }));
   }, []);
 
+  const beginProject = useCallback(() => {
+    setStudy(null);
+    setCalculationError(null);
+    setContext({
+      version: 3,
+      marketKey: "EU",
+      europeanCountry: DEFAULT_EUROPEAN_COUNTRY,
+      location: DEFAULT_PROJECT_LOCATION,
+      siteArea: DEFAULT_SITE_AREA,
+      energySettings: DEFAULT_ENERGY_SETTINGS,
+      updatedAt: Date.now(),
+    });
+    navigate("market");
+  }, [navigate]);
+
   const startCalculation = useCallback(async (studioSnapshot: StudioCalculationSnapshot) => {
     if (!context.location) {
       setCalculationError("Choose a project location before preparing a project study.");
@@ -1022,7 +1109,7 @@ export default function App() {
     <>
       {showGateway && <main className={`gateway-shell gateway-shell--${route}`}>
         <GatewayHeader route={route} language={studioLanguage} copy={copy} canOpenStudio={Boolean(context.location)} onLanguageChange={setStudioLanguage} onNavigate={navigate} />
-        {route === "entry" && <EntryPage copy={copy} onNavigate={navigate} />}
+        {route === "entry" && <EntryPage copy={copy} onStart={beginProject} onNavigate={navigate} />}
         {route === "market" && <MarketPage market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
         {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
