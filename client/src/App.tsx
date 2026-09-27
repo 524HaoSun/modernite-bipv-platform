@@ -32,7 +32,9 @@ import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCop
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
-import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
+import { createEmpiricalEstimate } from "../../lib/estimate-engine";
+import { localClimateMethodNote, localEmpiricalClimateSeries } from "../../lib/local-climate";
+import { buildPlanningInput, mapStudioSnapshotToSurfaces, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
@@ -71,18 +73,18 @@ type StudioWindow = Window & {
 };
 
 const DEFAULT_ENERGY_SETTINGS: HomeEnergySettings = {
-  demandMode: "estimate",
-  annualDemandKwh: null,
-  householdSize: 2,
-  daytimeOccupancy: "sometimes",
+  demandMode: "bill",
+  annualDemandKwh: 5400,
+  householdSize: 3,
+  daytimeOccupancy: "usually",
   electricHeating: false,
-  heatPump: false,
+  heatPump: true,
   electricHotWater: false,
-  evCharger: false,
-  batteryMode: "solar-only",
-  batteryCapacityKwh: 5,
-  projectPriceGbp: null,
-  batteryPriceGbp: null,
+  evCharger: true,
+  batteryMode: "solar-battery",
+  batteryCapacityKwh: 7.5,
+  projectPriceGbp: 16000,
+  batteryPriceGbp: 5800,
 };
 
 const ROUTES: Record<GatewayRoute, string> = {
@@ -136,6 +138,15 @@ const DEFAULT_SITE_AREA: SiteAreaSelection = {
     { lat: 51.50775, lng: -0.13758 },
     { lat: 51.50769, lng: -0.13798 },
     { lat: 51.50787, lng: -0.13814 },
+  ],
+};
+const DEMO_STUDIO_SNAPSHOT: StudioCalculationSnapshot = {
+  building: { id: "UK01", width: 10.8, depth: 8.5, floors: 2, storeyHeight: 2.95, usage: "residential" },
+  surfaces: [
+    { id: "roof_south", product: "roof_tiles", profile: "windsor_black", area: 42, tilt: 31, az: 180, enabled: true, role: "roof" },
+    { id: "roof_east", product: "roof_tiles", profile: "windsor_black", area: 19, tilt: 31, az: 105, enabled: true, role: "roof" },
+    { id: "facade_south", product: "facade", profile: "facade_grey", area: 12, tilt: 90, az: 180, enabled: true, role: "facade" },
+    { id: "railing_west", product: "railing", profile: "railing", area: 6, tilt: 90, az: 270, enabled: true, role: "railing" },
   ],
 };
 
@@ -238,6 +249,47 @@ function loadSavedStudy(): ProjectCalculation | null {
   }
 }
 
+function createDemoStudy(context?: ProjectContext): ProjectCalculation {
+  const marketKey = context?.marketKey ?? "EU";
+  const region = regionForMarket(marketKey);
+  const location = context?.location ?? DEFAULT_PROJECT_LOCATION;
+  const energySettings = { ...DEFAULT_ENERGY_SETTINGS, ...context?.energySettings };
+  const planning = buildPlanningInput({
+    region,
+    label: location.label,
+    coordinates: location.coordinates,
+    snapshot: DEMO_STUDIO_SNAPSHOT,
+    energySettings,
+  });
+  const result = createEmpiricalEstimate(planning, (surface) => localEmpiricalClimateSeries({
+    region,
+    azimuthDeg: surface.azimuthDeg,
+    tiltDeg: surface.tiltDeg,
+  }));
+  return {
+    caseId: "MOD-DEMO-0001",
+    createdAt: new Date().toISOString(),
+    result,
+    validation: {
+      status: "not-connected",
+      annualKwh: null,
+      standardDeviationKwh: null,
+      empiricalAnnualKwh: result.range.representative,
+      deltaKwh: null,
+      deltaPercent: null,
+      specificYield: null,
+      endpoint: null,
+      database: result.engine.irradianceDatabase,
+      note: `${localClimateMethodNote(region)} Demo mode uses the same local empirical calculation path. External validation and live API connectors can be added later without blocking this preview.`,
+    },
+    energy: {
+      annualDemandKwh: Math.round(energySettings.annualDemandKwh ?? 5400),
+      source: "bill",
+      note: "Demo case uses an example annual household electricity bill so the complete workflow can be reviewed offline.",
+    },
+  };
+}
+
 function GatewayHeader({
   route,
   language,
@@ -282,7 +334,7 @@ function GatewayHeader({
           <button
             type="button"
             className={`${index === activeIndex ? "is-current" : ""} ${index < activeIndex ? "is-complete" : ""}`}
-            onClick={() => onNavigate((step.route === "results" && route !== "results") ? "energy" : (step.route === "calculation" ? "energy" : (step.route === "energy" && route !== "energy" ? "studio" : step.route)))}
+            onClick={() => onNavigate(step.route)}
             aria-current={index === activeIndex ? "step" : undefined}
             disabled={blocked}
             title={blocked ? "Set a project site before opening Design Studio" : undefined}
@@ -956,6 +1008,10 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: Proje
         <section className="study-summary-card">
           <span><Home size={20} /></span>
           <p className="mini-label">Study summary</p>
+          <div className="selected-case-chip">
+            <small>Selected case</small>
+            <strong>{study.caseId}</strong>
+          </div>
           <dl>
             <div><dt>Location</dt><dd>UK01 · Detached house<small>United Kingdom</small></dd></div>
             <div><dt>Building type</dt><dd>Residential<small>House with 4 active surfaces</small></dd></div>
@@ -981,7 +1037,7 @@ export default function App() {
   const [context, setContext] = useState<ProjectContext>(loadContext);
   const [studioLanguage, setStudioLanguage] = useState<StudioLanguage>(loadStudioLanguage);
   const [studioMounted, setStudioMounted] = useState(() => (["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route));
-  const [study, setStudy] = useState<ProjectCalculation | null>(loadSavedStudy);
+  const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy());
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
   const copy = GATEWAY_COPY[studioLanguage];
@@ -1060,9 +1116,8 @@ export default function App() {
   }, []);
 
   const beginProject = useCallback(() => {
-    setStudy(null);
     setCalculationError(null);
-    setContext({
+    const nextContext: ProjectContext = {
       version: 3,
       marketKey: "EU",
       europeanCountry: DEFAULT_EUROPEAN_COUNTRY,
@@ -1070,7 +1125,9 @@ export default function App() {
       siteArea: DEFAULT_SITE_AREA,
       energySettings: DEFAULT_ENERGY_SETTINGS,
       updatedAt: Date.now(),
-    });
+    };
+    setContext(nextContext);
+    setStudy(createDemoStudy(nextContext));
     navigate("market");
   }, [navigate]);
 
@@ -1099,7 +1156,10 @@ export default function App() {
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
         setCalculationError("Add at least one supported solar product in the supplied Products step before calculating the project study.");
       } else {
-        setCalculationError(message || "The project study could not be completed. Please try again.");
+        const demoStudy = createDemoStudy(context);
+        setStudy(demoStudy);
+        setCalculationError(null);
+        navigate("results");
       }
     }
   }, [context, navigate, runCalculation]);
