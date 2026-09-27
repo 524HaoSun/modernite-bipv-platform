@@ -223,7 +223,16 @@ function loadContext(): ProjectContext {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(PROJECT_CONTEXT_STORAGE_KEY) ?? "") as Omit<Partial<ProjectContext>, "version"> & { version?: number };
     if ((parsed.version === 1 || parsed.version === 2 || parsed.version === 3) && markets.some((market) => market.key === parsed.marketKey)) {
-      return { version: 3, marketKey: parsed.marketKey!, europeanCountry: parsed.europeanCountry ?? null, location: parsed.location ?? null, siteArea: parsed.siteArea ?? null, energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings }, updatedAt: parsed.updatedAt ?? Date.now() };
+      const marketKey = parsed.marketKey!;
+      return {
+        version: 3,
+        marketKey,
+        europeanCountry: marketKey === "EU" ? parsed.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : parsed.europeanCountry ?? null,
+        location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
+        siteArea: parsed.siteArea ?? DEFAULT_SITE_AREA,
+        energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings },
+        updatedAt: parsed.updatedAt ?? Date.now(),
+      };
     }
   } catch {
     // Start with a clean, versioned local project context.
