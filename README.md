@@ -6,6 +6,7 @@ Private migration baseline for the Modernite BIPV platform, including the React/
 
 - Owner: `524HaoSun`
 - Main repository: `https://github.com/524HaoSun/modernite-bipv-platform`
+- GitHub Pages preview: `https://524haosun.github.io/modernite-bipv-platform/`
 - Protected baseline branch: `main`
 - UI redesign branch: `feature/ui-redesign`
 
@@ -63,6 +64,19 @@ Baseline status:
 
 Use `feature/ui-redesign` for host UI work. Keep `main` as the verified baseline unless intentionally updating the baseline through review.
 
+For a private repository, collaborators need GitHub accounts and must be invited from repository settings:
+
+```text
+Settings -> Collaborators and teams -> Add people
+```
+
+Recommended workflow:
+
+- Invite collaborators with Write access.
+- Make UI changes on `feature/ui-redesign` or a new feature branch.
+- Open pull requests into `main` for review before merging.
+- Keep `main` deployable because GitHub Pages publishes from `main`.
+
 Design inputs can be placed under:
 
 ```text
@@ -84,4 +98,10 @@ Then confirm `client/public/studio.html` still matches the protected SHA-256.
 
 ## Deployment Note
 
-This application is not a GitHub Pages-only static site in its current architecture. It includes a Node/Express/tRPC server for calculations and assistant routes. A public production deployment should use a Node-capable host such as Railway, Render, Fly.io, or an equivalent app platform, with secrets configured in the host dashboard rather than committed to GitHub.
+GitHub Pages is configured as a static preview deployment at:
+
+```text
+https://524haosun.github.io/modernite-bipv-platform/
+```
+
+This repository's current architecture also includes a Node/Express/tRPC server for calculations and assistant routes. GitHub Pages cannot run that server, so the Pages site is best treated as a static preview for the host UI, local assets, and protected Studio runtime. A full production deployment should use a Node-capable host such as Railway, Render, Fly.io, or an equivalent app platform, with secrets configured in the host dashboard rather than committed to GitHub.

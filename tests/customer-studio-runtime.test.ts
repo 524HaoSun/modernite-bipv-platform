@@ -11,7 +11,7 @@ const runtimeInventory = path.join(projectRoot, "docs/handoff/studio-runtime-inv
 describe("customer V31 Studio runtime", () => {
   it("uses the uploaded customer studio as the application runtime", () => {
     const app = fs.readFileSync(appPath, "utf8");
-    expect(app).toContain('CUSTOMER_STUDIO_URL = "/studio.html"');
+    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html")');
     expect(app).toContain("customer-studio-frame");
     expect(fs.existsSync(publicRuntime)).toBe(true);
   });

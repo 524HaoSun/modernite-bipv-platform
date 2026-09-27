@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, Compass, Shield, Sun, Sparkles, Building, Layers } from "lucide-react";
 import { useLocation } from "wouter";
+import { publicPath } from "@/lib/paths";
 import { ArchitecturalHotspots, Hotspot } from "./ArchitecturalHotspots";
 
 const HERO_HOTSPOTS: Hotspot[] = [
@@ -63,7 +64,7 @@ export function PremiumHero({ onStart }: { onStart: () => void }) {
           <button
             className="cta-secondary-minimal"
             onClick={() => {
-              navigate("/location");
+              navigate(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/location`);
             }}
           >
             <Compass size={17} />
@@ -90,7 +91,7 @@ export function PremiumHero({ onStart }: { onStart: () => void }) {
       <div className="hero-canvas-frame">
         <div className="hero-interactive-viewport">
           <img
-            src="/assets/premium-solar-house-hero_ae3a0ca1.png"
+            src={publicPath("assets/premium-solar-house-hero_ae3a0ca1.png")}
             alt="Modernité Contemporary Residence"
             className="hero-image-render"
           />

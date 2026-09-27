@@ -155,6 +155,7 @@ function vitePluginManusDebugCollector(): Plugin {
 const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES === "true" ? "/modernite-bipv-platform/" : "/",
   plugins,
   resolve: {
     alias: {

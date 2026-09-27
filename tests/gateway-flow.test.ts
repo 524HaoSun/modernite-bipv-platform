@@ -9,7 +9,7 @@ const map = fs.readFileSync(path.join(root, "client/src/components/ProjectLocati
 
 describe("V28-aligned entry gateway", () => {
   it("keeps the customer Studio runtime available behind the new entry flow", () => {
-    expect(app).toContain('CUSTOMER_STUDIO_URL = "/studio.html"');
+    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html")');
     expect(app).toContain("customer-studio-frame");
     expect(app).toContain("ProjectLocationMap");
   });

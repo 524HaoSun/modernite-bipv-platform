@@ -25,13 +25,14 @@ import {
 } from "lucide-react";
 import { ProjectLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
+import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
 import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
-const CUSTOMER_STUDIO_URL = "/studio.html";
-const HERO_IMAGE_URL = "/assets/modernite-entry-hero-a_aa79dbb7.png";
+const CUSTOMER_STUDIO_URL = publicPath("studio.html");
+const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v1";
@@ -88,6 +89,7 @@ const ROUTES: Record<GatewayRoute, string> = {
   calculation: "/calculation",
   results: "/results",
 };
+const APP_BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const markets: Market[] = [
   { key: "GB", name: "United Kingdom", shortName: "UK", coordinates: { lat: 51.5072, lng: -0.1276 }, zoom: 12 },
@@ -172,8 +174,18 @@ const LOCATION_PAGE_TEXT: Record<StudioLanguage, { title: string; intro: string;
 };
 
 function routeFromPath(pathname: string): GatewayRoute {
-  const route = Object.entries(ROUTES).find(([, path]) => path === pathname)?.[0];
+  const normalizedPath =
+    APP_BASE_PATH && pathname.startsWith(APP_BASE_PATH)
+      ? pathname.slice(APP_BASE_PATH.length) || "/"
+      : pathname;
+  const route = Object.entries(ROUTES).find(([, path]) => path === normalizedPath)?.[0];
   return (route as GatewayRoute | undefined) ?? "entry";
+}
+
+function routePath(route: GatewayRoute) {
+  const path = ROUTES[route];
+  if (!APP_BASE_PATH) return path;
+  return path === "/" ? `${APP_BASE_PATH}/` : `${APP_BASE_PATH}${path}`;
 }
 
 function loadContext(): ProjectContext {
@@ -935,7 +947,7 @@ export default function App() {
 
   const navigate = useCallback((nextRoute: GatewayRoute) => {
     if (nextRoute === "studio" || nextRoute === "energy" || nextRoute === "calculation" || nextRoute === "results") setStudioMounted(true);
-    const nextPath = ROUTES[nextRoute];
+    const nextPath = routePath(nextRoute);
     if (window.location.pathname !== nextPath) window.history.pushState({}, "", nextPath);
     setRoute(nextRoute);
   }, []);

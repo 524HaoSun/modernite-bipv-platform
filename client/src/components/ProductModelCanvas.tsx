@@ -1,13 +1,14 @@
 import { Canvas } from "@react-three/fiber";
 import { Clone, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
+import { publicPath } from "@/lib/paths";
 import * as THREE from "three";
 
 const ASSET_FOR: Record<string, string> = {
-  window: "/assets/window_fixed_3bf5c5a2.glb",
-  facade: "/assets/facade_black_dca3822e.glb",
-  railing: "/assets/railing_d391c76c.glb",
-  structure: "/assets/sunroom_gable_7303a7d6.glb",
+  window: publicPath("assets/window_fixed_3bf5c5a2.glb"),
+  facade: publicPath("assets/facade_black_dca3822e.glb"),
+  railing: publicPath("assets/railing_d391c76c.glb"),
+  structure: publicPath("assets/sunroom_gable_7303a7d6.glb"),
 };
 
 const TILE_FINISH: Record<string, string> = { black: "#17242a", terracotta: "#a45c46", "brick-red": "#9e4e43", burgundy: "#7d4144", "silver-grey": "#a7adb0", "dusty-grey": "#7d8289", "graphite-grey": "#55585d", "blue-grey": "#63768b", "steel-blue": "#4e6074", "night-blue": "#273552" };
@@ -36,7 +37,7 @@ function StageContent({ category, finish, variant }: { category: string; finish?
   if (category === "roof") return <RoofTileAssembly finish={finish} />;
   if (category === "structure") {
     const isPergola = variant && variant !== "conservatory";
-    const src = isPergola ? "/assets/canopy_pergola_46caa817.glb" : "/assets/sunroom_gable_7303a7d6.glb";
+    const src = isPergola ? publicPath("assets/canopy_pergola_46caa817.glb") : publicPath("assets/sunroom_gable_7303a7d6.glb");
     return <group position={[0, -0.9, 0]}><ImportedAsset source={src} scale={0.62} rotation={[0, -0.4, 0]} /></group>;
   }
   const source = ASSET_FOR[category];
