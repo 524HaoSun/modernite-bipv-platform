@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.png binary
+*.glb binary
+
+client/public/studio.html -text

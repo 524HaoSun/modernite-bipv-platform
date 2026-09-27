@@ -1,0 +1,13 @@
+import fs from "node:fs";
+const path = "/home/ubuntu/modernite-bipv-platform/client/src/App.tsx";
+let source = fs.readFileSync(path, "utf8");
+const start = source.indexOf("function RoofPage() {");
+const end = source.indexOf("\nfunction BuildingPage()", start);
+if (start < 0 || end < 0) throw new Error("RoofPage not found");
+let block = source.slice(start, end);
+block = block.replace('const [, navigate] = useLocation();\n  const { location } = state;', 'const [, navigate] = useLocation();\n  const [searchToken, setSearchToken] = useState(0);\n  const { location } = state;');
+block = block.replace('onClick={() => state.setLocation({ lat: config.initialMap.lat, lng: config.initialMap.lng })}', 'onClick={() => setSearchToken((token) => token + 1)}');
+block = block.replace('<LocationMap center={{ lat: location.lat, lng: location.lng }} footprint={location.footprint} onFootprintChange={updateFootprint} />', '<LocationMap center={{ lat: location.lat, lng: location.lng }} footprint={location.footprint} onFootprintChange={updateFootprint} searchQuery={location.label} searchToken={searchToken} onCenterChange={(next) => state.setLocation({ lat: next.lat, lng: next.lng, centroid: { lat: next.lat, lng: next.lng }, label: next.label ?? location.label, locality: next.label ?? location.locality })} />');
+if (!block.includes("searchToken={searchToken}")) throw new Error("LocationMap wiring replacement failed");
+source = source.slice(0, start) + block + source.slice(end);
+fs.writeFileSync(path, source);

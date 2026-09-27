@@ -1,0 +1,12 @@
+import fs from "node:fs";
+const path = "/home/ubuntu/modernite-bipv-platform/client/src/App.tsx";
+let source = fs.readFileSync(path, "utf8");
+const anchor = '  const visibleProductCount = selected.reduce((count, surface) => count + productFor(surface).length, 0);';
+const insertion = `${anchor}\n  const changeMaterialType = (next: typeof materialType) => { setMaterialType(next); if (next !== "all") setTab(next === "roof" ? "roof" : next); };`;
+if (!source.includes(anchor)) throw new Error("Material filter anchor not found");
+source = source.replace(anchor, insertion);
+const oldHandler = 'onChange={(event) => setMaterialType(event.target.value as typeof materialType)}';
+const newHandler = 'onChange={(event) => changeMaterialType(event.target.value as typeof materialType)}';
+if (!source.includes(oldHandler)) throw new Error("Material type handler not found");
+source = source.replace(oldHandler, newHandler);
+fs.writeFileSync(path, source);

@@ -1,0 +1,12 @@
+import fs from "node:fs";
+const path = "/home/ubuntu/modernite-bipv-platform/client/src/App.tsx";
+let source = fs.readFileSync(path, "utf8");
+const from = '<div className="products-layout"><section><div className="surface-tabs">';
+const to = '<div className="products-layout"><section className="product-library"><div className="product-library-heading"><span>03 / SOLAR MATERIAL LIBRARY</span><h3>Specify every building surface</h3><p>Choose roof tiles, solar façade glass, balcony railings and add-on structures. Every selection updates capacity and the live 3D model.</p></div><div className="surface-tabs">';
+if (!source.includes(from)) throw new Error("Product library insertion point not found");
+source = source.replace(from, to);
+const fromAside = '<aside className="product-visual"><BuildingCanvas building={state.building} surfaces={state.surfaces} label={t(language, "products.title")} /><p><Sun size={16} />{selected.find((surface) => surface.productId)?.label ?? t(language, "products.none_selected")}</p></aside>';
+const toAside = '<aside className="product-visual"><div className="material-hero"><img src="/manus-storage/modernite-product-detail_915604ec.png" alt="Integrated photovoltaic tile material detail" /><span>Material reality</span></div><BuildingCanvas building={state.building} surfaces={state.surfaces} label={t(language, "products.title")} /><p><Sun size={16} />{selected.find((surface) => surface.productId)?.label ?? t(language, "products.none_selected")}</p></aside>';
+if (!source.includes(fromAside)) throw new Error("Product visual insertion point not found");
+source = source.replace(fromAside, toAside);
+fs.writeFileSync(path, source);
