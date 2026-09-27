@@ -1092,10 +1092,10 @@ export default function App() {
   const updateMarket = useCallback((next: Market) => {
     setContext((current) => ({
       version: 3,
-      siteArea: current.marketKey === next.key ? current.siteArea : null,
+      siteArea: current.siteArea ?? DEFAULT_SITE_AREA,
       marketKey: next.key,
-      europeanCountry: next.key === "EU" ? current.europeanCountry : null,
-      location: current.marketKey === next.key ? current.location : null,
+      europeanCountry: next.key === "EU" ? current.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : null,
+      location: current.location ?? DEFAULT_PROJECT_LOCATION,
       energySettings: current.energySettings,
       updatedAt: Date.now(),
     }));
@@ -1118,8 +1118,8 @@ export default function App() {
       ...current,
       marketKey: europeanCountry ? "EU" : current.marketKey,
       europeanCountry,
-      location: europeanCountry ? null : current.location,
-      siteArea: europeanCountry ? null : current.siteArea,
+      location: current.location ?? DEFAULT_PROJECT_LOCATION,
+      siteArea: current.siteArea ?? DEFAULT_SITE_AREA,
       updatedAt: Date.now(),
     }));
   }, []);

@@ -130,6 +130,18 @@ function useGlobeProjection(rotation: Rotation, scale: number) {
 
 type GlobeHover = { name: string; code: string; key: MarketKey; x: number; y: number };
 
+function flagImageCode(code: string): string {
+  if (code === "UK") return "gb";
+  if (code === "EU") return "eu";
+  return code.toLowerCase();
+}
+
+function FlagIcon({ code, label }: { code: string; label: string }) {
+  return <span className="country-flag" aria-label={`${label} flag`}><img src={`https://flagcdn.com/w40/${flagImageCode(code)}.png`} alt="" loading="lazy" /></span>;
+}
+
+const DEFAULT_EUROPEAN_MARKET = EUROPEAN_MARKETS.find((country) => country.shortName === "FR") ?? EUROPEAN_MARKETS[0]!;
+
 function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSelect, copy }: {
   market: Market;
   europeanCountry: EuropeanMarket | null;
@@ -242,7 +254,7 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
     <div className="globe-stage">
       <div className="globe-atmosphere" aria-hidden="true" />
       <div className="globe-market-rail" aria-label="Available markets">
-        {MARKET_NODES.map((node) => <button type="button" key={node.key} className={`globe-market-rail__item globe-market-rail__item--${node.key} ${market.key === node.key ? "is-selected" : ""}`} onClick={() => chooseMarket(node.key)}><i /><b>{node.code}</b><span>{node.name}</span></button>)}
+        {MARKET_NODES.map((node) => <button type="button" key={node.key} className={`globe-market-rail__item globe-market-rail__item--${node.key} ${market.key === node.key ? "is-selected" : ""}`} onClick={() => chooseMarket(node.key)}><FlagIcon code={node.code} label={node.name} /><span>{node.name}</span><i /></button>)}
       </div>
       {hover && <div className={`globe-hover-bubble globe-hover-bubble--${hover.key}`} style={{ left: `${hover.x}px`, top: `${hover.y}px` }}><i /><span><b>{hover.name}</b><small>{hover.code} · {copy.available}</small></span></div>}
       <svg className={`market-globe ${dragging ? "is-dragging" : ""}`} viewBox="0 0 700 700" role="img" aria-label="Drag to rotate the interactive market globe" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={stopDragging} onWheel={onWheel}>
@@ -315,14 +327,14 @@ function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSele
 
   return (
     <aside className="globe-library">
-      <div className="globe-library-heading"><span className="mini-label">{isEurope ? copy.europeDirectory : copy.library}</span><span className="globe-library-count">{isEurope ? `${filteredEurope.length}/${EUROPEAN_MARKETS.length}` : "04"}</span></div>
+      <div className="globe-library-heading"><span className="mini-label">{isEurope ? "Select a country" : copy.library}</span><span className="globe-library-count">{isEurope ? `${filteredEurope.length} countries available` : "04"}</span></div>
       {isEurope ? <>
         <label className="globe-library-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.filterCountries} aria-label={copy.filterCountries} /></label>
         <div className="globe-library-list globe-library-list--countries" role="list">
-          {filteredEurope.map((country) => <button type="button" key={country.id} role="listitem" className={europeanCountry?.id === country.id ? "is-selected" : ""} onClick={() => onEuropeanSelect(country)}><b>{country.shortName}</b><span>{country.name}</span><i /></button>)}
+          {filteredEurope.map((country) => <button type="button" key={country.id} role="listitem" className={europeanCountry?.id === country.id ? "is-selected" : ""} onClick={() => onEuropeanSelect(country)}><FlagIcon code={country.shortName} label={country.name} /><span>{country.name}</span><i /></button>)}
         </div>
       </> : <div className="globe-library-list" role="list">
-        {MARKET_NODES.map((node) => <button type="button" key={node.key} role="listitem" className={market.key === node.key ? "is-selected" : ""} onClick={() => onMarketSelect(node.key)}><b>{node.code}</b><span>{node.name}</span><i /></button>)}
+        {MARKET_NODES.map((node) => <button type="button" key={node.key} role="listitem" className={market.key === node.key ? "is-selected" : ""} onClick={() => onMarketSelect(node.key)}><FlagIcon code={node.code} label={node.name} /><span>{node.name}</span><i /></button>)}
       </div>}
       <div className="globe-library-foot"><Compass size={15} /><span>{isEurope && !europeanCountry ? copy.chooseCountry : copy.chooseMarket}</span></div>
     </aside>
@@ -339,8 +351,8 @@ export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropea
 }) {
   const selectMarket = (key: MarketKey) => {
     if (key === "EU") {
-      onEuropeanCountryChange(null);
-      onMarketChange({ key: "EU", name: "Europe", shortName: "EU", coordinates: { lat: 50.7, lng: 10.2 }, zoom: 4.4 });
+      onEuropeanCountryChange(DEFAULT_EUROPEAN_MARKET);
+      onMarketChange({ key: "EU", name: DEFAULT_EUROPEAN_MARKET.name, shortName: DEFAULT_EUROPEAN_MARKET.shortName, coordinates: DEFAULT_EUROPEAN_MARKET.coordinates, zoom: 6 });
       return;
     }
     onEuropeanCountryChange(null);
@@ -359,9 +371,10 @@ export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropea
       </div>
       {market.key === "EU" && <MarketLibrary market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} />}
       <footer className="globe-workbench-footer">
+        <div className="globe-selected-image" aria-hidden="true" />
         <div className="globe-selection-summary">
           <span className="mini-label">{copy.selected}</span>
-          <strong>{market.name}</strong>
+          <strong><FlagIcon code={market.shortName} label={market.name} />{market.name}{market.key === "EU" ? ", Europe" : ""}</strong>
           <small>{copy.studyNote}</small>
         </div>
         <div className="globe-legend" aria-label="Globe status legend">

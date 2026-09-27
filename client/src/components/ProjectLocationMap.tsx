@@ -623,6 +623,31 @@ export function ProjectLocationMap({
   return (
     <section className={`location-map-shell location-map-shell--studio ${drawingActive ? "is-tracing" : ""}`} aria-label={searchLabel}>
       <MapView className="location-map" initialCenter={market.coordinates} initialZoom={market.zoom} onMapReady={onMapReady} />
+      <div className="site-demo-map" aria-hidden="true">
+        <div className="site-demo-map__block site-demo-map__block--left" />
+        <div className="site-demo-map__block site-demo-map__block--right" />
+        <div className="site-demo-map__street site-demo-map__street--north" />
+        <div className="site-demo-map__street site-demo-map__street--east" />
+        <div className="site-demo-map__trees site-demo-map__trees--one" />
+        <div className="site-demo-map__trees site-demo-map__trees--two" />
+        <div className="site-demo-roof">
+          <svg viewBox="0 0 220 320" preserveAspectRatio="none">
+            <polygon points="55,34 174,74 194,254 66,294 27,105" />
+            <polyline points="55,34 174,74 194,254 66,294 27,105 55,34" />
+          </svg>
+          <span className="site-demo-vertex site-demo-vertex--a" />
+          <span className="site-demo-vertex site-demo-vertex--b" />
+          <span className="site-demo-vertex site-demo-vertex--c" />
+          <span className="site-demo-vertex site-demo-vertex--d" />
+          <span className="site-demo-vertex site-demo-vertex--e" />
+          <strong>91.8 m²</strong>
+        </div>
+        <div className="site-demo-controls">
+          <button type="button">+</button>
+          <button type="button">−</button>
+          <button type="button">⌖</button>
+        </div>
+      </div>
       <div className="site-map-search">
         <Search size={17} aria-hidden="true" />
         <input ref={searchInputRef} aria-label={searchLabel} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") locate(query); }} placeholder={placeholder} />
