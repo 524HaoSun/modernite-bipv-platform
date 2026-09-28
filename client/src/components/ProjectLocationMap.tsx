@@ -71,7 +71,7 @@ const EN_TEXT: MapText = {
   drawCleared: "Site outline cleared. Trace another area when ready.",
   vertexPlaced: (count) => `Point ${count} placed. Add another corner, or return to point 1 to close the boundary.`,
   outlined: (area, count) => `Outlined site area: ${area} across ${count} vertices. Drag a numbered point to refine it.`,
-  aerial: "Context",
+  aerial: "Aerial",
   road: "Road",
   siteArea: "Solar-ready area",
   drawZone: "Pencil-trace a boundary, then close it",
@@ -84,7 +84,7 @@ const EN_TEXT: MapText = {
   closeCue: "Point 1 is ready - click to close",
   outlinedArea: "Outlined solar area",
   points: "points",
-  openData: "OpenStreetMap live map",
+  openData: "Aerial map with OpenStreetMap search",
   editHint: "Drag any numbered point to refine the boundary",
   googleLater: "Google Street View can be connected later with the Google Maps API.",
   zoomIn: "Zoom in",
@@ -102,7 +102,7 @@ const ZH_TEXT: MapText = {
   drawCleared: "已清除场地边界，可重新勾画。",
   vertexPlaced: (count) => `已放置第 ${count} 个点。继续添加顶点，或回到第 1 个点闭合边界。`,
   outlined: (area, count) => `已勾画场地面积：${area}，共 ${count} 个顶点。可拖动编号顶点进行微调。`,
-  aerial: "环境",
+  aerial: "航拍",
   road: "道路",
   siteArea: "光伏候选区域",
   drawZone: "用铅笔勾画边界并闭合",
@@ -115,7 +115,7 @@ const ZH_TEXT: MapText = {
   closeCue: "第 1 点已高亮，点击即可闭合",
   outlinedArea: "已勾画光伏区域",
   points: "个顶点",
-  openData: "OpenStreetMap 实时地图",
+  openData: "航拍地图与 OpenStreetMap 搜索",
   editHint: "拖动任意编号顶点即可微调边界",
   googleLater: "Google Street View 可在后续接入 Google Maps API 后启用。",
   zoomIn: "放大",
@@ -224,6 +224,11 @@ function normaliseTileX(x: number, zoom: number) {
   return ((x % max) + max) % max;
 }
 
+function tileUrl(mode: MapMode, zoom: number, x: number, y: number) {
+  if (mode === "aerial") return `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+}
+
 export function ProjectLocationMap({
   language,
   market,
@@ -310,14 +315,14 @@ export function ProjectLocationMap({
         const tileX = normaliseTileX(x, zoom);
         output.push({
           key: `${zoom}-${x}-${y}`,
-          url: `https://tile.openstreetmap.org/${zoom}/${tileX}/${y}.png`,
+          url: tileUrl(mapMode, zoom, tileX, y),
           left: x * TILE_SIZE - centerPoint.x + size.width / 2,
           top: y * TILE_SIZE - centerPoint.y + size.height / 2,
         });
       }
     }
     return output;
-  }, [centerPoint, size.height, size.width, zoom]);
+  }, [centerPoint, mapMode, size.height, size.width, zoom]);
 
   const polygonPoints = useMemo(() => (area?.path ?? []).map(projectToScreen).map((point) => `${point.x},${point.y}`).join(" "), [area, projectToScreen]);
   const draftPoints = useMemo(() => {
@@ -560,7 +565,9 @@ export function ProjectLocationMap({
           <button type="button" className="osm-detail-button" aria-label={text.detailView} title={text.detailView} onClick={focusDetailView}>1:1</button>
           <button type="button" aria-label="Center on selected site" onClick={() => setCenter(marker?.coordinates ?? market.coordinates)}><Crosshair size={16} /></button>
         </div>
-        <a className="osm-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
+        <div className="osm-attribution">
+          {mapMode === "aerial" ? "Imagery © Esri, Maxar, Earthstar Geographics" : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>}
+        </div>
       </div>
 
       <div className="site-map-search">
