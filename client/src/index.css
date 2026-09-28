@@ -4373,3 +4373,28 @@ body {
 .gateway-shell--entry .entry-copy {
   z-index: 5 !important;
 }
+
+/* Market position nudge requested after review: lower selectors, slightly larger globe. */
+.market-page .globe-stage {
+  right: clamp(-18px, .7vw, 14px) !important;
+  width: min(43vw, 675px) !important;
+  height: min(63vh, 590px) !important;
+}
+.market-page .market-globe {
+  width: min(625px, 105%) !important;
+}
+.market-page .globe-market-rail {
+  top: 350px !important;
+}
+.market-page .globe-library {
+  top: 350px !important;
+}
+@media (max-width: 1180px) {
+  .market-page .globe-market-rail,
+  .market-page .globe-library {
+    top: 372px !important;
+  }
+  .market-page .market-globe {
+    width: min(590px, 108%) !important;
+  }
+}
