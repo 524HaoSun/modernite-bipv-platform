@@ -45,7 +45,7 @@ import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
-const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-reference-full.png");
+const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-clean-bg.png");
 const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";

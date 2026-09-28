@@ -3774,3 +3774,602 @@ body {
     box-shadow: 0 0 0 8px rgba(67, 183, 102, 0);
   }
 }
+
+/* Crisp composited entering page: high-resolution scene with real, selectable UI. */
+.gateway-shell--entry {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #f7fbf7;
+}
+.gateway-shell--entry .gateway-header {
+  display: grid !important;
+  height: 76px;
+  border-bottom: 1px solid rgba(183, 203, 193, .64);
+  background: rgba(252, 254, 251, .76);
+  backdrop-filter: blur(18px);
+}
+.gateway-shell--entry .gateway-header .journey-rail {
+  display: none !important;
+}
+.gateway-shell--entry .gateway-header .gateway-tools {
+  grid-column: 3;
+}
+.gateway-shell--entry .brand-lockup strong {
+  color: #0b2d34;
+  font-size: 19px;
+  letter-spacing: 5.4px;
+}
+.gateway-shell--entry .brand-lockup small {
+  color: #67798b;
+  font-size: 8px;
+  letter-spacing: 3px;
+}
+.gateway-shell--entry .studio-language-control {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border-color: rgba(190, 209, 203, .86);
+  background: rgba(255, 255, 255, .7);
+  box-shadow: 0 8px 22px rgba(20, 55, 48, .05);
+}
+.gateway-shell--entry .studio-language-control select {
+  height: 40px;
+  color: #2f404b;
+  font-size: 14px;
+}
+.gateway-shell--entry .gateway-status {
+  color: #344a52;
+  font-size: 15px;
+}
+.gateway-shell--entry .gateway-status i {
+  width: 10px;
+  height: 10px;
+  background: #44bd66;
+  box-shadow: 0 0 0 6px rgba(68, 189, 102, .13);
+  animation: entryWorkspacePulse 1.9s ease-in-out infinite;
+}
+.gateway-shell--entry .entry-page {
+  width: 100vw;
+  height: calc(100dvh - 76px);
+  min-height: calc(100dvh - 76px);
+  overflow: hidden;
+  background: #f8fbf6;
+}
+.gateway-shell--entry .entry-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.gateway-shell--entry .entry-background img {
+  display: block;
+  width: 100%;
+  height: calc(100% + 76px);
+  object-fit: cover;
+  object-position: center top;
+  transform: translateY(-76px);
+  filter: saturate(1.02) contrast(1.02) brightness(1.01);
+}
+.gateway-shell--entry .entry-background::after {
+  display: block !important;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(250, 253, 249, .985) 0%, rgba(250, 253, 249, .97) 39%, rgba(250, 253, 249, .58) 51%, rgba(250, 253, 249, .1) 66%, rgba(250, 253, 249, 0) 100%),
+    linear-gradient(0deg, rgba(245, 249, 241, .36) 0%, rgba(245, 249, 241, 0) 32%);
+}
+.gateway-shell--entry .entry-page::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  top: 0;
+  width: min(620px, 45vw);
+  height: 100%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 32% 45%, rgba(250, 253, 249, 1) 0%, rgba(250, 253, 249, .99) 58%, rgba(250, 253, 249, .82) 76%, rgba(250, 253, 249, 0) 100%),
+    linear-gradient(90deg, rgba(250, 253, 249, 1) 0%, rgba(250, 253, 249, .98) 72%, rgba(250, 253, 249, 0) 100%);
+  filter: blur(1px);
+}
+.gateway-shell--entry .entry-copy {
+  z-index: 8;
+}
+.gateway-shell--entry .entry-copy .eyebrow,
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-lede,
+.gateway-shell--entry .entry-actions {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  color: #6d7c8e;
+}
+.gateway-shell--entry .entry-copy h1 {
+  color: #003c32 !important;
+}
+.gateway-shell--entry .entry-copy h1 em {
+  color: #064338 !important;
+}
+.gateway-shell--entry .entry-lede {
+  color: #617386;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  color: #fff !important;
+}
+
+/* Final entry-page layer lock: keep live text crisp across browser zoom and narrow viewports. */
+.gateway-shell--entry .entry-page {
+  isolation: isolate;
+}
+.gateway-shell--entry .entry-background::after {
+  display: block !important;
+  background:
+    linear-gradient(90deg, rgba(250, 253, 249, .99) 0%, rgba(250, 253, 249, .985) 42%, rgba(250, 253, 249, .72) 55%, rgba(250, 253, 249, .16) 70%, rgba(250, 253, 249, 0) 100%),
+    linear-gradient(0deg, rgba(245, 249, 241, .3) 0%, rgba(245, 249, 241, 0) 32%) !important;
+}
+.gateway-shell--entry .entry-page::before {
+  width: clamp(620px, 54vw, 800px);
+}
+.gateway-shell--entry .entry-copy {
+  z-index: 20 !important;
+  max-width: min(700px, 52vw);
+  padding: clamp(54px, 9vh, 92px) 0 0 clamp(58px, 7vw, 88px) !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  color: #66768a !important;
+}
+.gateway-shell--entry .entry-copy h1 {
+  color: #003b31 !important;
+  opacity: 1 !important;
+}
+.gateway-shell--entry .entry-copy h1 em {
+  color: #063f35 !important;
+}
+.gateway-shell--entry .entry-lede {
+  color: #617386 !important;
+}
+.gateway-shell--entry .entry-actions {
+  z-index: 21 !important;
+  margin-top: clamp(34px, 4.6vh, 56px) !important;
+  opacity: 1 !important;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  background: linear-gradient(135deg, #087a55 0%, #043d32 100%) !important;
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 760px) {
+  .gateway-shell--entry .entry-background::after {
+    background:
+      linear-gradient(90deg, rgba(250, 253, 249, .99) 0%, rgba(250, 253, 249, .985) 54%, rgba(250, 253, 249, .68) 72%, rgba(250, 253, 249, .1) 100%) !important;
+  }
+  .gateway-shell--entry .entry-copy {
+    max-width: min(520px, calc(100vw - 44px));
+    padding: 50px 22px 0 !important;
+  }
+  .gateway-shell--entry .entry-page::before {
+    width: 100vw;
+  }
+}
+.gateway-shell--entry .entry-haze {
+  display: block !important;
+  z-index: 1;
+}
+.gateway-shell--entry .entry-haze--left {
+  left: -8vw;
+  top: 18vh;
+  width: 48vw;
+  height: 46vh;
+  background: rgba(255, 255, 255, .5);
+}
+.gateway-shell--entry .entry-haze--right {
+  right: 12vw;
+  top: 0;
+  width: 30vw;
+  height: 36vh;
+  background: rgba(222, 239, 231, .28);
+}
+.gateway-shell--entry .entry-copy {
+  position: relative;
+  z-index: 5;
+  max-width: min(700px, 52vw);
+  padding: clamp(54px, 9vh, 92px) 0 0 clamp(58px, 7vw, 88px);
+  pointer-events: auto;
+}
+.gateway-shell--entry .entry-copy .eyebrow,
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-lede {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  opacity: 1;
+  transform: none;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  margin: 0;
+  color: #728195;
+  font-size: clamp(13px, .9vw, 15px);
+  font-weight: 800;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+}
+.gateway-shell--entry .entry-copy h1 {
+  max-width: 710px;
+  margin: 22px 0 18px;
+  color: #05392f;
+  font-size: clamp(74px, 6.35vw, 102px);
+  font-weight: 560;
+  letter-spacing: -4.6px;
+  line-height: .99;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .28);
+}
+.gateway-shell--entry .entry-copy h1 em {
+  display: block;
+  color: #073f34;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: .82em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -3px;
+}
+.gateway-shell--entry .entry-lede {
+  max-width: 520px;
+  color: #6b7889;
+  font-size: clamp(18px, 1.25vw, 22px);
+  line-height: 1.46;
+}
+.gateway-shell--entry .entry-actions {
+  display: grid;
+  position: static;
+  width: min(430px, 30vw);
+  gap: 22px;
+  margin-top: clamp(34px, 4.6vh, 56px);
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+.gateway-shell--entry .entry-actions .button-primary,
+.gateway-shell--entry .entry-actions .button-quiet {
+  position: relative;
+  color: inherit;
+  font-size: inherit;
+  pointer-events: auto;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  left: auto;
+  top: auto;
+  width: 100%;
+  height: auto;
+  min-height: 76px;
+  justify-content: space-between;
+  padding: 0 30px 0 100px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #087a55 0%, #043d32 100%);
+  box-shadow: 0 24px 46px rgba(5, 64, 49, .26);
+  font-size: 21px;
+  font-weight: 820;
+}
+.gateway-shell--entry .entry-actions .button-primary::before {
+  display: grid !important;
+}
+.gateway-shell--entry .entry-actions .button-primary::after,
+.gateway-shell--entry .entry-actions .button-primary svg,
+.gateway-shell--entry .entry-actions .button-quiet svg {
+  display: block !important;
+}
+.gateway-shell--entry .entry-actions .button-primary svg {
+  color: #fff;
+}
+.gateway-shell--entry .entry-actions .button-quiet {
+  left: auto;
+  top: auto;
+  width: max-content;
+  height: auto;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  color: #687983;
+  background: transparent;
+  box-shadow: none;
+  font-size: 17px;
+  font-weight: 650;
+}
+.gateway-shell--entry .entry-actions .button-quiet::after {
+  display: block !important;
+}
+.gateway-shell--entry .entry-solar-geometry {
+  display: none !important;
+  z-index: 2;
+  top: -18vh;
+  right: -4vw;
+  width: min(66vw, 980px);
+  min-width: 760px;
+  opacity: .42;
+}
+.gateway-shell--entry .entry-wireframe-overlay {
+  display: none !important;
+  z-index: 4;
+  right: -1vw;
+  bottom: 12vh;
+  width: min(43vw, 660px);
+  min-width: 460px;
+  opacity: .34;
+}
+.gateway-shell--entry .entry-foreground {
+  display: block !important;
+  z-index: 6;
+  bottom: -10px;
+  height: 15vh;
+  opacity: .5;
+  filter: blur(11px);
+}
+.gateway-shell--entry .entry-language-hotspot,
+.gateway-shell--entry .entry-workspace-pulse,
+.gateway-shell--entry .entry-visual {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .gateway-shell--entry .entry-copy {
+    max-width: 58vw;
+    padding-left: 44px;
+  }
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(58px, 6.4vw, 76px);
+    letter-spacing: -3px;
+  }
+  .gateway-shell--entry .entry-actions {
+    width: min(410px, 38vw);
+  }
+}
+
+@media (max-width: 760px) {
+  .gateway-shell--entry {
+    overflow: auto;
+  }
+  .gateway-shell--entry .gateway-header {
+    height: auto;
+    min-height: 68px;
+  }
+  .gateway-shell--entry .entry-page {
+    height: auto;
+    min-height: calc(100dvh - 68px);
+    padding-bottom: 42vh;
+  }
+  .gateway-shell--entry .entry-background img {
+    object-position: 74% bottom;
+  }
+  .gateway-shell--entry .entry-background::after {
+    background:
+      linear-gradient(180deg, rgba(250,253,249,.98) 0%, rgba(250,253,249,.9) 46%, rgba(250,253,249,.2) 78%),
+      linear-gradient(0deg, rgba(237,245,235,.78), transparent 38%);
+  }
+  .gateway-shell--entry .entry-copy {
+    max-width: none;
+    padding: 50px 22px 0;
+  }
+  .gateway-shell--entry .entry-copy .eyebrow {
+    letter-spacing: 5px;
+  }
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(45px, 13vw, 64px);
+    letter-spacing: -2.4px;
+  }
+  .gateway-shell--entry .entry-lede {
+    font-size: 17px;
+  }
+  .gateway-shell--entry .entry-actions {
+    width: min(100%, 430px);
+  }
+  .gateway-shell--entry .entry-solar-geometry {
+    top: 38vh;
+    right: -44vw;
+    width: 112vw;
+    min-width: 560px;
+    opacity: .52;
+  }
+  .gateway-shell--entry .entry-wireframe-overlay {
+    right: -18vw;
+    bottom: 8vh;
+    width: 82vw;
+    min-width: 320px;
+  }
+}
+
+/* Absolute final override for the entry page. Keep this at EOF. */
+.gateway-shell--entry .entry-page {
+  isolation: isolate !important;
+}
+.gateway-shell--entry .entry-page::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 18 !important;
+  inset: 0 auto 0 0 !important;
+  width: clamp(620px, 54vw, 800px) !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse at 32% 44%, rgba(250, 253, 249, 1) 0%, rgba(250, 253, 249, .995) 56%, rgba(250, 253, 249, .82) 78%, rgba(250, 253, 249, 0) 100%),
+    linear-gradient(90deg, rgba(250, 253, 249, 1) 0%, rgba(250, 253, 249, .99) 72%, rgba(250, 253, 249, 0) 100%) !important;
+  filter: blur(1px) !important;
+}
+.gateway-shell--entry .entry-copy {
+  position: relative !important;
+  z-index: 40 !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow,
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-copy h1 em,
+.gateway-shell--entry .entry-lede,
+.gateway-shell--entry .entry-actions,
+.gateway-shell--entry .entry-actions .button-primary {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow { color: #66768a !important; }
+.gateway-shell--entry .entry-copy h1 { color: #003b31 !important; }
+.gateway-shell--entry .entry-copy h1 em { color: #063f35 !important; }
+.gateway-shell--entry .entry-lede { color: #617386 !important; }
+.gateway-shell--entry .entry-actions {
+  z-index: 41 !important;
+  margin-top: clamp(34px, 4.6vh, 56px) !important;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  background: linear-gradient(135deg, #087a55 0%, #043d32 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 24px 46px rgba(5, 64, 49, .26) !important;
+}
+@media (max-width: 760px) {
+  .gateway-shell--entry .entry-page::before {
+    width: 100vw !important;
+  }
+}
+
+/* Clean entry composition: remove the washed-out veil and crop the supplied art to the right side. */
+.gateway-shell--entry .entry-page {
+  background:
+    linear-gradient(115deg, #fbfdf9 0%, #f7fbf6 42%, #edf6f0 100%) !important;
+}
+.gateway-shell--entry .entry-background {
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+.gateway-shell--entry .entry-background img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: calc(100% + 76px) !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  transform: translateY(-76px) !important;
+  filter: saturate(1.1) contrast(1.04) brightness(1.03) !important;
+  opacity: 1 !important;
+}
+.gateway-shell--entry .entry-background::after {
+  display: block !important;
+  background:
+    linear-gradient(90deg, rgba(251, 253, 249, .92) 0%, rgba(251, 253, 249, .75) 25%, rgba(251, 253, 249, .3) 43%, rgba(251, 253, 249, 0) 62%),
+    linear-gradient(0deg, rgba(247, 251, 244, .12) 0%, rgba(247, 251, 244, 0) 24%) !important;
+}
+.gateway-shell--entry .entry-page::before {
+  display: none !important;
+}
+.gateway-shell--entry .entry-haze {
+  display: none !important;
+}
+.gateway-shell--entry .entry-copy {
+  z-index: 30 !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  color: #6d7b90 !important;
+}
+.gateway-shell--entry .entry-copy h1 {
+  color: #003b31 !important;
+  text-shadow: none !important;
+}
+.gateway-shell--entry .entry-copy h1 em {
+  color: #063f35 !important;
+}
+.gateway-shell--entry .entry-lede {
+  color: #627386 !important;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  background: linear-gradient(135deg, #087a55 0%, #043d32 100%) !important;
+  box-shadow: 0 24px 44px rgba(5, 64, 49, .24) !important;
+}
+
+/* New clean background final pass: no fog wash, no old text mask. */
+.gateway-shell--entry .entry-background img {
+  inset: 0 !important;
+  width: 100% !important;
+  height: calc(100% + 76px) !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  transform: translateY(-76px) !important;
+  filter: saturate(1.12) contrast(1.08) brightness(1.04) !important;
+  opacity: 1 !important;
+}
+.gateway-shell--entry .entry-background::after {
+  background:
+    linear-gradient(90deg, rgba(251, 253, 249, .82) 0%, rgba(251, 253, 249, .5) 24%, rgba(251, 253, 249, .12) 42%, rgba(251, 253, 249, 0) 58%) !important;
+}
+.gateway-shell--entry .entry-page::before,
+.gateway-shell--entry .entry-haze,
+.gateway-shell--entry .entry-foreground {
+  display: none !important;
+}
+.gateway-shell--entry .entry-copy {
+  z-index: 60 !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  color: #596b7f !important;
+}
+.gateway-shell--entry .entry-copy h1 {
+  color: #00382f !important;
+  text-shadow: none !important;
+}
+.gateway-shell--entry .entry-copy h1 em {
+  color: #053f35 !important;
+}
+.gateway-shell--entry .entry-lede {
+  color: #536679 !important;
+}
+.gateway-shell--entry .entry-actions .button-primary {
+  background: linear-gradient(135deg, #067c57 0%, #033d32 100%) !important;
+  box-shadow: 0 24px 44px rgba(4, 62, 48, .3) !important;
+}
+
+/* Sharp entry pass for the clean supplied background. */
+.gateway-shell--entry,
+.gateway-shell--entry .entry-page {
+  opacity: 1 !important;
+  animation: none !important;
+}
+.gateway-shell--entry .entry-page {
+  background: #fbfdf9 !important;
+}
+.gateway-shell--entry .entry-background {
+  z-index: 0 !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+.gateway-shell--entry .entry-background img {
+  height: calc(100% + 76px) !important;
+  object-position: center top !important;
+  transform: translateY(-76px) !important;
+  filter: saturate(1.18) contrast(1.13) brightness(1.04) !important;
+}
+.gateway-shell--entry .entry-background::after {
+  display: block !important;
+  background:
+    linear-gradient(90deg, rgba(251,253,249,.78) 0%, rgba(251,253,249,.42) 22%, rgba(251,253,249,.08) 41%, rgba(251,253,249,0) 58%) !important;
+}
+.gateway-shell--entry .entry-copy,
+.gateway-shell--entry .entry-copy .eyebrow,
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-copy h1 em,
+.gateway-shell--entry .entry-lede,
+.gateway-shell--entry .entry-actions,
+.gateway-shell--entry .entry-actions .button-primary {
+  opacity: 1 !important;
+  filter: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+.gateway-shell--entry .entry-copy {
+  z-index: 5 !important;
+}
