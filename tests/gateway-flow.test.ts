@@ -37,8 +37,8 @@ describe("V28-aligned entry gateway", () => {
   it("includes a restrained local-model calculation transition and optional AI study control", () => {
     expect(app).toContain("Preparing a grounded project study.");
     expect(app).toContain("Local empirical climate profile");
-    expect(app).toContain("local regional climate baseline");
-    expect(app).toContain("Ask about this study");
+    expect(app).toContain("Regional monthly baseline");
+    expect(app).toContain("Modernité Design Guide");
     expect(app).toContain("PersistentStudyAssistant");
     expect(styles).toContain(".persistent-study-assistant");
     expect(styles).toContain(".calculation-page");
@@ -51,41 +51,36 @@ describe("V28-aligned entry gateway", () => {
     expect(styles).toContain(".location-map-shell");
   });
 
-  it("uses the managed Google Maps frontend wrapper for address search and pin placement", () => {
-    expect(map).toContain('import { MapView } from "@/components/Map"');
-    expect(map).toContain("new window.google.maps.Geocoder()");
-    expect(map).toContain("new window.google.maps.places.Autocomplete");
-    expect(map).toContain("draftPathRef");
-    expect(map).toContain("draftLineRef");
-    expect(map).toContain("draftVertexMarkersRef");
+  it("uses an OpenStreetMap frontend layer for address search and pin placement", () => {
+    expect(map).toContain("tile.openstreetmap.org");
+    expect(map).toContain("nominatim.openstreetmap.org/search");
+    expect(map).toContain("OpenStreetMap is ready");
+    expect(map).toContain("osm-map-canvas");
+    expect(map).toContain("osm-tile-layer");
+    expect(map).toContain("osm-vector-layer");
     expect(map).toContain("Close outline");
     expect(map).toContain("Undo point");
-    expect(map).toContain("componentRestrictions: { country }");
+    expect(map).toContain("countrycodes");
     expect(map).toContain("COUNTRY_NAME_TERMS");
-    expect(map).toContain('result.types.includes("country")');
-    expect(map).toContain("computeArea(polygon.getPath())");
-    expect(map).toContain("StreetViewService");
-    expect(map).toContain("streetViewControl: true");
-    expect(map).toContain("MapTypeId.HYBRID");
+    expect(map).toContain("item.type !== \"country\"");
+    expect(map).toContain("calculateArea");
+    expect(map).toContain("Google Street View can be connected later");
     expect(map).toContain("Trace area");
     expect(map).toContain('site-map-tool-card ${drawingActive ? "is-drawing" : ""}');
-    expect(map).toContain("Drag Pegman onto a highlighted road");
-    expect(map).toContain("map.addListener(\"click\"");
+    expect(map).toContain("handlePointerUp");
     expect(map).toContain("ProjectLocationSelection");
     expect(map).toContain("coordinates");
-    expect(map).toContain("draggable: true");
-    expect(map).toContain("renderEditVertices");
-    expect(map).toContain("closeThresholdMetres");
+    expect(map).toContain("beginVertexDrag");
+    expect(map).toContain("distanceMetres");
     expect(map).toContain("is-close-ready");
     expect(map).toContain("Pencil");
   });
 
-  it("keeps the selected market locked at the site stage with reversible aerial exploration", () => {
+  it("keeps the selected market locked at the site stage with reversible map exploration", () => {
     expect(app).not.toContain('aria-label="Change selected market"');
-    expect(map).toContain("exitStreetView");
-    expect(map).toContain("streetViewOpenRef");
-    expect(map).toContain("Return to aerial map");
-    expect(map).toContain("map.getStreetView().setVisible(false)");
+    expect(map).toContain('type MapMode = "aerial" | "road"');
+    expect(map).toContain("setMapMode");
+    expect(map).toContain("Google Maps API");
     expect(map).not.toContain("map.setTilt(45)");
     expect(map).not.toContain("45° view");
   });

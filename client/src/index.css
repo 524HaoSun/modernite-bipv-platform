@@ -760,6 +760,147 @@ body { color: var(--v32-text); background: #f8fbf7; }
   opacity: 0;
   pointer-events: none;
 }
+.osm-map-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(circle at 78% 16%, rgba(213, 231, 220, .48), transparent 24%),
+    linear-gradient(135deg, #d9e9e1, #eef5ec 45%, #c9ddd2);
+}
+.osm-map-canvas:active {
+  cursor: grabbing;
+}
+.osm-map-canvas--aerial .osm-tile-layer {
+  filter: saturate(.56) contrast(.94) brightness(1.04) sepia(.1);
+}
+.osm-map-canvas--aerial::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, transparent 0 32%, rgba(15, 62, 48, .08) 76%, rgba(12, 40, 33, .16) 100%),
+    linear-gradient(120deg, rgba(250, 253, 248, .18), rgba(255, 255, 255, 0) 54%);
+  mix-blend-mode: multiply;
+}
+.osm-tile-layer,
+.osm-vector-layer {
+  position: absolute;
+  inset: 0;
+}
+.osm-tile-layer img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  user-select: none;
+}
+.osm-vector-layer {
+  z-index: 3;
+  pointer-events: none;
+}
+.osm-area-polygon {
+  fill: rgba(187, 225, 188, .48);
+  stroke: rgba(24, 91, 63, .95);
+  stroke-width: 3;
+  filter: drop-shadow(0 12px 16px rgba(15, 58, 45, .22));
+}
+.osm-draft-line {
+  fill: none;
+  stroke: #1b6a4b;
+  stroke-width: 3;
+  stroke-dasharray: 8 8;
+  filter: drop-shadow(0 6px 12px rgba(12, 61, 43, .18));
+}
+.osm-draft-line.is-close-ready {
+  stroke: #36d7ff;
+}
+.osm-area-vertex circle,
+.osm-draft-vertex circle {
+  pointer-events: auto;
+  cursor: grab;
+  fill: #f7fff8;
+  stroke: #1f694e;
+  stroke-width: 4;
+  filter: drop-shadow(0 6px 10px rgba(18, 62, 48, .24));
+}
+.osm-area-vertex text,
+.osm-draft-vertex text {
+  pointer-events: none;
+  fill: #163d35;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-anchor: middle;
+}
+.osm-draft-vertex.is-close-ready circle {
+  fill: #e9fbff;
+  stroke: #36d7ff;
+}
+.osm-site-marker {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(180deg, #0a7255, #184938);
+  border: 3px solid rgba(255, 255, 255, .96);
+  border-radius: 50% 50% 50% 8px;
+  box-shadow: 0 18px 28px rgba(19, 65, 49, .28);
+  transform: translate(-50%, -100%) rotate(-45deg);
+}
+.osm-site-marker svg {
+  transform: rotate(45deg);
+}
+.osm-control-stack {
+  position: absolute;
+  right: 24px;
+  bottom: 112px;
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+}
+.osm-control-stack button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(216, 229, 217, .92);
+  border-radius: 9px;
+  color: #173e35;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 10px 24px rgba(24, 54, 45, .2);
+  font-size: 22px;
+  font-weight: 750;
+}
+.osm-control-stack button:hover {
+  color: white;
+  border-color: var(--v28-green);
+  background: var(--v28-green);
+}
+.osm-control-stack .osm-detail-button {
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.osm-attribution {
+  position: absolute;
+  right: 22px;
+  bottom: 12px;
+  z-index: 5;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #4e6a5a;
+  background: rgba(250, 252, 248, .88);
+  box-shadow: 0 6px 16px rgba(24, 54, 45, .12);
+  font-size: 10px;
+  text-decoration: none;
+}
 .site-demo-map {
   position: absolute;
   inset: 0;
