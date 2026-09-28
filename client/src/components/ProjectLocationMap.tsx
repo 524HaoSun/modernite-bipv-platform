@@ -169,6 +169,67 @@ function nominatimLanguage(language: GatewayLanguage) {
   return language;
 }
 
+function stripLocalisedAliases(value: string) {
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part && !/[\u3400-\u9fff]/.test(part))
+    .map((part) => part.split(";").map((item) => item.trim()).find((item) => item && !/[\u3400-\u9fff]/.test(item)) ?? "")
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function cleanAddressLabel(value: string, language: GatewayLanguage) {
+  if (language === "en") return stripLocalisedAliases(value) || value;
+  return value;
+}
+
+type NominatimAddress = {
+  postcode?: string;
+  road?: string;
+  pedestrian?: string;
+  footway?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  county?: string;
+  state_district?: string;
+  state?: string;
+  country?: string;
+};
+
+function formatNominatimAddress(result: { display_name?: string; address?: NominatimAddress }, language: GatewayLanguage, fallback: string) {
+  if (language === "en" && result.address) {
+    const address = result.address;
+    const parts = [
+      address.postcode,
+      address.road ?? address.pedestrian ?? address.footway,
+      address.neighbourhood ?? address.suburb,
+      address.city ?? address.town ?? address.village ?? address.municipality,
+      address.county,
+      address.state_district,
+      address.state,
+      address.country,
+    ];
+    const seen = new Set<string>();
+    const label = parts
+      .map((part) => part?.trim())
+      .filter((part): part is string => Boolean(part && !/[\u3400-\u9fff]/.test(part)))
+      .filter((part) => {
+        const key = part.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .join(", ");
+    if (label) return label;
+  }
+  return cleanAddressLabel(result.display_name ?? fallback, language);
+}
+
 function countryRestriction(market: Market) {
   if (market.key === "GB") return "gb";
   if (market.key === "CA") return "ca";
@@ -405,11 +466,11 @@ export function ProjectLocationMap({
     }
     setStatus(text.locating);
     const requestLanguage = nominatimLanguage(language);
-    const params = new URLSearchParams({ format: "jsonv2", limit: "1", q: trimmed, "accept-language": requestLanguage });
+    const params = new URLSearchParams({ format: "jsonv2", addressdetails: "1", limit: "1", q: trimmed, "accept-language": requestLanguage });
     if (country) params.set("countrycodes", country);
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, { headers: { Accept: "application/json", "Accept-Language": requestLanguage } });
-      const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string; type?: string }>;
+      const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string; type?: string; address?: NominatimAddress }>;
       const result = results.find((item) => item.type !== "country") ?? results[0];
       if (!result) {
         setStatus(text.unavailable);
@@ -420,7 +481,7 @@ export function ProjectLocationMap({
         setStatus(text.unavailable);
         return;
       }
-      selectLocation(coordinates, result.display_name ?? trimmed);
+      selectLocation(coordinates, formatNominatimAddress(result, language, trimmed));
     } catch {
       setStatus(text.unavailable);
     }

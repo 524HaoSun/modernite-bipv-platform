@@ -27,7 +27,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { ProjectLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
+import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
@@ -440,6 +440,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
 }) {
   const outlinedArea = context.siteArea ? new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(context.siteArea.areaM2) : null;
   const locationText = LOCATION_PAGE_TEXT[language];
+  const locationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
   return (
     <section className="location-page gateway-page">
       <div className="location-scene-heading">
@@ -468,7 +469,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           <div className="location-market-name"><small>{locationText.market}</small><strong>{market.name}</strong></div>
           <div className={`location-readout ${context.location ? "is-ready" : ""}`}>
             <MapPinned size={17} />
-            <span>{context.location?.label || copy.locationEmpty}</span>
+            <span>{locationLabel || copy.locationEmpty}</span>
           </div>
           <div className="site-brief-metrics">
             <div><span>{locationText.area}</span><strong>{outlinedArea ? `${outlinedArea} m²` : locationText.notTraced}</strong></div>
@@ -645,6 +646,7 @@ function StudioPage({
   const studioRegion = STUDIO_REGION_BY_MARKET[market.key];
   const workflow = WORKFLOW_LABELS[language];
   const bridgeCopy = STUDIO_BRIDGE_COPY[language];
+  const studioLocationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
   const studioJourney = [
     { id: "project", label: workflow.project, complete: true },
     { id: "market", label: workflow.market, complete: true },
@@ -851,7 +853,7 @@ function StudioPage({
           </div>)}
         </div>
         <div className="studio-bridge-context">
-          <span className="studio-bridge-context__site"><MapPinned size={13} /> <i>{bridgeCopy.siteContext}</i> {market.shortName}{context.location ? ` · ${context.location.label}` : ""}</span>
+          <span className="studio-bridge-context__site"><MapPinned size={13} /> <i>{bridgeCopy.siteContext}</i> {market.shortName}{studioLocationLabel ? ` · ${studioLocationLabel}` : ""}</span>
           <label className="studio-language-control">
             <Globe2 size={13} aria-hidden="true" />
             <span className="sr-only">Project workspace</span>
@@ -1185,7 +1187,7 @@ export default function App() {
     try {
       const nextStudy = await runCalculation.mutateAsync({
         market: context.marketKey,
-        address: context.location.label,
+        address: cleanAddressLabel(context.location.label, studioLanguage),
         coordinates: context.location.coordinates,
         studioSnapshot,
         energySettings: context.energySettings,
