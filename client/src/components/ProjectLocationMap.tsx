@@ -244,6 +244,7 @@ export function ProjectLocationMap({
   const shellRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const emittedAreaKeyRef = useRef("");
+  const toolPointerHandledRef = useRef(false);
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState<LatLng>(initialLocation?.coordinates ?? market.coordinates);
   const [zoom, setZoom] = useState(clamp(Math.max(market.zoom, 16), MIN_ZOOM, MAX_ZOOM));
@@ -447,7 +448,25 @@ export function ProjectLocationMap({
   }, [area, marker, market.coordinates, market.zoom]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (drawingActive) return;
+    if (drawingActive) {
+      event.preventDefault();
+      event.stopPropagation();
+      const point = screenToLatLng(event.clientX, event.clientY);
+      const first = draftPath[0];
+      const shouldClose = Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(point), projectToScreen(first)) <= 34 || distanceMetres(point, first) <= 5.2));
+      if (shouldClose) {
+        finishDrawing();
+        return;
+      }
+      setDraftPath((path) => {
+        const next = [...path, point];
+        setStatus(text.vertexPlaced(next.length));
+        return next;
+      });
+      setHoverPoint(null);
+      setCloseReady(false);
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { type: "pan", pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startCenter: centerPoint, moved: false };
   };
@@ -482,18 +501,7 @@ export function ProjectLocationMap({
         setStatus(text.outlined(areaLabel(area.areaM2), area.path.length));
       }
     }
-    if (drawingActive) {
-      const point = screenToLatLng(event.clientX, event.clientY);
-      if (closeReady && draftPath.length >= 3) {
-        finishDrawing();
-      } else {
-        setDraftPath((path) => {
-          const next = [...path, point];
-          setStatus(text.vertexPlaced(next.length));
-          return next;
-        });
-      }
-    } else if (drag?.type === "pan" && !drag.moved) {
+    if (!drawingActive && drag?.type === "pan" && !drag.moved) {
       selectLocation(screenToLatLng(event.clientX, event.clientY));
     }
     dragRef.current = null;
@@ -515,6 +523,21 @@ export function ProjectLocationMap({
     if (draftPath.length < 3) return;
     event.stopPropagation();
     finishDrawing();
+  };
+
+  const runToolAction = (event: React.PointerEvent<HTMLButtonElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toolPointerHandledRef.current = true;
+    window.setTimeout(() => { toolPointerHandledRef.current = false; }, 0);
+    action();
+  };
+
+  const runToolClickAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (toolPointerHandledRef.current) return;
+    action();
   };
 
   const showReference = !marker;
@@ -587,9 +610,9 @@ export function ProjectLocationMap({
         <div className={`site-map-tool-card ${drawingActive ? "is-drawing" : ""}`}>
           <div className="site-map-tool-heading"><span><Ruler size={15} /></span><div><b>{text.siteArea}</b><small>{text.drawZone}</small></div></div>
           <div className={`site-map-tool-actions ${drawingActive ? "is-drawing" : ""}`}>
-            <button type="button" className={drawingActive ? "is-active" : ""} onClick={drawingActive ? finishDrawing : startDrawing}><Pencil size={14} /> {drawingActive ? text.finish : text.trace}</button>
-            {drawingActive && <button type="button" className="is-quiet" onClick={undoDraftPoint} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>}
-            <button type="button" className="is-quiet" onClick={clearArea} disabled={!area && !drawingActive}>{text.clear}</button>
+            <button type="button" className={drawingActive ? "is-active" : ""} onPointerDown={(event) => runToolAction(event, drawingActive ? finishDrawing : startDrawing)} onClick={(event) => runToolClickAction(event, drawingActive ? finishDrawing : startDrawing)}><Pencil size={14} /> {drawingActive ? text.finish : text.trace}</button>
+            {drawingActive && <button type="button" className="is-quiet" onPointerDown={(event) => runToolAction(event, undoDraftPoint)} onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>}
+            <button type="button" className="is-quiet" onPointerDown={(event) => runToolAction(event, clearArea)} onClick={(event) => runToolClickAction(event, clearArea)} disabled={!area && !drawingActive}>{text.clear}</button>
           </div>
           {drawingActive && <div className={`site-trace-progress ${closeReady ? "is-close-ready" : ""}`} aria-live="polite"><span>{draftPath.length}</span><b>{text.points}</b><i>{closeReady ? text.closeCue : text.drawCue}</i></div>}
           <p className="site-map-trace-help">{text.traceHelp}</p>

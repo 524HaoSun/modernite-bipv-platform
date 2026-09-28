@@ -774,6 +774,10 @@ body { color: var(--v32-text); background: #f8fbf7; }
 .osm-map-canvas:active {
   cursor: grabbing;
 }
+.location-map-shell.is-tracing .osm-map-canvas,
+.location-map-shell.is-tracing .osm-map-canvas:active {
+  cursor: crosshair;
+}
 .osm-map-canvas--aerial .osm-tile-layer {
   filter: saturate(.95) contrast(1.05) brightness(.94);
 }
@@ -797,6 +801,7 @@ body { color: var(--v32-text); background: #f8fbf7; }
   position: absolute;
   width: 256px;
   height: 256px;
+  pointer-events: none;
   user-select: none;
 }
 .osm-vector-layer {
@@ -840,6 +845,9 @@ body { color: var(--v32-text); background: #f8fbf7; }
 .osm-draft-vertex.is-close-ready circle {
   fill: #e9fbff;
   stroke: #36d7ff;
+}
+.location-map-shell.is-tracing .osm-draft-vertex:first-of-type circle {
+  cursor: crosshair;
 }
 .osm-site-marker {
   position: absolute;
