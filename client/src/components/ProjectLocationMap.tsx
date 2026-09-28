@@ -25,6 +25,7 @@ export type SiteAreaSelection = {
 type GatewayLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
 type LatLng = google.maps.LatLngLiteral;
 type Point = { x: number; y: number };
+type Segment = { left: number; top: number; width: number; angle: number };
 type MapMode = "aerial" | "road";
 type DragState =
   | { type: "pan"; pointerId: number; startX: number; startY: number; startCenter: Point; moved: boolean }
@@ -162,6 +163,12 @@ function areaLabel(areaM2: number) {
   return `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(areaM2)} m²`;
 }
 
+function nominatimLanguage(language: GatewayLanguage) {
+  if (language === "zh") return "zh-CN";
+  if (language === "zh-Hant") return "zh-TW";
+  return language;
+}
+
 function countryRestriction(market: Market) {
   if (market.key === "GB") return "gb";
   if (market.key === "CA") return "ca";
@@ -196,6 +203,25 @@ function distanceMetres(a: LatLng, b: LatLng) {
 
 function screenDistance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function buildSegments(points: Point[], closed: boolean): Segment[] {
+  if (points.length < 2) return [];
+  const segments: Segment[] = [];
+  const limit = closed ? points.length : points.length - 1;
+  for (let index = 0; index < limit; index += 1) {
+    const start = points[index]!;
+    const end = points[(index + 1) % points.length]!;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    segments.push({
+      left: start.x,
+      top: start.y,
+      width: Math.hypot(dx, dy),
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    });
+  }
+  return segments;
 }
 
 function calculateArea(path: LatLng[]) {
@@ -244,7 +270,6 @@ export function ProjectLocationMap({
   const shellRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const emittedAreaKeyRef = useRef("");
-  const toolPointerHandledRef = useRef(false);
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState<LatLng>(initialLocation?.coordinates ?? market.coordinates);
   const [zoom, setZoom] = useState(clamp(Math.max(market.zoom, 16), MIN_ZOOM, MAX_ZOOM));
@@ -330,6 +355,10 @@ export function ProjectLocationMap({
     const path = hoverPoint && drawingActive && draftPath.length ? [...draftPath, closeReady ? draftPath[0]! : hoverPoint] : draftPath;
     return path.map(projectToScreen).map((point) => `${point.x},${point.y}`).join(" ");
   }, [closeReady, draftPath, drawingActive, hoverPoint, projectToScreen]);
+  const screenAreaPoints = useMemo(() => (area?.path ?? []).map(projectToScreen), [area, projectToScreen]);
+  const screenDraftPoints = useMemo(() => draftPath.map(projectToScreen), [draftPath, projectToScreen]);
+  const areaSegments = useMemo(() => buildSegments(screenAreaPoints, Boolean(area)), [area, screenAreaPoints]);
+  const draftSegments = useMemo(() => buildSegments(screenDraftPoints, false), [screenDraftPoints]);
 
   const publishArea = useCallback((path: LatLng[]) => {
     if (!isUsablePath(path)) {
@@ -375,10 +404,11 @@ export function ProjectLocationMap({
       return;
     }
     setStatus(text.locating);
-    const params = new URLSearchParams({ format: "jsonv2", limit: "1", q: trimmed });
+    const requestLanguage = nominatimLanguage(language);
+    const params = new URLSearchParams({ format: "jsonv2", limit: "1", q: trimmed, "accept-language": requestLanguage });
     if (country) params.set("countrycodes", country);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, { headers: { Accept: "application/json" } });
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, { headers: { Accept: "application/json", "Accept-Language": requestLanguage } });
       const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string; type?: string }>;
       const result = results.find((item) => item.type !== "country") ?? results[0];
       if (!result) {
@@ -394,7 +424,7 @@ export function ProjectLocationMap({
     } catch {
       setStatus(text.unavailable);
     }
-  }, [market, selectLocation, text.locating, text.unavailable]);
+  }, [language, market, selectLocation, text.locating, text.unavailable]);
 
   const startDrawing = useCallback(() => {
     setArea(null);
@@ -453,9 +483,14 @@ export function ProjectLocationMap({
       event.stopPropagation();
       const point = screenToLatLng(event.clientX, event.clientY);
       const first = draftPath[0];
-      const shouldClose = Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(point), projectToScreen(first)) <= 34 || distanceMetres(point, first) <= 5.2));
+      const shouldClose = Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(point), projectToScreen(first)) <= 56 || distanceMetres(point, first) <= 8.5));
       if (shouldClose) {
         finishDrawing();
+        return;
+      }
+      const previous = draftPath[draftPath.length - 1];
+      if (previous && (screenDistance(projectToScreen(point), projectToScreen(previous)) <= 14 || distanceMetres(point, previous) <= 1.5)) {
+        setStatus(text.vertexPlaced(draftPath.length));
         return;
       }
       setDraftPath((path) => {
@@ -477,7 +512,7 @@ export function ProjectLocationMap({
     if (drawingActive) {
       setHoverPoint(pointerLocation);
       const first = draftPath[0];
-      setCloseReady(Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(pointerLocation), projectToScreen(first)) <= 30 || distanceMetres(pointerLocation, first) <= 4.8)));
+      setCloseReady(Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(pointerLocation), projectToScreen(first)) <= 56 || distanceMetres(pointerLocation, first) <= 8.5)));
     }
     if (!drag || drag.pointerId !== event.pointerId) return;
     if (drag.type === "vertex") {
@@ -513,30 +548,22 @@ export function ProjectLocationMap({
     setZoom((current) => clamp(current + (event.deltaY < 0 ? 1 : -1), MIN_ZOOM, MAX_ZOOM));
   };
 
-  const beginVertexDrag = (event: React.PointerEvent<SVGCircleElement>, index: number) => {
+  const beginVertexDrag = (event: React.PointerEvent<SVGCircleElement | HTMLButtonElement>, index: number) => {
     event.stopPropagation();
     shellRef.current?.setPointerCapture(event.pointerId);
     dragRef.current = { type: "vertex", pointerId: event.pointerId, index };
   };
 
-  const closeFromFirstDraftPoint = (event: React.PointerEvent<SVGCircleElement>) => {
+  const closeFromFirstDraftPoint = (event: React.PointerEvent<SVGCircleElement | HTMLButtonElement>) => {
     if (draftPath.length < 3) return;
-    event.stopPropagation();
-    finishDrawing();
-  };
-
-  const runToolAction = (event: React.PointerEvent<HTMLButtonElement>, action: () => void) => {
     event.preventDefault();
     event.stopPropagation();
-    toolPointerHandledRef.current = true;
-    window.setTimeout(() => { toolPointerHandledRef.current = false; }, 0);
-    action();
+    finishDrawing();
   };
 
   const runToolClickAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
     event.preventDefault();
     event.stopPropagation();
-    if (toolPointerHandledRef.current) return;
     action();
   };
 
@@ -581,6 +608,48 @@ export function ProjectLocationMap({
             );
           })}
         </svg>
+        {(areaSegments.length > 0 || draftSegments.length > 0 || screenAreaPoints.length > 0 || screenDraftPoints.length > 0) && (
+          <div className="osm-html-overlay">
+            {areaSegments.map((segment, index) => (
+              <span
+                key={`area-segment-${index}`}
+                className="osm-html-segment osm-html-segment--area"
+                style={{ left: segment.left, top: segment.top, width: segment.width, transform: `rotate(${segment.angle}deg)` }}
+              />
+            ))}
+            {draftSegments.map((segment, index) => (
+              <span
+                key={`draft-segment-${index}`}
+                className={`osm-html-segment osm-html-segment--draft ${closeReady ? "is-close-ready" : ""}`}
+                style={{ left: segment.left, top: segment.top, width: segment.width, transform: `rotate(${segment.angle}deg)` }}
+              />
+            ))}
+            {screenAreaPoints.map((point, index) => (
+              <button
+                key={`area-html-${index}`}
+                type="button"
+                className="osm-html-vertex osm-html-vertex--area"
+                style={{ left: point.x, top: point.y }}
+                onPointerDown={(event) => beginVertexDrag(event, index)}
+                aria-label={`Move point ${index + 1}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+            {screenDraftPoints.map((point, index) => (
+              <button
+                key={`draft-html-${index}`}
+                type="button"
+                className={`osm-html-vertex osm-html-vertex--draft ${index === 0 ? "is-first" : ""} ${index === 0 && closeReady ? "is-close-ready" : ""}`}
+                style={{ left: point.x, top: point.y }}
+                onPointerDown={index === 0 ? closeFromFirstDraftPoint : undefined}
+                aria-label={index === 0 && draftPath.length >= 3 ? "Close outline at point 1" : `Draft point ${index + 1}`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        )}
         {marker && <div className="osm-site-marker" style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}><MapPin size={24} /></div>}
         <div className="osm-control-stack" aria-label="Map zoom">
           <button type="button" aria-label={text.zoomIn} onClick={() => setZoomAroundCenter(zoom + 1)}>+</button>
@@ -610,9 +679,9 @@ export function ProjectLocationMap({
         <div className={`site-map-tool-card ${drawingActive ? "is-drawing" : ""}`}>
           <div className="site-map-tool-heading"><span><Ruler size={15} /></span><div><b>{text.siteArea}</b><small>{text.drawZone}</small></div></div>
           <div className={`site-map-tool-actions ${drawingActive ? "is-drawing" : ""}`}>
-            <button type="button" className={drawingActive ? "is-active" : ""} onPointerDown={(event) => runToolAction(event, drawingActive ? finishDrawing : startDrawing)} onClick={(event) => runToolClickAction(event, drawingActive ? finishDrawing : startDrawing)}><Pencil size={14} /> {drawingActive ? text.finish : text.trace}</button>
-            {drawingActive && <button type="button" className="is-quiet" onPointerDown={(event) => runToolAction(event, undoDraftPoint)} onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>}
-            <button type="button" className="is-quiet" onPointerDown={(event) => runToolAction(event, clearArea)} onClick={(event) => runToolClickAction(event, clearArea)} disabled={!area && !drawingActive}>{text.clear}</button>
+            <button type="button" className={drawingActive ? "is-active" : ""} onClick={(event) => runToolClickAction(event, drawingActive ? finishDrawing : startDrawing)}><Pencil size={14} /> {drawingActive ? text.finish : text.trace}</button>
+            {drawingActive && <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>}
+            <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, clearArea)} disabled={!area && !drawingActive}>{text.clear}</button>
           </div>
           {drawingActive && <div className={`site-trace-progress ${closeReady ? "is-close-ready" : ""}`} aria-live="polite"><span>{draftPath.length}</span><b>{text.points}</b><i>{closeReady ? text.closeCue : text.drawCue}</i></div>}
           <p className="site-map-trace-help">{text.traceHelp}</p>
