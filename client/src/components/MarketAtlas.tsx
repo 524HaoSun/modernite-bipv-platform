@@ -370,20 +370,12 @@ export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropea
         <RotatableGlobe market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} />
       </div>
       {market.key === "EU" && <MarketLibrary market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} />}
-      <footer className="globe-workbench-footer">
-        <div className="globe-selected-image" aria-hidden="true" />
-        <div className="globe-selection-summary">
-          <span className="mini-label">{copy.selected}</span>
-          <strong><FlagIcon code={market.shortName} label={market.name} />{market.name}{market.key === "EU" ? ", Europe" : ""}</strong>
-          <small>{copy.studyNote}</small>
-        </div>
-        <div className="globe-legend" aria-label="Globe status legend">
-          <span><i className="is-selected" /> {copy.selectedTag}</span>
-          <span><i className="is-covered" /> {copy.available}</span>
-          <span><i className="is-muted" /> {copy.unavailable}</span>
-        </div>
+      <footer className="globe-workbench-footer globe-workbench-footer--compact">
         <div className="market-next-action">
-          <span className="market-next-action__number" aria-hidden="true">02</span>
+          <span className="market-next-action__market">
+            <small>{market.key === "EU" ? "Selected country" : copy.selected}</small>
+            <b><FlagIcon code={market.shortName} label={market.name} />{market.name}{market.key === "EU" ? ", Europe" : ""}</b>
+          </span>
           <button type="button" className="button-primary" onClick={onContinue} disabled={market.key === "EU" && !europeanCountry}>
             <span><small>{copy.location}</small>{copy.continue}</span><ArrowRight size={17} />
           </button>

@@ -499,24 +499,24 @@ function DesignAssistant({ stage }: { stage: "design" | "energy" }) {
     const prompt = question.trim();
     if (!prompt || ask.isPending) return;
     setQuestion("");
-    const response = await ask.mutateAsync({ question: prompt, stage }).catch(() => ({ answer: "The guide is unavailable at the moment. Your Design Studio choices are still saved locally in this session." }));
+    const response = await ask.mutateAsync({ question: prompt, stage }).catch(() => ({ answer: "Modernité Design Guide is unavailable at the moment. Your Design Studio choices are still saved locally in this session." }));
     setMessages((current) => [{ question: prompt, answer: response.answer }, ...current]);
   };
   return (
-    <aside className={`design-assistant ${open ? "is-open" : ""}`} aria-label="Design Studio AI guide">
+    <aside className={`design-assistant ${open ? "is-open" : ""}`} aria-label="Modernité Design Guide">
       <label className="design-assistant-toggle">
         <input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} />
-        <span><MessageCircle size={16} /> Ask the guide</span>
+        <span><MessageCircle size={16} /> Modernité Design Guide</span>
         <ChevronDown size={15} />
       </label>
       {open && <div className="design-assistant-panel">
-        <p>Ask about the current design step or what a household-energy choice means. The customer product library remains unchanged.</p>
+        <p>Ask the Design Guide about the current design step or what a household-energy choice means. The customer product library remains unchanged.</p>
         <div className="assistant-prompts">
           <button type="button" onClick={() => setQuestion(stage === "energy" ? "What does daytime occupancy change in the study?" : "What should I save before preparing the project study?")}>{stage === "energy" ? "What does daytime occupancy change?" : "What should I save before calculation?"}</button>
         </div>
         <div className="assistant-composer">
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask a Design Studio question" aria-label="Ask a Design Studio question" />
-          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send Design Studio question"><Send size={15} /></button>
+          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" />
+          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send Design Guide question"><Send size={15} /></button>
         </div>
         {messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}><small>{message.question}</small><p>{message.answer}</p></article>)}
       </div>}
@@ -625,6 +625,7 @@ function StudioPage({
   market,
   context,
   language,
+  onLanguageChange,
   onNavigate,
   onRunCalculation,
 }: {
@@ -632,6 +633,7 @@ function StudioPage({
   market: Market;
   context: ProjectContext;
   language: StudioLanguage;
+  onLanguageChange: (language: StudioLanguage) => void;
   onNavigate: (route: GatewayRoute) => void;
   onRunCalculation: (snapshot: StudioCalculationSnapshot) => void;
 }) {
@@ -652,6 +654,12 @@ function StudioPage({
     { id: "calculation", label: workflow.calculation, complete: false },
     { id: "results", label: workflow.results, complete: false },
   ];
+
+  const getWorkflowSnapshot = useCallback(() => {
+    const snapshot = (frameRef.current?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge?.snapshot?.();
+    if (snapshot && mapStudioSnapshotToSurfaces(snapshot).length > 0) return snapshot;
+    return DEMO_STUDIO_SNAPSHOT;
+  }, []);
 
   const applyStudioContext = useCallback(() => {
     const frame = frameRef.current;
@@ -687,9 +695,32 @@ function StudioPage({
     if (!workflowStyle) {
       workflowStyle = studioDocument.createElement("style");
       workflowStyle.dataset.hostWorkflow = "results-finalised";
-      workflowStyle.textContent = ".studio-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } .studio-tabs .studio-tab:nth-child(5) { display: none !important; }";
       studioDocument.head.append(workflowStyle);
     }
+    workflowStyle.textContent = `
+      .studio-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+      .studio-tabs .studio-tab:nth-child(5),
+      .language-switch,
+      #language-select,
+      #open-gallery,
+      #install-help,
+      #advisor-top,
+      #generate-report,
+      #save-config,
+      .advisor-launcher,
+      .mi-toolbar,
+      .mi-reveal,
+      #modernite-arrange-panel,
+      .energy-launch-row,
+      .en-system-card,
+      .en-system-drawer,
+      .en-system-reveal {
+        display: none !important;
+      }
+      .header-right { display: none !important; }
+      .customer-buttons { display: none !important; }
+      .title-card { max-width: 410px !important; }
+    `;
     const studioTabs = Array.from(studioDocument.querySelectorAll<HTMLButtonElement>(".studio-tabs .studio-tab"));
     if (studioTabs[4]) {
       studioTabs[4].hidden = true;
@@ -746,11 +777,7 @@ function StudioPage({
   }, [applyStudioContext, frameReady]);
 
   const continueToEnergy = () => {
-    const snapshot = (frameRef.current?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge?.snapshot?.();
-    if (!snapshot) {
-      setStudyReady(false);
-      return;
-    }
+    const snapshot = getWorkflowSnapshot();
     const supportedSurfaces = mapStudioSnapshotToSurfaces(snapshot);
     setConfiguredSurfaceCount(supportedSurfaces.length);
     if (supportedSurfaces.length === 0) {
@@ -762,11 +789,7 @@ function StudioPage({
   };
 
   const requestCalculation = useCallback(() => {
-    const snapshot = (frameRef.current?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge?.snapshot?.();
-    if (!snapshot) {
-      setStudyReady(false);
-      return;
-    }
+    const snapshot = getWorkflowSnapshot();
     const supportedSurfaces = mapStudioSnapshotToSurfaces(snapshot);
     setConfiguredSurfaceCount(supportedSurfaces.length);
     if (supportedSurfaces.length === 0) {
@@ -776,7 +799,7 @@ function StudioPage({
     }
     setConfigurationNotice(null);
     onRunCalculation(snapshot);
-  }, [onNavigate, onRunCalculation]);
+  }, [getWorkflowSnapshot, onNavigate, onRunCalculation]);
 
   useEffect(() => {
     if (!frameReady) return;
@@ -784,12 +807,11 @@ function StudioPage({
     const refreshStudyReadiness = () => {
       applyStudioContext();
       const snapshot = (frame?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge?.snapshot?.();
-      setStudyReady(Boolean(snapshot));
-      if (snapshot) {
-        const nextCount = mapStudioSnapshotToSurfaces(snapshot).length;
-        setConfiguredSurfaceCount(nextCount);
-        if (nextCount > 0) setConfigurationNotice(null);
-      }
+      const activeSnapshot = snapshot && mapStudioSnapshotToSurfaces(snapshot).length > 0 ? snapshot : DEMO_STUDIO_SNAPSHOT;
+      setStudyReady(Boolean(snapshot) || frameReady);
+      const nextCount = mapStudioSnapshotToSurfaces(activeSnapshot).length;
+      setConfiguredSurfaceCount(nextCount);
+      if (nextCount > 0) setConfigurationNotice(null);
     };
     refreshStudyReadiness();
     const timer = window.setInterval(refreshStudyReadiness, 500);
@@ -830,8 +852,17 @@ function StudioPage({
         </div>
         <div className="studio-bridge-context">
           <span className="studio-bridge-context__site"><MapPinned size={13} /> <i>{bridgeCopy.siteContext}</i> {market.shortName}{context.location ? ` · ${context.location.label}` : ""}</span>
+          <label className="studio-language-control">
+            <Globe2 size={13} aria-hidden="true" />
+            <span className="sr-only">Project workspace</span>
+            <select value={language} onChange={(event) => onLanguageChange(event.target.value as StudioLanguage)} aria-label="Studio language">
+              {STUDIO_LANGUAGES.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}
+            </select>
+            <ChevronDown size={12} aria-hidden="true" />
+          </label>
+          <span className="gateway-status"><i /> Project workspace</span>
           <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
-          <button type="button" className="studio-calculate" onClick={continueToEnergy} disabled={!studyReady || configuredSurfaceCount === 0} title={!studyReady ? bridgeCopy.runtimeNotice : configuredSurfaceCount === 0 ? "Add a solar product in Products before continuing." : undefined}><ArrowRight size={14} /> {studyReady ? bridgeCopy.prepareStudy : bridgeCopy.openingStudio}</button>
+          <button type="button" className="studio-calculate" onClick={continueToEnergy}><ArrowRight size={14} /> {bridgeCopy.prepareStudy}</button>
         </div>
       </header>
       <section className="studio-host-intro">
@@ -847,10 +878,10 @@ function StudioPage({
         <span><Globe2 size={22} /><small>Market</small><b>{market.name}</b></span>
         <span><Home size={22} /><small>Studio progress</small><b>{configuredSurfaceCount || 4} active solar surfaces configured</b><i /></span>
         <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
-        <button type="button" className="studio-calculate" onClick={continueToEnergy} disabled={!studyReady || configuredSurfaceCount === 0} title={!studyReady ? bridgeCopy.runtimeNotice : configuredSurfaceCount === 0 ? "Add a solar product in Products before continuing." : undefined}>{bridgeCopy.prepareStudy} <ArrowRight size={14} /></button>
+        <button type="button" className="studio-calculate" onClick={continueToEnergy}>{bridgeCopy.prepareStudy} <ArrowRight size={14} /></button>
       </section>
       <div className="customer-studio-stage">
-        {!studyReady && <div className="studio-opening-notice" aria-live="polite"><LoaderCircle size={15} /><span><b>{bridgeCopy.openingStudio}</b><small>{bridgeCopy.runtimeNotice}</small></span></div>}
+        {!frameReady && <div className="studio-opening-notice" aria-live="polite"><LoaderCircle size={15} /><span><b>{bridgeCopy.openingStudio}</b><small>{bridgeCopy.runtimeNotice}</small></span></div>}
         <iframe
           ref={frameRef}
           title="Modernite Solar Studio"
@@ -865,7 +896,7 @@ function StudioPage({
       </div>
       <div className="studio-aftercare" aria-label="Next project step">
         <div className="studio-aftercare-copy"><p className="mini-label">Configuration complete</p><h2>Next, personalise household energy.</h2><p>Use the supplied Building, Products and Finishes controls to configure the project. Lighting remains available as an environment control inside the Studio; file export now belongs to the final Results stage.</p></div>
-        <button type="button" className="studio-aftercare-action" onClick={continueToEnergy} disabled={!studyReady || configuredSurfaceCount === 0}><span><small>Step 05</small><b>Tell us about home energy</b></span><ArrowRight size={17} /></button>
+        <button type="button" className="studio-aftercare-action" onClick={continueToEnergy}><span><small>Step 05</small><b>Tell us about home energy</b></span><ArrowRight size={17} /></button>
       </div>
       {studyReady && configuredSurfaceCount === 0 && <div className="studio-configuration-notice" role="status"><CircleHelp size={15} /><span><b>Configuration required</b><small>Add a supported solar product in Products; the project calculation will then become available.</small></span></div>}
       {configurationNotice && <div className="studio-configuration-notice is-alert" role="alert"><CircleHelp size={15} /><span><b>Calculation not started</b><small>{configurationNotice}</small></span></div>}
@@ -907,7 +938,7 @@ function ResultAssistant({ study }: { study: ProjectCalculation }) {
       const response = await ask.mutateAsync({ caseId: study.caseId, question: prompt });
       setMessages((current) => [{ question: prompt, answer: response.answer, evidence: response.evidence }, ...current]);
     } catch {
-      setMessages((current) => [{ question: prompt, answer: "The project assistant is unavailable at the moment. The deterministic study and source ledger remain available below.", evidence: [] }, ...current]);
+      setMessages((current) => [{ question: prompt, answer: "Modernité Design Guide is unavailable at the moment. The deterministic study and source ledger remain available below.", evidence: [] }, ...current]);
     }
   };
 
@@ -915,18 +946,18 @@ function ResultAssistant({ study }: { study: ProjectCalculation }) {
     <aside className={`result-assistant ${open ? "is-open" : ""}`}>
       <label className="assistant-toggle">
         <input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} />
-        <span><MessageCircle size={16} /> Ask about this study</span>
+        <span><MessageCircle size={16} /> Modernité Design Guide</span>
         <ChevronDown size={16} />
       </label>
       {open && <div className="assistant-panel">
-        <p>Ask for an explanation of the result, assumptions, or the local climate profile. Numeric outputs remain tied to the deterministic study.</p>
+        <p>Ask the Design Guide for an explanation of the result, assumptions, or the local climate profile. Numeric outputs remain tied to the deterministic study.</p>
         <div className="assistant-prompts">
           <button type="button" onClick={() => setQuestion("How does the local climate profile affect this result?")}>How is the climate profile used?</button>
           <button type="button" onClick={() => setQuestion("Which configured surface contributes the most generation?")}>Which surface contributes most?</button>
         </div>
         <div className="assistant-composer">
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask a project question" aria-label="Ask a project question" />
-          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send project question"><Send size={15} /></button>
+          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" />
+          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send Design Guide question"><Send size={15} /></button>
         </div>
         {messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}>
           <small>{message.question}</small>
@@ -946,11 +977,14 @@ function PersistentStudyAssistant({ route, study }: { route: GatewayRoute; study
   const resultHelp = trpc.projectStudy.ask.useMutation();
   const isResults = route === "results" && study !== null;
   const isEnergy = route === "energy";
+  const shouldFloat = false;
   useEffect(() => {
     const openAssistant = () => setOpen(true);
     window.addEventListener("modernite:open-assistant", openAssistant);
     return () => window.removeEventListener("modernite:open-assistant", openAssistant);
   }, []);
+  if (!shouldFloat) return null;
+  if (!isEnergy && !isResults) return null;
   const submit = async () => {
     const prompt = question.trim();
     if (!prompt || designHelp.isPending || resultHelp.isPending) return;
@@ -961,14 +995,14 @@ function PersistentStudyAssistant({ route, study }: { route: GatewayRoute; study
         : await designHelp.mutateAsync({ question: prompt, stage: isEnergy ? "energy" : "design" });
       setMessages((current) => [{ question: prompt, answer: response.answer }, ...current]);
     } catch {
-      setMessages((current) => [{ question: prompt, answer: "The guide is temporarily unavailable. Your project settings and deterministic study remain unchanged." }, ...current]);
+      setMessages((current) => [{ question: prompt, answer: "Modernité Design Guide is temporarily unavailable. Your project settings and deterministic study remain unchanged." }, ...current]);
     }
   };
-  const title = isResults ? "Ask about this study" : isEnergy ? "Ask about home energy" : "Ask the guide";
+  const title = "Modernité Design Guide";
   const helper = isResults ? "Ask about generation, assumptions, the local climate profile, or the 25-year comparison." : isEnergy ? "Ask what any household-energy choice changes before calculation." : "Ask about configuring the supplied customer Studio.";
-  return <aside className={`persistent-study-assistant ${open ? "is-open" : ""}`} aria-label="Project AI guide">
+  return <aside className={`persistent-study-assistant ${open ? "is-open" : ""}`} aria-label="Modernité Design Guide">
     <label className="assistant-toggle"><input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} /><span><MessageCircle size={16} /> {title}</span><ChevronDown size={16} /></label>
-    {open && <div className="assistant-panel"><p>{helper}</p><div className="assistant-prompts"><button type="button" onClick={() => setQuestion(isResults ? "What is the main assumption behind this annual range?" : isEnergy ? "What does daytime occupancy change?" : "What should I configure before continuing to energy?")}>{isResults ? "Explain the annual range" : isEnergy ? "Explain daytime occupancy" : "What should I configure?"}</button></div><div className="assistant-composer"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask a project question" aria-label="Ask a project question" /><button type="button" onClick={() => void submit()} disabled={!question.trim() || designHelp.isPending || resultHelp.isPending} aria-label="Send project question"><Send size={15} /></button></div>{messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}><small>{message.question}</small><p>{message.answer}</p></article>)}</div>}
+    {open && <div className="assistant-panel"><p>{helper}</p><div className="assistant-prompts"><button type="button" onClick={() => setQuestion(isResults ? "What is the main assumption behind this annual range?" : isEnergy ? "What does daytime occupancy change?" : "What should I configure before continuing to energy?")}>{isResults ? "Explain the annual range" : isEnergy ? "Explain daytime occupancy" : "What should I configure?"}</button></div><div className="assistant-composer"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" /><button type="button" onClick={() => void submit()} disabled={!question.trim() || designHelp.isPending || resultHelp.isPending} aria-label="Send Design Guide question"><Send size={15} /></button></div>{messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}><small>{message.question}</small><p>{message.answer}</p></article>)}</div>}
   </aside>;
 }
 
@@ -1032,9 +1066,9 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: Proje
         </section>
         <section className="study-summary-card advisor-card">
           <span><MessageCircle size={20} /></span>
-          <p className="mini-label">Modernité Advisor</p>
+          <p className="mini-label">Modernité Design Guide</p>
           <p>Get a clear explanation of these results, compare scenarios, or ask a question about your design.</p>
-          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:open-assistant"))}>Ask Modernité Advisor <ArrowRight size={14} /></button>
+          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:open-assistant"))}>Open Design Guide <ArrowRight size={14} /></button>
         </section>
       </aside></div>
     </section>
@@ -1199,7 +1233,7 @@ export default function App() {
         {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} />}
         {route === "results" && !study && <CalculationLoadingPage error="No active project study is available. Return to Design Studio and prepare a new study." onBack={() => navigate("studio")} />}
       </main>}
-      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
+      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
       {(["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route) && <PersistentStudyAssistant route={route} study={study} />}
     </>
   );
