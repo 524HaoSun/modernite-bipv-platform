@@ -35,7 +35,7 @@ describe("V28-aligned entry gateway", () => {
   });
 
   it("includes a restrained local-model calculation transition and optional AI study control", () => {
-    expect(app).toContain("Preparing a grounded project study.");
+    expect(app).toContain("Preparing your personalised project outlook.");
     expect(app).toContain("Local empirical climate profile");
     expect(app).toContain("Regional monthly baseline");
     expect(app).toContain("Modernité Design Guide");

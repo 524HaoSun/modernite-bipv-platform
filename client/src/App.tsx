@@ -12,10 +12,12 @@ import {
   Database,
   Download,
   FileText,
+  Gauge,
   Globe2,
   Home,
   Leaf,
   Lightbulb,
+  LineChart,
   MapPinned,
   MessageCircle,
   MoveUpRight,
@@ -23,8 +25,12 @@ import {
   Pencil,
   LoaderCircle,
   Send,
+  ShieldCheck,
   Sparkles,
+  SunMedium,
+  TrendingUp,
   Users,
+  Zap,
   X,
 } from "lucide-react";
 import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
@@ -39,6 +45,7 @@ import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
+const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-reference-full.png");
 const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
@@ -369,34 +376,114 @@ function GatewayHeader({
   );
 }
 
-function EntryPage({ copy, onStart, onNavigate }: { copy: GatewayCopy; onStart: () => void; onNavigate: (route: GatewayRoute) => void }) {
+function EntryPage({ copy, language, onLanguageChange, onStart, onNavigate }: {
+  copy: GatewayCopy;
+  language: StudioLanguage;
+  onLanguageChange: (language: StudioLanguage) => void;
+  onStart: () => void;
+  onNavigate: (route: GatewayRoute) => void;
+}) {
   return (
     <section className="entry-page gateway-page">
-      <div className="entry-background" aria-hidden="true"><img src={HERO_IMAGE_URL} alt="" /></div>
-      <div className="entry-copy">
+      <div className="entry-background backgroundAtmosphere" aria-hidden="true">
+        <img src={ENTRY_REFERENCE_URL} alt="" />
+        <span className="entry-haze entry-haze--left" />
+        <span className="entry-haze entry-haze--right" />
+      </div>
+      <svg className="entry-solar-geometry solarGeometryBase" viewBox="0 0 900 820" aria-hidden="true">
+        <defs>
+          <filter id="entrySunGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <g className="solar-grid-lines">
+          {[0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180].map((angle) => <line key={angle} x1="450" y1="430" x2={450 + Math.cos((angle - 180) * Math.PI / 180) * 390} y2={430 + Math.sin((angle - 180) * Math.PI / 180) * 390} />)}
+          <circle cx="450" cy="430" r="180" />
+          <circle cx="450" cy="430" r="250" />
+          <circle cx="450" cy="430" r="320" />
+          <circle cx="450" cy="430" r="390" />
+        </g>
+        <g className="solar-compass-labels">
+          <text x="450" y="42">N</text>
+          <text x="92" y="432">W</text>
+          <text x="450" y="806">S</text>
+          <text x="805" y="432">E</text>
+          <text x="210" y="162">60°</text>
+          <text x="680" y="162">120°</text>
+          <text x="180" y="586">300°</text>
+        </g>
+        <g className="solarGeometryHighlightedPaths">
+          <path className="solar-path solar-path--summer" pathLength="1" d="M126 455 C204 196 382 118 564 170 C682 204 760 286 819 398" />
+          <path className="solar-path solar-path--equinox" pathLength="1" d="M158 534 C286 338 442 294 590 326 C678 346 744 402 804 480" />
+          <path className="solar-path solar-path--winter" pathLength="1" d="M236 602 C372 486 520 474 690 554" />
+        </g>
+        <g className="solarMarkers">
+          {[[174,421],[205,366],[250,300],[316,247],[392,210],[530,176],[620,200],[682,238],[746,320],[784,390],[240,520],[330,410],[450,350],[555,342],[664,365],[330,562],[486,525],[632,540]].map(([x, y], index) => <circle key={`${x}-${y}-${index}`} cx={x} cy={y} r={index % 5 === 0 ? 5 : 3.4} />)}
+        </g>
+        <g className="sunMarker" filter="url(#entrySunGlow)">
+          <circle cx="292" cy="270" r="18" />
+          <circle cx="292" cy="270" r="34" />
+          <line x1="292" y1="216" x2="292" y2="232" />
+          <line x1="292" y1="308" x2="292" y2="324" />
+          <line x1="238" y1="270" x2="254" y2="270" />
+          <line x1="330" y1="270" x2="346" y2="270" />
+        </g>
+        <g className="solar-annotations">
+          <text x="348" y="278">32°</text>
+          <text x="348" y="304">SUN ELEVATION</text>
+          <text x="348" y="326">21 JUN</text>
+          <text x="740" y="228">SUMMER</text>
+          <text x="740" y="250">SOLSTICE</text>
+          <text x="802" y="336">EQUINOX</text>
+          <text x="640" y="616">WINTER SOLSTICE</text>
+        </g>
+      </svg>
+      <svg className="entry-wireframe-overlay wireframeOverlayLayer" viewBox="0 0 620 520" aria-hidden="true">
+        <g className="wireframe-shell">
+          <polygon points="118,184 348,104 550,184 326,258" />
+          <polygon points="326,258 550,184 550,430 326,500" />
+          <polygon points="118,184 326,258 326,500 118,410" />
+          <polyline points="118,184 118,410 326,500 550,430 550,184" />
+          <line x1="348" y1="104" x2="326" y2="500" />
+          <line x1="205" y1="214" x2="420" y2="140" />
+          <line x1="270" y1="236" x2="484" y2="162" />
+          <line x1="368" y1="245" x2="368" y2="487" />
+          <line x1="410" y1="230" x2="410" y2="474" />
+          <line x1="454" y1="214" x2="454" y2="460" />
+          <line x1="500" y1="198" x2="500" y2="446" />
+        </g>
+        <g className="wireframe-panels">
+          {Array.from({ length: 5 }).map((_, index) => <line key={`roof-${index}`} x1={202 + index * 42} y1={214 - index * 15} x2={408 + index * 36} y2={286 - index * 12} />)}
+          {Array.from({ length: 4 }).map((_, index) => <line key={`facade-${index}`} x1="342" y1={298 + index * 38} x2="532" y2={244 + index * 34} />)}
+        </g>
+      </svg>
+      <div className="entry-copy heroTextGroup">
         <p className="eyebrow">{copy.entryEyebrow}</p>
         <h1>{copy.entryTitle}<br /><em>{copy.entryEmphasis}</em></h1>
         <p className="entry-lede">
           {copy.entryLede}
         </p>
-        <div className="entry-actions">
+        <div className="entry-actions ctaGroup">
           <button className="button-primary" type="button" onClick={onStart}>
-            {copy.start} <ArrowRight size={16} />
+            {copy.start} <ArrowRight size={18} />
           </button>
           <button className="button-quiet" type="button" onClick={() => onNavigate("studio")}>
             {copy.resume} <MoveUpRight size={15} />
           </button>
         </div>
-        <div className="entry-proof" aria-label="Project workflow">
-          <span><b>01</b> {copy.marketContext}</span>
-          <span><b>02</b> {copy.siteLocation}</span>
-          <span><b>03</b> {copy.buildingStudy}</span>
-        </div>
       </div>
       <figure className="entry-visual">
         <img src={HERO_IMAGE_URL} alt="Contemporary residence with a discreet integrated solar roof in a mature garden" />
-        <figcaption>Built for context, not a generic template.</figcaption>
+        <figcaption>Architecture, solar geometry, and digital design intelligence.</figcaption>
       </figure>
+      <div className="entry-foreground foregroundFoliageBlur" aria-hidden="true" />
+      <label className="entry-language-hotspot" aria-label="Select language">
+        <select value={language} onChange={(event) => onLanguageChange(event.target.value as StudioLanguage)}>
+          {STUDIO_LANGUAGES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+      </label>
+      <span className="entry-workspace-pulse" aria-hidden="true" />
     </section>
   );
 }
@@ -525,6 +612,67 @@ function DesignAssistant({ stage }: { stage: "design" | "energy" }) {
   );
 }
 
+function estimateEnergyPreview(settings: HomeEnergySettings) {
+  const services = [
+    settings.electricHeating ? "Electric heating" : null,
+    settings.heatPump ? "Heat pump" : null,
+    settings.electricHotWater ? "Electric hot water" : null,
+    settings.evCharger ? "EV charging" : null,
+  ].filter(Boolean) as string[];
+  const estimatedDemand = Math.max(
+    1600,
+    Math.round(
+      1450
+      + settings.householdSize * 900
+      + (settings.daytimeOccupancy === "usually" ? 500 : settings.daytimeOccupancy === "rarely" ? -250 : 0)
+      + (settings.electricHeating ? 7000 : settings.heatPump ? 3800 : 0)
+      + (settings.electricHotWater ? 1300 : 0)
+      + (settings.evCharger ? 2100 : 0),
+    ),
+  );
+  const annualDemand = settings.demandMode === "bill" && settings.annualDemandKwh ? Math.round(settings.annualDemandKwh) : estimatedDemand;
+  const directUse = settings.daytimeOccupancy === "usually" ? 46 : settings.daytimeOccupancy === "rarely" ? 30 : 38;
+  const projectPrice = settings.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : 23800;
+  return {
+    annualDemand,
+    directUse,
+    projectPrice,
+    source: settings.demandMode === "bill" ? "Energy bill" : "Modernité estimate",
+    profile: `${settings.householdSize} ${settings.householdSize === 1 ? "person" : "people"} · ${settings.daytimeOccupancy} daytime presence`,
+    services: services.length ? services.join(" · ") : "No major electric loads selected",
+    battery: settings.batteryMode === "solar-battery" ? `${settings.batteryCapacityKwh} kWh battery considered` : "Solar-only baseline",
+  };
+}
+
+function EnergyPlanningPreview({ settings }: { settings: HomeEnergySettings }) {
+  const preview = estimateEnergyPreview(settings);
+  return (
+    <aside className="energy-planning-preview" aria-label="Live planning profile">
+      <div className="energy-preview-heading">
+        <p className="mini-label">Your planning profile</p>
+        <span><i /> Live preview</span>
+      </div>
+      <div className="energy-preview-meter">
+        <small>Estimated annual household use</small>
+        <strong>{preview.annualDemand.toLocaleString()} <em>kWh / year</em></strong>
+        <div><span style={{ width: `${Math.min(100, Math.max(18, (preview.annualDemand / 9000) * 100))}%` }} /></div>
+        <p>{preview.source}</p>
+      </div>
+      <dl className="energy-preview-facts">
+        <div><dt><Home size={14} /> Home profile</dt><dd>{preview.profile}</dd></div>
+        <div><dt><SunMedium size={14} /> Expected direct solar use</dt><dd>About {preview.directUse}%</dd></div>
+        <div><dt><Zap size={14} /> Electric home loads</dt><dd>{preview.services}</dd></div>
+        <div><dt><BatteryCharging size={14} /> Storage scenario</dt><dd>{preview.battery}</dd></div>
+        <div><dt><TrendingUp size={14} /> Planning cost used</dt><dd>£{Math.round(preview.projectPrice).toLocaleString()} estimate</dd></div>
+      </dl>
+      <div className="energy-preview-connectors">
+        <p className="mini-label">These answers connect to</p>
+        {["Direct solar coverage", "Bill saving", "Export income", "Solar vs battery", "25-year cash flow", "Result explanation"].map((item) => <span key={item}><Check size={12} /> {item}</span>)}
+      </div>
+    </aside>
+  );
+}
+
 function HomeEnergyPanel({ settings, disabled, onChange, onPrepare }: {
   settings: HomeEnergySettings;
   disabled: boolean;
@@ -599,7 +747,7 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate }:
           <button className="back-link" type="button" onClick={() => onNavigate("studio")}><ArrowLeft size={15} /> Back to Design Studio</button>
           <p className="eyebrow"><Lightbulb size={14} /> Household energy</p>
           <h1>Personalise the value of your solar design.</h1>
-          <p>The Design Studio defines the building and solar surfaces. These concise questions only describe how energy may be used at home, before the planning study is calculated.</p>
+          <p>The Design Studio defines the building and solar surfaces. These inputs connect household demand, tariff assumptions, storage preference, and a 25-year planning view before the study is calculated.</p>
         </div>
       </div>
       <div className="energy-page-workbench">
@@ -616,6 +764,7 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate }:
           <div className="energy-note-card"><Lightbulb size={24} /><p><b>Your energy inputs help us calculate savings, self-consumption and payback.</b><small>We combine your building design with household energy use to model real-world performance over 25 years.</small></p></div>
         </aside>
         <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} />
+        <EnergyPlanningPreview settings={settings} />
       </div>
     </section>
   );
@@ -911,14 +1060,14 @@ function CalculationLoadingPage({ error, onBack }: { error: string | null; onBac
     <section className="calculation-page" aria-live="polite">
       <div className="calculation-card">
         <div className="calculation-orbit" aria-hidden="true"><Orbit size={34} /></div>
-        <p className="eyebrow"><Database size={14} /> Project study</p>
-        <h1>{error ? "The study needs another look." : "Preparing a grounded project study."}</h1>
-        <p>{error || "Reading the active Studio geometry, preparing the supplied household-demand context, applying the approved empirical coefficients, and building a local regional climate profile."}</p>
+        <p className="eyebrow"><Database size={14} /> Calculating project study</p>
+        <h1>{error ? "The study needs another look." : "Preparing your personalised project outlook."}</h1>
+        <p>{error || "Applying your configured surfaces, household use, tariff assumptions, storage preference, and local climate profile."}</p>
         {!error && <div className="calculation-stages" aria-label="Calculation stages">
-          <span><i /> Capturing active building surfaces</span>
-          <span><i /> Interpreting household energy inputs</span>
-          <span><i /> Applying empirical product coefficients</span>
-          <span><i /> Preparing the local climate baseline</span>
+          <span className="is-active"><i /> Surface model</span>
+          <span><i /> Home demand</span>
+          <span><i /> Generation range</span>
+          <span><i /> Scenario value</span>
         </div>}
         {error && <button type="button" className="button-primary" onClick={onBack}>Return to Design Studio <ArrowLeft size={16} /></button>}
       </div>
@@ -1008,29 +1157,161 @@ function PersistentStudyAssistant({ route, study }: { route: GatewayRoute; study
   </aside>;
 }
 
+const ORIENTATION_SERIES = [
+  ["South", "south", "#07573f"],
+  ["East", "east", "#4d9b71"],
+  ["West", "west", "#a5c979"],
+  ["North", "north", "#79aeca"],
+  ["Horizontal", "horizontal", "#f1b33d"],
+] as const;
+
 function MonthlyProfileChart({ study }: { study: ProjectCalculation }) {
+  const [selectedMonth, setSelectedMonth] = useState(5);
   const entries = study.result.monthlyByOrientation;
-  const series = [
-    ["South", "south", "#234e40"], ["East", "east", "#7eaa86"], ["West", "west", "#b6cf9f"], ["North", "north", "#9bb4d0"], ["Horizontal", "horizontal", "#d9bd83"],
-  ] as const;
   const max = Math.max(1, ...entries.map((entry) => entry.total));
-  return <section className="result-section monthly-profile-card"><div className="result-section-heading"><div><p className="mini-label">Seasonal profile</p><h2>Monthly generation by orientation</h2></div><span className="chart-total">{Math.round(study.result.range.representative).toLocaleString()} kWh/year</span></div><div className="orientation-legend">{series.map(([label, , color]) => <span key={label}><i style={{ backgroundColor: color }} />{label}</span>)}</div><svg className="monthly-profile-chart" viewBox="0 0 720 252" role="img" aria-label="Monthly energy generation grouped by orientation">
-    <line x1="42" y1="210" x2="704" y2="210" className="chart-axis" />
-    {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="42" y1={210 - ratio * 174} x2="704" y2={210 - ratio * 174} className="chart-grid" />)}
-    {entries.map((entry, index) => { const x = 50 + index * 54; let y = 210; return <g key={entry.month}>{series.map(([label, key, color]) => { const height = (entry[key] / max) * 174; y -= height; return height > 0.45 ? <rect key={label} x={x} y={y} width="31" height={height} rx="3" fill={color}><title>{`${entry.monthName}: ${label} ${Math.round(entry[key])} kWh`}</title></rect> : null; })}<text x={x + 15.5} y="229" textAnchor="middle">{entry.monthName}</text></g>; })}
-  </svg><p className="result-note"><CircleHelp size={14} /> Each month stacks the enabled Studio surfaces by compass orientation; horizontal contributions remain visible where configured.</p></section>;
+  const selected = entries[selectedMonth] ?? entries[0];
+  const topOrientation = selected
+    ? ORIENTATION_SERIES.slice().sort(([, a], [, b]) => selected[b] - selected[a])[0]
+    : ORIENTATION_SERIES[0];
+
+  return <section className="result-section monthly-profile-card premium-chart-card">
+    <div className="result-section-heading">
+      <div><p className="mini-label">Monthly generation profile</p><h2>Seasonal output by solar orientation</h2></div>
+      <span className="chart-total">{Math.round(study.result.range.representative).toLocaleString()} kWh/year</span>
+    </div>
+    <div className="orientation-legend">{ORIENTATION_SERIES.map(([label, , color]) => <span key={label}><i style={{ backgroundColor: color }} />{label}</span>)}</div>
+    <div className="monthly-chart-stage">
+      <svg className="monthly-profile-chart" viewBox="0 0 760 310" role="img" aria-label="Monthly energy generation stacked by south, east, west, north, and horizontal orientation">
+        <defs>
+          <linearGradient id="monthlyGlow" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#fff8da" stopOpacity=".9" /><stop offset="1" stopColor="#eaf6eb" stopOpacity=".15" /></linearGradient>
+        </defs>
+        <rect x="34" y="24" width="690" height="218" rx="18" fill="url(#monthlyGlow)" opacity=".6" />
+        {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="58" y1={244 - ratio * 190} x2="710" y2={244 - ratio * 190} className="chart-grid" />)}
+        <line x1="58" y1="244" x2="710" y2="244" className="chart-axis" />
+        {entries.map((entry, index) => {
+          const x = 70 + index * 53;
+          const barWidth = 33;
+          let y = 244;
+          return <g key={entry.month} onClick={() => setSelectedMonth(index)} className={selectedMonth === index ? "is-selected" : ""}>
+            <rect x={x - 5} y="38" width={barWidth + 10} height="206" rx="17" fill={selectedMonth === index ? "rgba(255,255,255,.72)" : "transparent"} />
+            {ORIENTATION_SERIES.map(([label, key, color]) => {
+              const height = (entry[key] / max) * 190;
+              y -= height;
+              return height > 0.45 ? <rect key={label} x={x} y={y} width={barWidth} height={height} rx={y < 60 ? 5 : 2} fill={color}><title>{`${entry.monthName}: ${label} ${Math.round(entry[key])} kWh`}</title></rect> : null;
+            })}
+            <circle cx={x + barWidth / 2} cy={Math.max(42, y - 10)} r={selectedMonth === index ? 4.6 : 0} fill="#f0b83a" />
+            <text x={x + barWidth / 2} y="268" textAnchor="middle">{entry.monthName}</text>
+          </g>;
+        })}
+      </svg>
+      {selected && <aside className="month-inspector">
+        <span>{selected.monthName}</span>
+        <strong>{Math.round(selected.total).toLocaleString()} kWh</strong>
+        <small>Largest share: {topOrientation[0]} · {Math.round(selected[topOrientation[1]]).toLocaleString()} kWh</small>
+        <em>Click any month to inspect how the stacked bar is built from orientation outputs.</em>
+      </aside>}
+    </div>
+    <p className="result-note"><CircleHelp size={14} /> Each bar is intentionally stacked by configured surface orientation, so the user can see whether seasonal value is coming from south roof planes, east/west balancing, north surfaces, or horizontal additions.</p>
+  </section>;
 }
 
-function CashPositionChart({ scenario }: { scenario: FinancialScenario }) {
-  const flows = scenario.annualCashFlows;
-  const values = flows.map((flow) => flow.cumulativeNetGbp);
-  const maxAbs = Math.max(1, ...values.map((value) => Math.abs(value)));
-  const plot = flows.map((flow, index) => {
-    const x = 38 + (index / Math.max(1, flows.length - 1)) * 646;
-    const y = 114 - (flow.cumulativeNetGbp / maxAbs) * 84;
+function CashPositionChart({ scenarios, scenario }: { scenarios: FinancialScenario[]; scenario: FinancialScenario }) {
+  const visible = scenarios.filter((item) => item.id !== "battery-only" && item.available && item.annualCashFlows.length > 0);
+  const allValues = visible.flatMap((item) => item.annualCashFlows.map((flow) => flow.cumulativeNetGbp));
+  const maxAbs = Math.max(1, ...allValues.map((value) => Math.abs(value)));
+  const scenarioColors: Record<string, string> = { "solar-only": "#0c6249", "solar-battery": "#d6a226", "battery-only": "#789" };
+  const pathFor = (item: FinancialScenario) => item.annualCashFlows.map((flow, index) => {
+    const x = 54 + (index / Math.max(1, item.annualCashFlows.length - 1)) * 646;
+    const y = 164 - (flow.cumulativeNetGbp / maxAbs) * 112;
     return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
   }).join(" ");
-  return <section className="result-section cash-position-card"><div className="result-section-heading"><div><p className="mini-label">25-year planning view</p><h2>How might the cash position change?</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? `Break-even year ${scenario.breakEvenYear}` : "No break-even in the shown horizon"}</span></div>{scenario.available && flows.length > 0 ? <><svg className="cash-position-chart" viewBox="0 0 720 178" role="img" aria-label={`Twenty-five year cumulative cash position for ${scenario.title}`}><line x1="38" y1="114" x2="684" y2="114" className="chart-axis" /><path d={plot} className="cash-position-line" /><circle cx="38" cy={114 - (flows[0]!.cumulativeNetGbp / maxAbs) * 84} r="4" className="cash-position-dot" /><circle cx="684" cy={114 - (flows.at(-1)!.cumulativeNetGbp / maxAbs) * 84} r="4" className="cash-position-dot" /><text x="38" y="148">Year 1</text><text x="684" y="148" textAnchor="end">Year 25</text></svg><div className="cash-position-values"><span><i>Year 1</i><b>£{Math.round(scenario.firstYearBenefitGbp).toLocaleString()}</b></span><span><i>Year 25 cumulative</i><b>£{Math.round(scenario.net25YearGbp).toLocaleString()}</b></span></div></> : <p className="result-note">{scenario.unavailableReason ?? "Enter the requested project and battery prices in Design Studio to view this comparison."}</p>}<p className="result-note">This is an indicative planning scenario based on the inputs supplied. It is not an installation quotation or a guaranteed return.</p></section>;
+  const selectedFinal = scenario.annualCashFlows.at(-1);
+
+  return <section className="result-section cash-position-card premium-chart-card">
+    <div className="result-section-heading"><div><p className="mini-label">25-year planning view</p><h2>Cash position, break-even, and scenario spread</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? `Break-even year ${scenario.breakEvenYear}` : "No break-even in the shown horizon"}</span></div>
+    {visible.length > 0 ? <>
+      <svg className="cash-position-chart" viewBox="0 0 760 242" role="img" aria-label={`Twenty-five year cumulative cash position for ${scenario.title}`}>
+        <defs>
+          <linearGradient id="cashPositive" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#f5cf61" stopOpacity=".35" /><stop offset="1" stopColor="#f5cf61" stopOpacity="0" /></linearGradient>
+        </defs>
+        <rect x="36" y="26" width="690" height="168" rx="18" fill="rgba(245,250,244,.82)" />
+        {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="54" y1={164 - ratio * 112} x2="700" y2={164 - ratio * 112} className="chart-grid" />)}
+        <line x1="54" y1="164" x2="700" y2="164" className="chart-axis" />
+        {visible.map((item) => <path key={`${item.id}-glow`} d={pathFor(item)} className={`cash-position-line-glow ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: scenarioColors[item.id] }} />)}
+        {visible.map((item) => <path key={item.id} d={pathFor(item)} className={`cash-position-line ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: scenarioColors[item.id] }} />)}
+        {visible.map((item) => {
+          const breakEvenYear = item.breakEvenYear;
+          if (breakEvenYear === null) return null;
+          const breakFlow = item.annualCashFlows.find((flow) => flow.year === breakEvenYear);
+          if (!breakFlow) return null;
+          const x = 54 + ((breakEvenYear - 1) / Math.max(1, item.annualCashFlows.length - 1)) * 646;
+          const y = 164 - (breakFlow.cumulativeNetGbp / maxAbs) * 112;
+          return <g key={`${item.id}-break`}><circle cx={x} cy={y} r={item.id === scenario.id ? 5.5 : 4} fill={scenarioColors[item.id]} stroke="#fff" strokeWidth="2" /><text x={x + 8} y={y - 8}>Y{breakEvenYear}</text></g>;
+        })}
+        <text x="54" y="220">Year 1</text><text x="700" y="220" textAnchor="end">Year 25</text>
+      </svg>
+      <div className="cash-position-values">
+        <span><i>Selected scenario</i><b>{scenario.title}</b></span>
+        <span><i>Year 25 cumulative</i><b>£{Math.round(selectedFinal?.cumulativeNetGbp ?? scenario.net25YearGbp).toLocaleString()}</b></span>
+        <span><i>First-year benefit</i><b>£{Math.round(scenario.firstYearBenefitGbp).toLocaleString()}</b></span>
+      </div>
+      <div className="cash-scenario-legend">{visible.map((item) => <span key={item.id}><i style={{ backgroundColor: scenarioColors[item.id] }} />{item.title}</span>)}</div>
+    </> : <p className="result-note">{scenario.unavailableReason ?? "Enter the requested project and battery prices in Design Studio to view this comparison."}</p>}
+    <p className="result-note">This is an indicative planning scenario based on the inputs supplied. It is not an installation quotation or a guaranteed return.</p>
+  </section>;
+}
+
+function ScenarioComparisonPanel({ scenarios, scenario, onSelect }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; onSelect: (id: string) => void }) {
+  const visible = scenarios.filter((item) => item.id !== "battery-only");
+  return <section className="result-section scenario-comparison-panel scenario-premium-panel"><div className="result-section-heading"><div><p className="mini-label">Solar and storage options</p><h2>Choose the planning case to inspect.</h2></div><span className="validation-status ready">25-year view</span></div><div className="scenario-options">{visible.map((item) => <button key={item.id} type="button" className={`${scenario.id === item.id ? "is-selected" : ""} ${!item.available ? "is-unavailable" : ""}`} onClick={() => onSelect(item.id)}><span>{item.id === "solar-battery" ? <BatteryCharging size={17} /> : <SunMedium size={17} />}</span><div><b>{item.title}</b><small>{item.available ? `${item.breakEvenYear ? `Break-even year ${item.breakEvenYear}` : "Planning comparison"} · £${Math.round(item.net25YearGbp).toLocaleString()} by year 25` : item.unavailableReason}</small></div></button>)}</div><p className="result-note"><ShieldCheck size={14} /> Battery value is shown as an editable planning comparison, while the generation figure stays anchored to the configured BIPV surfaces.</p></section>;
+}
+
+function EnergyFlowPanel({ study, scenario }: { study: ProjectCalculation; scenario: FinancialScenario }) {
+  const firstYear = scenario.annualCashFlows[0];
+  const generation = study.result.range.representative;
+  const directUse = firstYear?.directUseKwh ?? generation * 0.38;
+  const exported = firstYear?.exportKwh ?? Math.max(0, generation - directUse);
+  const storageValue = scenario.id === "solar-battery" ? Math.max(0, generation - directUse - exported) : 0;
+  const total = Math.max(1, directUse + exported + storageValue);
+  const flows = [
+    { label: "Used at home", value: directUse, color: "#0b6047", detail: "Offsets imported electricity" },
+    { label: "Exported", value: exported, color: "#8fbf79", detail: "Sent to grid at export rate" },
+    { label: "Battery shifted", value: storageValue, color: "#efba45", detail: scenario.id === "solar-battery" ? "Stored for evening use" : "Enable battery to model storage" },
+  ];
+  return <section className="result-section energy-flow-panel">
+    <div className="result-section-heading"><div><p className="mini-label">Energy flow</p><h2>Where the generated electricity goes</h2></div><span className="chart-total">{Math.round(generation).toLocaleString()} kWh/year</span></div>
+    <div className="energy-flow-visual">
+      <div className="energy-flow-source"><SunMedium size={25} /><strong>{Math.round(generation).toLocaleString()}</strong><small>Generated</small></div>
+      <div className="energy-flow-bars">{flows.map((flow) => <article key={flow.label} style={{ ["--flow-color" as string]: flow.color, ["--flow-width" as string]: `${Math.max(5, (flow.value / total) * 100)}%` }}><span><i /></span><div><b>{flow.label}</b><strong>{Math.round(flow.value).toLocaleString()} kWh</strong><small>{flow.detail}</small></div></article>)}</div>
+    </div>
+  </section>;
+}
+
+function EnergyAppliedChain({ study, scenario, onNavigate }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: GatewayRoute) => void }) {
+  const firstYear = scenario.annualCashFlows[0];
+  const directUse = firstYear?.directUseKwh ?? 0;
+  const exported = firstYear?.exportKwh ?? 0;
+  const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.arbitrageIncomeGbp ?? 0);
+  const directPercent = Math.round((directUse / Math.max(1, study.energy.annualDemandKwh)) * 100);
+  const keptPercent = Math.round((directUse / Math.max(1, study.result.range.representative)) * 100);
+  return <section className="result-section energy-applied-chain"><div className="result-section-heading"><div><p className="mini-label">Your energy answers · applied</p><h2>How household inputs shape the value case</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> Edit energy inputs</button></div><div className="applied-chain-grid"><article><span><Home size={17} /></span><p>01 · Household</p><strong>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</strong><small>{study.energy.note}</small></article><i><ArrowRight size={18} /></i><article><span><SunMedium size={17} /></span><p>02 · Self-use and export</p><strong>{Math.round(directUse).toLocaleString()} used · {Math.round(exported).toLocaleString()} exported</strong><small>{directPercent}% of annual demand met directly by solar · {keptPercent}% of generation kept at home.</small></article><i><ArrowRight size={18} /></i><article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · Estimated value</p><strong>£{Math.round(value).toLocaleString()} / year</strong><small>{scenario.breakEvenYear ? `${scenario.breakEvenYear}-year simple break-even` : "Long-term planning case"} on £{Math.round(scenario.upfrontGbp).toLocaleString()} estimated cost.</small></article></div><p className="result-note"><Gauge size={14} /> Calculation first, explanation second. The figures above are calculated from project inputs; the Design Guide explains them without changing the numbers.</p></section>;
+}
+
+function GenerationRangeCard({ study, scenario }: { study: ProjectCalculation; scenario: FinancialScenario }) {
+  const range = study.result.range;
+  const band = Math.max(1, range.high - range.low);
+  const representativePosition = ((range.representative - range.low) / band) * 100;
+  return <section className="result-section generation-range-card generation-hero-card">
+    <div className="range-card-top"><div><p className="mini-label">Project study result</p><strong>{range.representative.toLocaleString()} <small>kWh / year</small></strong><p>Representative annual generation from {study.result.surfaces.length} configured BIPV surfaces.</p></div><span><i /> Local empirical · PVGIS connector ready</span></div>
+    <div className="range-insight-grid">
+      <div className="range-window"><div className="range-window-head"><span>Annual estimate range</span><b>{range.low.toLocaleString()} – {range.high.toLocaleString()} kWh / year</b></div><div className="range-points"><span><i>Low</i><b>{range.low.toLocaleString()}</b></span><span className="is-main"><i>Representative</i><b>{range.representative.toLocaleString()}</b></span><span><i>High</i><b>{range.high.toLocaleString()}</b></span></div><div className="range-track"><em style={{ left: "0%" }} /><strong style={{ left: `${representativePosition}%` }} /><em style={{ left: "100%" }} /></div><p>Use this range to discuss conservative, representative, and upper planning cases.</p></div>
+      <div className="hero-result-metrics">
+        <article><span><BarChart3 size={18} /></span><small>Configured capacity</small><b>{study.result.totalCapacityKwp.toFixed(2)} kWp</b></article>
+        <article><span><Zap size={18} /></span><small>First-year value</small><b>£{Math.round(scenario.firstYearBenefitGbp).toLocaleString()}</b></article>
+        <article><span><LineChart size={18} /></span><small>25-year view</small><b>£{Math.round(scenario.net25YearGbp).toLocaleString()}</b></article>
+      </div>
+    </div>
+  </section>;
 }
 
 function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: ProjectCalculation; preferredBatteryMode: HomeEnergySettings["batteryMode"]; onNavigate: (route: GatewayRoute) => void }) {
@@ -1040,12 +1321,18 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: Proje
   const demandLabel = study.energy.source === "bill" ? "Your energy bill" : study.energy.source === "ai-estimate" ? "AI household estimate" : "Cautious household estimate";
   return (
     <section className="results-page gateway-page">
-      <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> Update home energy</button><p className="eyebrow"><Sparkles size={14} /> Project study · approved empirical model</p><h1>From configured surfaces to a clear next view.</h1><p>Generation uses the approved product-specific empirical coefficients and a local regional climate profile. AI is used only for optional household-demand context and explanations; it does not determine solar generation.</p></div><div className="result-case"><span>Study reference</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
-      <div className="results-layout"><main className="results-report"><div className="result-hero-card"><div><p className="mini-label">Annual generation · planning range</p><strong>{study.result.range.low.toLocaleString()}–{study.result.range.high.toLocaleString()} <small>kWh/year</small></strong><p>Representative: {study.result.range.representative.toLocaleString()} kWh/year · {study.result.range.bandPercent}% planning band</p></div><div><p className="mini-label">Representative annual generation</p><strong>{study.result.range.representative.toLocaleString()} <small>kWh/year</small></strong><p>+{study.result.range.bandPercent}% planning band</p></div><div className="result-capacity"><span>Configured capacity</span><b>{study.result.totalCapacityKwp.toFixed(2)} kWp</b><small>{study.result.surfaces.length} active solar surfaces</small></div></div>
-        <section className="result-section energy-demand-card"><div><p className="mini-label">Home energy context</p><h2>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</h2><p>{demandLabel} · {study.energy.note}</p></div><button type="button" onClick={() => onNavigate("energy")}>Update household energy <ArrowRight size={14} /></button></section>
+      <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> Update home energy</button><p className="eyebrow"><Sparkles size={14} /> Project study · approved empirical model</p><h1>From configured surfaces to a complete project outlook.</h1><p>Generation uses the approved product-specific empirical coefficients and a local regional climate profile. Household answers shape the value case, savings, export income, and storage comparison without changing the deterministic generation output.</p></div><div className="result-case"><span>Study reference</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
+      <div className="results-layout"><main className="results-report">
+        <GenerationRangeCard study={study} scenario={scenario} />
+        <div className="result-main-grid">
+          <section className="result-section energy-demand-card"><div><p className="mini-label">Household energy context</p><h2>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</h2><p>{demandLabel} · {study.energy.note}</p></div><button type="button" onClick={() => onNavigate("energy")}>Update household energy <ArrowRight size={14} /></button></section>
+          <section className="result-section result-capacity-tile"><span><BarChart3 size={20} /></span><p className="mini-label">Configured capacity</p><h2>{study.result.totalCapacityKwp.toFixed(2)} kWp</h2><p>{study.result.surfaces.length} active solar surfaces.</p></section>
+        </div>
+        <EnergyAppliedChain study={study} scenario={scenario} onNavigate={onNavigate} />
+        <EnergyFlowPanel study={study} scenario={scenario} />
         <MonthlyProfileChart study={study} />
-        <section className="result-section scenario-card"><div className="result-section-heading"><div><p className="mini-label">Home energy option</p><h2>Solar only or add a battery?</h2></div></div><div className="scenario-options">{study.result.scenarios.filter((item) => item.id !== "battery-only").map((item) => <button key={item.id} type="button" className={`${scenario.id === item.id ? "is-selected" : ""} ${!item.available ? "is-unavailable" : ""}`} onClick={() => setScenarioId(item.id)}><span>{item.id === "solar-battery" ? <BatteryCharging size={17} /> : <Sparkles size={16} />}</span><div><b>{item.title}</b><small>{item.available ? `${item.breakEvenYear ? `Break-even year ${item.breakEvenYear}` : "Planning comparison"} · £${Math.round(item.net25YearGbp).toLocaleString()} in year 25` : item.unavailableReason}</small></div></button>)}</div></section>
-        <CashPositionChart scenario={scenario} />
+        <ScenarioComparisonPanel scenarios={study.result.scenarios} scenario={scenario} onSelect={setScenarioId} />
+        <CashPositionChart scenarios={study.result.scenarios} scenario={scenario} />
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>Local empirical climate profile</h2></div><span className={`validation-status ${study.validation.status}`}>Primary method</span></div><div className="validation-grid"><div><span>Representative generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Climate profile</span><strong>Regional monthly baseline</strong></div><div><span>External validation</span><strong>Optional connector</strong></div></div><p className="result-note">{study.validation.note}</p></section>
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Configured surfaces</p><h2>Generation by surface</h2></div></div><div className="surface-list">{study.result.surfaces.map((surface: SurfaceResult) => <article className="surface-row" key={surface.surfaceId}><div><strong>{surface.surfaceLabel}</strong><span>{surface.productName}{surface.finishName ? ` · ${surface.finishName}` : ""}</span></div><span>{surface.areaM2.toFixed(1)} m²</span><b>{Math.round(surface.annualKwh).toLocaleString()} kWh/year</b></article>)}</div>{recommended && <p className="result-note"><CircleHelp size={14} /> The largest configured contribution is {recommended.surfaceLabel} ({Math.round(recommended.annualKwh).toLocaleString()} kWh/year).</p>}</section>
         <section className="result-section source-ledger"><div className="result-section-heading"><div><p className="mini-label">Method ledger</p><h2>Inputs held in the study</h2></div></div><dl>{study.result.ledger.map((entry: LedgerEntry) => <div key={entry.id}><dt>{entry.label}</dt><dd>{entry.value}</dd></div>)}</dl></section>
@@ -1214,7 +1501,7 @@ export default function App() {
     <>
       {showGateway && <main className={`gateway-shell gateway-shell--${route}`}>
         <GatewayHeader route={route} language={studioLanguage} copy={copy} canOpenStudio={Boolean(context.location)} onLanguageChange={setStudioLanguage} onNavigate={navigate} />
-        {route === "entry" && <EntryPage copy={copy} onStart={beginProject} onNavigate={navigate} />}
+        {route === "entry" && <EntryPage copy={copy} language={studioLanguage} onLanguageChange={setStudioLanguage} onStart={beginProject} onNavigate={navigate} />}
         {route === "market" && <MarketPage market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
         {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
