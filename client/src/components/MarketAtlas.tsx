@@ -18,6 +18,9 @@ export type MarketAtlasCopy = {
   location: string;
   library: string;
   selected: string;
+  selectCountry: string;
+  selectedCountry: string;
+  countriesAvailable: string;
   chooseMarket: string;
   chooseCountry: string;
   continue: string;
@@ -327,7 +330,7 @@ function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSele
 
   return (
     <aside className="globe-library">
-      <div className="globe-library-heading"><span className="mini-label">{isEurope ? "Select a country" : copy.library}</span><span className="globe-library-count">{isEurope ? `${filteredEurope.length} countries available` : "04"}</span></div>
+      <div className="globe-library-heading"><span className="mini-label">{isEurope ? copy.selectCountry : copy.library}</span><span className="globe-library-count">{isEurope ? `${filteredEurope.length} ${copy.countriesAvailable}` : "04"}</span></div>
       {isEurope ? <>
         <label className="globe-library-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.filterCountries} aria-label={copy.filterCountries} /></label>
         <div className="globe-library-list globe-library-list--countries" role="list">
@@ -373,7 +376,7 @@ export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropea
       <footer className="globe-workbench-footer globe-workbench-footer--compact">
         <div className="market-next-action">
           <span className="market-next-action__market">
-            <small>{market.key === "EU" ? "Selected country" : copy.selected}</small>
+            <small>{market.key === "EU" ? copy.selectedCountry : copy.selected}</small>
             <b><FlagIcon code={market.shortName} label={market.name} />{market.name}{market.key === "EU" ? ", Europe" : ""}</b>
           </span>
           <button type="button" className="button-primary" onClick={onContinue} disabled={market.key === "EU" && !europeanCountry}>

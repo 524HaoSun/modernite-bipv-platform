@@ -179,25 +179,25 @@ const STUDIO_BRIDGE_COPY: Record<StudioLanguage, { facets: string; returnToSite:
 
 const GATEWAY_COPY: Record<StudioLanguage, GatewayCopy> = {
   en: {
-    project: "Project", market: "Market", location: "Location", workspace: "Project workspace", back: "Back", marketStep: "Market selection", marketTitle: "Choose the project context.", marketIntro: "Turn the globe to explore available markets. Europe opens to a country-level selection before you locate the property.", entryEyebrow: "Build a brighter tomorrow", entryTitle: "Start your building-integrated", entryEmphasis: "solar project.", entryLede: "Turn your vision into a sustainable building with integrated solar design.", start: "Start a new project", resume: "Resume project", marketContext: "Market context", siteLocation: "Site location", buildingStudy: "Building study", locationStep: "Site selection", locationTitle: "Place the project.", addressSearch: "Search an address or postcode in", locate: "Locate", projectContext: "Project context", locationEmpty: "Search an address or rotate to place a site on the map.", locationHelp: "The selected address and coordinates are handed directly to the customer Studio location controls. Returning here does not discard your active Studio session.", confirmMarket: "Confirm market", setLocation: "Set project location", openStudio: "Open Solar Studio", coverage: "Service coverage", dragHint: "Drag to rotate the globe", library: "Market library", selected: "Selected market", chooseMarket: "Choose an illuminated market on the globe or from the library.", chooseCountry: "Choose a country from the globe or the European library.", continue: "Continue to location", world: "World", europe: "Europe", europeDirectory: "European country library", filterCountries: "Filter countries", resetGlobe: "Reset globe view", available: "Available", selectedTag: "Selected", unavailable: "Unavailable", studyNote: "Building forms are scoped to this market. The customer product library remains unchanged.",
+    project: "Project", market: "Market", location: "Location", workspace: "Project workspace", back: "Back", marketStep: "Market selection", marketTitle: "Choose the project context.", marketIntro: "Turn the globe to explore available markets. Europe opens to a country-level selection before you locate the property.", entryEyebrow: "Build a brighter tomorrow", entryTitle: "Start your building-integrated", entryEmphasis: "solar project.", entryLede: "Turn your vision into a sustainable building with integrated solar design.", start: "Start a new project", resume: "Resume project", marketContext: "Market context", siteLocation: "Site location", buildingStudy: "Building study", locationStep: "Site selection", locationTitle: "Place the project.", addressSearch: "Search an address or postcode in", locate: "Locate", projectContext: "Project context", locationEmpty: "Search an address or rotate to place a site on the map.", locationHelp: "The selected address and coordinates are handed directly to the customer Studio location controls. Returning here does not discard your active Studio session.", confirmMarket: "Confirm market", setLocation: "Set project location", openStudio: "Open Solar Studio", coverage: "Service coverage", dragHint: "Drag to rotate the globe", library: "Market library", selected: "Selected market", selectCountry: "Select a country", selectedCountry: "Selected country", countriesAvailable: "countries available", chooseMarket: "Choose an illuminated market on the globe or from the library.", chooseCountry: "Choose a country from the globe or the European library.", continue: "Continue to location", world: "World", europe: "Europe", europeDirectory: "European country library", filterCountries: "Filter countries", resetGlobe: "Reset globe view", available: "Available", selectedTag: "Selected", unavailable: "Unavailable", studyNote: "Building forms are scoped to this market. The customer product library remains unchanged.",
   },
   zh: {
-    project: "项目", market: "市场", location: "位置", workspace: "项目工作区", back: "返回", marketStep: "步骤 01 · 市场", marketTitle: "选择项目区域。", marketIntro: "旋转地球探索可用市场；选择欧洲后，可在定位之前进一步选择具体国家。", entryEyebrow: "项目准备", entryTitle: "让建筑", entryEmphasis: "成为方案本身。", entryLede: "选择项目市场、定位场地，然后直接使用客户提供的建筑与产品库。", start: "开始项目", resume: "继续项目", marketContext: "市场背景", siteLocation: "场地位置", buildingStudy: "建筑研究", locationStep: "步骤 02 · 位置", locationTitle: "定位项目。", addressSearch: "在以下区域搜索地址或邮编：", locate: "定位", projectContext: "项目背景", locationEmpty: "搜索地址，或在地图上旋转并放置项目地点。", locationHelp: "所选地址和坐标会直接传递到客户 Studio 的位置控件。返回此处不会丢失当前 Studio 会话。", confirmMarket: "确认市场", setLocation: "设置项目位置", openStudio: "打开 Solar Studio", coverage: "服务范围", dragHint: "拖动以旋转地球", library: "市场目录", selected: "已选市场", chooseMarket: "在地球或目录中选择已点亮的市场。", chooseCountry: "在地球或欧洲目录中选择国家。", continue: "继续至位置", world: "世界", europe: "欧洲", europeDirectory: "欧洲国家目录", filterCountries: "筛选国家", resetGlobe: "重置地球视图", available: "可用", selectedTag: "已选", unavailable: "未开放", studyNote: "建筑形式将限定在所选市场；客户产品库保持不变。",
+    project: "项目", market: "市场", location: "位置", workspace: "项目工作区", back: "返回", marketStep: "步骤 01 · 市场", marketTitle: "选择项目区域。", marketIntro: "旋转地球探索可用市场；选择欧洲后，可在定位之前进一步选择具体国家。", entryEyebrow: "项目准备", entryTitle: "让建筑", entryEmphasis: "成为方案本身。", entryLede: "选择项目市场、定位场地，然后直接使用客户提供的建筑与产品库。", start: "开始项目", resume: "继续项目", marketContext: "市场背景", siteLocation: "场地位置", buildingStudy: "建筑研究", locationStep: "步骤 02 · 位置", locationTitle: "定位项目。", addressSearch: "在以下区域搜索地址或邮编：", locate: "定位", projectContext: "项目背景", locationEmpty: "搜索地址，或在地图上旋转并放置项目地点。", locationHelp: "所选地址和坐标会直接传递到客户 Studio 的位置控件。返回此处不会丢失当前 Studio 会话。", confirmMarket: "确认市场", setLocation: "设置项目位置", openStudio: "打开 Solar Studio", coverage: "服务范围", dragHint: "拖动以旋转地球", library: "市场目录", selected: "已选市场", selectCountry: "选择国家", selectedCountry: "已选国家", countriesAvailable: "个国家可用", chooseMarket: "在地球或目录中选择已点亮的市场。", chooseCountry: "在地球或欧洲目录中选择国家。", continue: "继续至位置", world: "世界", europe: "欧洲", europeDirectory: "欧洲国家目录", filterCountries: "筛选国家", resetGlobe: "重置地球视图", available: "可用", selectedTag: "已选", unavailable: "未开放", studyNote: "建筑形式将限定在所选市场；客户产品库保持不变。",
   },
   "zh-Hant": {
-    project: "專案", market: "市場", location: "位置", workspace: "專案工作區", back: "返回", marketStep: "步驟 01 · 市場", marketTitle: "選擇專案區域。", marketIntro: "旋轉地球探索可用市場；選擇歐洲後，可在定位之前進一步選擇具體國家。", entryEyebrow: "專案準備", entryTitle: "讓建築", entryEmphasis: "成為方案本身。", entryLede: "選擇專案市場、定位場地，然後直接使用客戶提供的建築與產品庫。", start: "開始專案", resume: "繼續專案", marketContext: "市場背景", siteLocation: "場地位置", buildingStudy: "建築研究", locationStep: "步驟 02 · 位置", locationTitle: "定位專案。", addressSearch: "在以下區域搜尋地址或郵遞區號：", locate: "定位", projectContext: "專案背景", locationEmpty: "搜尋地址，或在地圖上旋轉並放置專案地點。", locationHelp: "所選地址和座標會直接傳遞到客戶 Studio 的位置控制項。返回此處不會遺失目前 Studio 工作階段。", confirmMarket: "確認市場", setLocation: "設定專案位置", openStudio: "開啟 Solar Studio", coverage: "服務範圍", dragHint: "拖曳以旋轉地球", library: "市場目錄", selected: "已選市場", chooseMarket: "在地球或目錄中選擇已點亮的市場。", chooseCountry: "在地球或歐洲目錄中選擇國家。", continue: "繼續至位置", world: "世界", europe: "歐洲", europeDirectory: "歐洲國家目錄", filterCountries: "篩選國家", resetGlobe: "重設地球視圖", available: "可用", selectedTag: "已選", unavailable: "未開放", studyNote: "建築形式將限定在所選市場；客戶產品庫保持不變。",
+    project: "專案", market: "市場", location: "位置", workspace: "專案工作區", back: "返回", marketStep: "步驟 01 · 市場", marketTitle: "選擇專案區域。", marketIntro: "旋轉地球探索可用市場；選擇歐洲後，可在定位之前進一步選擇具體國家。", entryEyebrow: "專案準備", entryTitle: "讓建築", entryEmphasis: "成為方案本身。", entryLede: "選擇專案市場、定位場地，然後直接使用客戶提供的建築與產品庫。", start: "開始專案", resume: "繼續專案", marketContext: "市場背景", siteLocation: "場地位置", buildingStudy: "建築研究", locationStep: "步驟 02 · 位置", locationTitle: "定位專案。", addressSearch: "在以下區域搜尋地址或郵遞區號：", locate: "定位", projectContext: "專案背景", locationEmpty: "搜尋地址，或在地圖上旋轉並放置專案地點。", locationHelp: "所選地址和座標會直接傳遞到客戶 Studio 的位置控制項。返回此處不會遺失目前 Studio 工作階段。", confirmMarket: "確認市場", setLocation: "設定專案位置", openStudio: "開啟 Solar Studio", coverage: "服務範圍", dragHint: "拖曳以旋轉地球", library: "市場目錄", selected: "已選市場", selectCountry: "選擇國家", selectedCountry: "已選國家", countriesAvailable: "個國家可用", chooseMarket: "在地球或目錄中選擇已點亮的市場。", chooseCountry: "在地球或歐洲目錄中選擇國家。", continue: "繼續至位置", world: "世界", europe: "歐洲", europeDirectory: "歐洲國家目錄", filterCountries: "篩選國家", resetGlobe: "重設地球視圖", available: "可用", selectedTag: "已選", unavailable: "未開放", studyNote: "建築形式將限定在所選市場；客戶產品庫保持不變。",
   },
   fr: {
-    project: "Projet", market: "Marché", location: "Localisation", workspace: "Espace projet", back: "Retour", marketStep: "Étape 01 · Marché", marketTitle: "Choisissez le contexte du projet.", marketIntro: "Faites tourner le globe pour explorer les marchés disponibles. L'Europe ouvre une sélection par pays avant la localisation du bien.", entryEyebrow: "Préparation du projet", entryTitle: "Faites du bâtiment", entryEmphasis: "le point de départ.", entryLede: "Sélectionnez le marché, localisez le site, puis travaillez avec la bibliothèque de bâtiments et de produits fournie.", start: "Démarrer un projet", resume: "Reprendre le projet", marketContext: "Contexte du marché", siteLocation: "Localisation du site", buildingStudy: "Étude du bâtiment", locationStep: "Étape 02 · Localisation", locationTitle: "Placez le projet.", addressSearch: "Rechercher une adresse ou un code postal dans", locate: "Localiser", projectContext: "Contexte du projet", locationEmpty: "Recherchez une adresse ou placez un site directement sur la carte.", locationHelp: "L'adresse et les coordonnées sélectionnées sont transmises directement aux commandes de localisation du Studio client. Revenir ici ne supprime pas votre session Studio active.", confirmMarket: "Confirmer le marché", setLocation: "Définir la localisation", openStudio: "Ouvrir Solar Studio", coverage: "Couverture du service", dragHint: "Faites glisser pour tourner le globe", library: "Bibliothèque des marchés", selected: "Marché sélectionné", chooseMarket: "Choisissez un marché illuminé sur le globe ou dans la bibliothèque.", chooseCountry: "Choisissez un pays sur le globe ou dans la bibliothèque européenne.", continue: "Continuer vers la localisation", world: "Monde", europe: "Europe", europeDirectory: "Bibliothèque des pays européens", filterCountries: "Filtrer les pays", resetGlobe: "Réinitialiser le globe", available: "Disponible", selectedTag: "Sélectionné", unavailable: "Indisponible", studyNote: "Les formes de bâtiment sont limitées au marché sélectionné. La bibliothèque de produits client reste inchangée.",
+    project: "Projet", market: "Marché", location: "Localisation", workspace: "Espace projet", back: "Retour", marketStep: "Étape 01 · Marché", marketTitle: "Choisissez le contexte du projet.", marketIntro: "Faites tourner le globe pour explorer les marchés disponibles. L'Europe ouvre une sélection par pays avant la localisation du bien.", entryEyebrow: "Préparation du projet", entryTitle: "Faites du bâtiment", entryEmphasis: "le point de départ.", entryLede: "Sélectionnez le marché, localisez le site, puis travaillez avec la bibliothèque de bâtiments et de produits fournie.", start: "Démarrer un projet", resume: "Reprendre le projet", marketContext: "Contexte du marché", siteLocation: "Localisation du site", buildingStudy: "Étude du bâtiment", locationStep: "Étape 02 · Localisation", locationTitle: "Placez le projet.", addressSearch: "Rechercher une adresse ou un code postal dans", locate: "Localiser", projectContext: "Contexte du projet", locationEmpty: "Recherchez une adresse ou placez un site directement sur la carte.", locationHelp: "L'adresse et les coordonnées sélectionnées sont transmises directement aux commandes de localisation du Studio client. Revenir ici ne supprime pas votre session Studio active.", confirmMarket: "Confirmer le marché", setLocation: "Définir la localisation", openStudio: "Ouvrir Solar Studio", coverage: "Couverture du service", dragHint: "Faites glisser pour tourner le globe", library: "Bibliothèque des marchés", selected: "Marché sélectionné", selectCountry: "Sélectionner un pays", selectedCountry: "Pays sélectionné", countriesAvailable: "pays disponibles", chooseMarket: "Choisissez un marché illuminé sur le globe ou dans la bibliothèque.", chooseCountry: "Choisissez un pays sur le globe ou dans la bibliothèque européenne.", continue: "Continuer vers la localisation", world: "Monde", europe: "Europe", europeDirectory: "Bibliothèque des pays européens", filterCountries: "Filtrer les pays", resetGlobe: "Réinitialiser le globe", available: "Disponible", selectedTag: "Sélectionné", unavailable: "Indisponible", studyNote: "Les formes de bâtiment sont limitées au marché sélectionné. La bibliothèque de produits client reste inchangée.",
   },
   ja: {
-    project: "プロジェクト", market: "市場", location: "所在地", workspace: "プロジェクトワークスペース", back: "戻る", marketStep: "ステップ 01 · 市場", marketTitle: "プロジェクト地域を選択。", marketIntro: "地球を回して利用可能な市場を探索します。ヨーロッパを選択すると、所在地を設定する前に国を選べます。", entryEyebrow: "プロジェクト準備", entryTitle: "建築を", entryEmphasis: "計画の中心に。", entryLede: "市場を選択し、サイトを特定してから、提供された建築・製品ライブラリを直接使用します。", start: "プロジェクトを開始", resume: "プロジェクトを再開", marketContext: "市場コンテキスト", siteLocation: "サイト所在地", buildingStudy: "建築スタディ", locationStep: "ステップ 02 · 所在地", locationTitle: "プロジェクトを配置。", addressSearch: "次の地域で住所または郵便番号を検索：", locate: "検索", projectContext: "プロジェクトコンテキスト", locationEmpty: "住所を検索するか、地図上でサイトを指定してください。", locationHelp: "選択した住所と座標は、顧客 Studio の所在地コントロールに直接渡されます。ここに戻っても現在の Studio セッションは失われません。", confirmMarket: "市場を確認", setLocation: "所在地を設定", openStudio: "Solar Studio を開く", coverage: "サービス対象地域", dragHint: "ドラッグして地球を回転", library: "市場ライブラリ", selected: "選択した市場", chooseMarket: "地球またはライブラリから点灯している市場を選択します。", chooseCountry: "地球またはヨーロッパのライブラリから国を選択します。", continue: "所在地へ進む", world: "世界", europe: "ヨーロッパ", europeDirectory: "ヨーロッパ国ライブラリ", filterCountries: "国を絞り込む", resetGlobe: "地球表示をリセット", available: "利用可能", selectedTag: "選択中", unavailable: "対象外", studyNote: "建築形式は選択した市場に限定されます。顧客製品ライブラリは変更されません。",
+    project: "プロジェクト", market: "市場", location: "所在地", workspace: "プロジェクトワークスペース", back: "戻る", marketStep: "ステップ 01 · 市場", marketTitle: "プロジェクト地域を選択。", marketIntro: "地球を回して利用可能な市場を探索します。ヨーロッパを選択すると、所在地を設定する前に国を選べます。", entryEyebrow: "プロジェクト準備", entryTitle: "建築を", entryEmphasis: "計画の中心に。", entryLede: "市場を選択し、サイトを特定してから、提供された建築・製品ライブラリを直接使用します。", start: "プロジェクトを開始", resume: "プロジェクトを再開", marketContext: "市場コンテキスト", siteLocation: "サイト所在地", buildingStudy: "建築スタディ", locationStep: "ステップ 02 · 所在地", locationTitle: "プロジェクトを配置。", addressSearch: "次の地域で住所または郵便番号を検索：", locate: "検索", projectContext: "プロジェクトコンテキスト", locationEmpty: "住所を検索するか、地図上でサイトを指定してください。", locationHelp: "選択した住所と座標は、顧客 Studio の所在地コントロールに直接渡されます。ここに戻っても現在の Studio セッションは失われません。", confirmMarket: "市場を確認", setLocation: "所在地を設定", openStudio: "Solar Studio を開く", coverage: "サービス対象地域", dragHint: "ドラッグして地球を回転", library: "市場ライブラリ", selected: "選択した市場", selectCountry: "国を選択", selectedCountry: "選択した国", countriesAvailable: "か国が利用可能", chooseMarket: "地球またはライブラリから点灯している市場を選択します。", chooseCountry: "地球またはヨーロッパのライブラリから国を選択します。", continue: "所在地へ進む", world: "世界", europe: "ヨーロッパ", europeDirectory: "ヨーロッパ国ライブラリ", filterCountries: "国を絞り込む", resetGlobe: "地球表示をリセット", available: "利用可能", selectedTag: "選択中", unavailable: "対象外", studyNote: "建築形式は選択した市場に限定されます。顧客製品ライブラリは変更されません。",
   },
   es: {
-    project: "Proyecto", market: "Mercado", location: "Ubicación", workspace: "Espacio del proyecto", back: "Volver", marketStep: "Paso 01 · Mercado", marketTitle: "Elija el contexto del proyecto.", marketIntro: "Gire el globo para explorar los mercados disponibles. Europa abre una selección por país antes de ubicar la propiedad.", entryEyebrow: "Preparación del proyecto", entryTitle: "Haga del edificio", entryEmphasis: "el punto de partida.", entryLede: "Elija el mercado, localice el sitio y trabaje directamente con la biblioteca de edificios y productos proporcionada.", start: "Iniciar un proyecto", resume: "Reanudar proyecto", marketContext: "Contexto del mercado", siteLocation: "Ubicación del sitio", buildingStudy: "Estudio del edificio", locationStep: "Paso 02 · Ubicación", locationTitle: "Ubique el proyecto.", addressSearch: "Buscar una dirección o código postal en", locate: "Localizar", projectContext: "Contexto del proyecto", locationEmpty: "Busque una dirección o coloque un sitio directamente en el mapa.", locationHelp: "La dirección y las coordenadas seleccionadas se transfieren directamente a los controles de ubicación del Studio del cliente. Volver aquí no descarta la sesión activa del Studio.", confirmMarket: "Confirmar mercado", setLocation: "Definir ubicación", openStudio: "Abrir Solar Studio", coverage: "Cobertura de servicio", dragHint: "Arrastre para girar el globo", library: "Biblioteca de mercados", selected: "Mercado seleccionado", chooseMarket: "Elija un mercado iluminado en el globo o en la biblioteca.", chooseCountry: "Elija un país en el globo o en la biblioteca europea.", continue: "Continuar a ubicación", world: "Mundo", europe: "Europa", europeDirectory: "Biblioteca de países europeos", filterCountries: "Filtrar países", resetGlobe: "Restablecer vista del globo", available: "Disponible", selectedTag: "Seleccionado", unavailable: "No disponible", studyNote: "Las formas de edificio se limitan al mercado seleccionado. La biblioteca de productos del cliente no cambia.",
+    project: "Proyecto", market: "Mercado", location: "Ubicación", workspace: "Espacio del proyecto", back: "Volver", marketStep: "Paso 01 · Mercado", marketTitle: "Elija el contexto del proyecto.", marketIntro: "Gire el globo para explorar los mercados disponibles. Europa abre una selección por país antes de ubicar la propiedad.", entryEyebrow: "Preparación del proyecto", entryTitle: "Haga del edificio", entryEmphasis: "el punto de partida.", entryLede: "Elija el mercado, localice el sitio y trabaje directamente con la biblioteca de edificios y productos proporcionada.", start: "Iniciar un proyecto", resume: "Reanudar proyecto", marketContext: "Contexto del mercado", siteLocation: "Ubicación del sitio", buildingStudy: "Estudio del edificio", locationStep: "Paso 02 · Ubicación", locationTitle: "Ubique el proyecto.", addressSearch: "Buscar una dirección o código postal en", locate: "Localizar", projectContext: "Contexto del proyecto", locationEmpty: "Busque una dirección o coloque un sitio directamente en el mapa.", locationHelp: "La dirección y las coordenadas seleccionadas se transfieren directamente a los controles de ubicación del Studio del cliente. Volver aquí no descarta la sesión activa del Studio.", confirmMarket: "Confirmar mercado", setLocation: "Definir ubicación", openStudio: "Abrir Solar Studio", coverage: "Cobertura de servicio", dragHint: "Arrastre para girar el globo", library: "Biblioteca de mercados", selected: "Mercado seleccionado", selectCountry: "Seleccione un país", selectedCountry: "País seleccionado", countriesAvailable: "países disponibles", chooseMarket: "Elija un mercado iluminado en el globo o en la biblioteca.", chooseCountry: "Elija un país en el globo o en la biblioteca europea.", continue: "Continuar a ubicación", world: "Mundo", europe: "Europa", europeDirectory: "Biblioteca de países europeos", filterCountries: "Filtrar países", resetGlobe: "Restablecer vista del globo", available: "Disponible", selectedTag: "Seleccionado", unavailable: "No disponible", studyNote: "Las formas de edificio se limitan al mercado seleccionado. La biblioteca de productos del cliente no cambia.",
   },
   it: {
-    project: "Progetto", market: "Mercato", location: "Posizione", workspace: "Spazio di lavoro", back: "Indietro", marketStep: "Fase 01 · Mercato", marketTitle: "Scegli il contesto del progetto.", marketIntro: "Ruota il globo per esplorare i mercati disponibili. L'Europa apre una selezione per paese prima di localizzare l'immobile.", entryEyebrow: "Preparazione del progetto", entryTitle: "Fai dell'edificio", entryEmphasis: "il punto di partenza.", entryLede: "Seleziona il mercato, individua il sito e lavora direttamente con la libreria di edifici e prodotti fornita.", start: "Avvia un progetto", resume: "Riprendi progetto", marketContext: "Contesto del mercato", siteLocation: "Posizione del sito", buildingStudy: "Studio dell'edificio", locationStep: "Fase 02 · Posizione", locationTitle: "Posiziona il progetto.", addressSearch: "Cerca un indirizzo o CAP in", locate: "Localizza", projectContext: "Contesto del progetto", locationEmpty: "Cerca un indirizzo o posiziona un sito direttamente sulla mappa.", locationHelp: "L'indirizzo e le coordinate selezionati vengono trasferiti direttamente ai controlli di posizione dello Studio del cliente. Tornare qui non elimina la sessione Studio attiva.", confirmMarket: "Conferma il mercato", setLocation: "Imposta la posizione", openStudio: "Apri Solar Studio", coverage: "Copertura del servizio", dragHint: "Trascina per ruotare il globo", library: "Libreria dei mercati", selected: "Mercato selezionato", chooseMarket: "Scegli un mercato illuminato sul globo o nella libreria.", chooseCountry: "Scegli un paese sul globo o nella libreria europea.", continue: "Continua alla posizione", world: "Mondo", europe: "Europa", europeDirectory: "Libreria dei paesi europei", filterCountries: "Filtra paesi", resetGlobe: "Reimposta il globo", available: "Disponibile", selectedTag: "Selezionato", unavailable: "Non disponibile", studyNote: "Le forme edilizie sono limitate al mercato selezionato. La libreria di prodotti del cliente resta invariata.",
+    project: "Progetto", market: "Mercato", location: "Posizione", workspace: "Spazio di lavoro", back: "Indietro", marketStep: "Fase 01 · Mercato", marketTitle: "Scegli il contesto del progetto.", marketIntro: "Ruota il globo per esplorare i mercati disponibili. L'Europa apre una selezione per paese prima di localizzare l'immobile.", entryEyebrow: "Preparazione del progetto", entryTitle: "Fai dell'edificio", entryEmphasis: "il punto di partenza.", entryLede: "Seleziona il mercato, individua il sito e lavora direttamente con la libreria di edifici e prodotti fornita.", start: "Avvia un progetto", resume: "Riprendi progetto", marketContext: "Contesto del mercato", siteLocation: "Posizione del sito", buildingStudy: "Studio dell'edificio", locationStep: "Fase 02 · Posizione", locationTitle: "Posiziona il progetto.", addressSearch: "Cerca un indirizzo o CAP in", locate: "Localizza", projectContext: "Contesto del progetto", locationEmpty: "Cerca un indirizzo o posiziona un sito direttamente sulla mappa.", locationHelp: "L'indirizzo e le coordinate selezionati vengono trasferiti direttamente ai controlli di posizione dello Studio del cliente. Tornare qui non elimina la sessione Studio attiva.", confirmMarket: "Conferma il mercato", setLocation: "Imposta la posizione", openStudio: "Apri Solar Studio", coverage: "Copertura del servizio", dragHint: "Trascina per ruotare il globo", library: "Libreria dei mercati", selected: "Mercato selezionato", selectCountry: "Seleziona un paese", selectedCountry: "Paese selezionato", countriesAvailable: "paesi disponibili", chooseMarket: "Scegli un mercato illuminato sul globo o nella libreria.", chooseCountry: "Scegli un paese sul globo o nella libreria europea.", continue: "Continua alla posizione", world: "Mondo", europe: "Europa", europeDirectory: "Libreria dei paesi europei", filterCountries: "Filtra paesi", resetGlobe: "Reimposta il globo", available: "Disponibile", selectedTag: "Selezionato", unavailable: "Non disponibile", studyNote: "Le forme edilizie sono limitate al mercato selezionato. La libreria di prodotti del cliente resta invariata.",
   },
 };
 
@@ -210,6 +210,323 @@ const LOCATION_PAGE_TEXT: Record<StudioLanguage, { title: string; intro: string;
   es: { title: "Trace la zona apta para solar.", intro: "Empiece en el mercado seleccionado, ubique el sitio y trace el tejado, la fachada o la parcela que puede recibir solar.", selectedMarket: "Mercado seleccionado", siteBrief: "Resumen del sitio", market: "Mercado", area: "Área trazada", boundary: "Límite", notTraced: "Sin trazar", awaiting: "Pendiente de trazar", confirmed: "Mercado confirmado", pinpoint: "Ubicar el sitio exacto", trace: "Trazar una zona apta para solar", continue: "Continuar al Estudio de diseño", retain: "La dirección, las coordenadas y el área trazada seguirán disponibles al volver para actualizar el resumen.", continueStudio: "Continuar al Estudio de diseño" },
   it: { title: "Mappa la zona adatta al solare.", intro: "Inizia nel mercato selezionato, individua il sito, poi traccia il tetto, la facciata o il lotto che può ricevere solare.", selectedMarket: "Mercato selezionato", siteBrief: "Sintesi del sito", market: "Mercato", area: "Area tracciata", boundary: "Perimetro", notTraced: "Non tracciata", awaiting: "In attesa del tracciato", confirmed: "Mercato confermato", pinpoint: "Individua il sito esatto", trace: "Traccia una zona adatta al solare", continue: "Continua allo Studio di progettazione", retain: "Indirizzo, coordinate e area tracciata restano disponibili quando torni per aggiornare la sintesi.", continueStudio: "Continua allo Studio di progettazione" },
 };
+
+const OUTER_UI_COPY = {
+  en: {
+    workspace: "Project workspace",
+    studioProgressLabel: "Project progress: Design Studio",
+    studioAriaLanguage: "Studio language",
+    studioStepEyebrow: "Design Studio",
+    studioTitle: "Configure your building and solar design.",
+    studioIntro: "Use the Modernité Solar Studio to model your building, select products and finishes, and define the solar-ready configuration.",
+    currentSite: "Current site",
+    market: "Market",
+    studioProgress: "Studio progress",
+    activeSurfacesConfigured: (count: number) => `${count} active solar surfaces configured`,
+    fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
+    environmentTab: "Environment",
+    environmentControls: "Environment controls",
+    configurationComplete: "Configuration complete",
+    nextEnergyTitle: "Next, personalise household energy.",
+    nextEnergyBody: "Use the supplied Building, Products and Finishes controls to configure the project. Lighting remains available as an environment control inside the Studio; file export now belongs to the final Results stage.",
+    step05: "Step 05",
+    homeEnergyCta: "Tell us about home energy",
+    configurationRequired: "Configuration required",
+    configurationRequiredBody: "Add a supported solar product in Products; the project calculation will then become available.",
+    calculationNotStarted: "Calculation not started",
+    addProductBeforeEnergy: "Add at least one solar product in the supplied Products step before continuing to household energy.",
+    addProductBeforeStudy: "Add at least one solar product in the supplied Products step before calculating the project study.",
+    energyBack: "Back to Design Studio",
+    energyEyebrow: "Household energy",
+    energyTitle: "Personalise the value of your solar design.",
+    energyIntro: "The Design Studio defines the building and solar surfaces. These inputs connect household demand, tariff assumptions, storage preference, and a 25-year planning view before the study is calculated.",
+    configuredBuilding: "Your configured building",
+    viewInStudio: "View in Design Studio",
+    detachedHouse: "UK01 · Detached house",
+    residential: "Residential",
+    houseSurfaces: "House with 4 active surfaces",
+    activeSolarSurfaces: "Active solar surfaces",
+    fourOfSix: "4 of 6 surfaces",
+    totalRoofArea: "Total roof area",
+    buildingFootprint: "Building footprint",
+    energyNoteTitle: "Your energy inputs help us calculate savings, self-consumption and payback.",
+    energyNoteBody: "We combine your building design with household energy use to model real-world performance over 25 years.",
+    planningInputs: "Planning inputs",
+    energyCashTitle: "Home energy & cash position",
+    energyFormIntro: "Complete these after configuring the customer Studio. They shape household demand, storage comparison and the 25-year planning view, not the retained building or product library.",
+    electricityUse: "Electricity use",
+    chooseSource: "Choose a source",
+    useBill: "Use my energy bill",
+    enterAnnual: "Enter annual kWh",
+    notSure: "I'm not sure",
+    aiEstimate: "Use a cautious AI estimate",
+    annualUse: "Annual electricity use",
+    householdRhythm: "Household rhythm",
+    estimatedDemandOnly: "For an estimated demand only",
+    peopleLiving: "People living here",
+    dayQuestion: "Is someone usually home during the day?",
+    occupancy: { usually: "Usually", sometimes: "Sometimes", rarely: "Rarely" },
+    electricHome: "What is electric at home?",
+    selectAny: "Select any that apply",
+    services: { electricHeating: "Electric heating", heatPump: "Heat pump", electricHotWater: "Electric hot water", evCharger: "EV charging" },
+    homeEnergyOption: "Home energy option",
+    compareStorage: "Compare storage after generation",
+    solarOnly: "Solar only",
+    exportSurplus: "Export surplus energy",
+    addBattery: "Add a battery",
+    increaseOnSite: "Increase on-site use",
+    usableBattery: "Usable battery",
+    batteryPrice: "Battery price",
+    optional: "Optional",
+    cashInputs: "Optional cash-position inputs",
+    installedSolarPrice: "Installed solar price",
+    quoteNote: "A price enables an indicative 25-year cash-position line. It is not a quotation.",
+    waitingStudio: "Waiting for Design Studio",
+    calculateResults: "Calculate project results",
+    planningProfile: "Your planning profile",
+    livePreview: "Live preview",
+    estimatedAnnualUse: "Estimated annual household use",
+    homeProfile: "Home profile",
+    directSolarUse: "Expected direct solar use",
+    aboutPercent: (value: number) => `About ${value}%`,
+    electricLoads: "Electric home loads",
+    storageScenario: "Storage scenario",
+    planningCostUsed: "Planning cost used",
+    estimateLabel: "estimate",
+    energyBill: "Energy bill",
+    moderniteEstimate: "Modernité estimate",
+    person: "person",
+    people: "people",
+    daytimePresence: "daytime presence",
+    noMajorLoads: "No major electric loads selected",
+    batteryConsidered: (kwh: number) => `${kwh} kWh battery considered`,
+    solarOnlyBaseline: "Solar-only baseline",
+    connectsTo: "These answers connect to",
+    connectors: ["Direct solar coverage", "Bill saving", "Export income", "Solar vs battery", "25-year cash flow", "Result explanation"],
+    calculationEyebrow: "Calculating project study",
+    calculationTitle: "Preparing your personalised project outlook.",
+    calculationErrorTitle: "The study needs another look.",
+    calculationBody: "Applying your configured surfaces, household use, tariff assumptions, storage preference, and local climate profile.",
+    calculationStages: ["Surface model", "Home demand", "Generation range", "Scenario value"],
+    returnStudio: "Return to Design Studio",
+    resultsBack: "Update home energy",
+    resultsEyebrow: "Project study · approved empirical model",
+    resultsTitle: "From configured surfaces to a complete project outlook.",
+    resultsIntro: "Generation uses the approved product-specific empirical coefficients and a local regional climate profile. Household answers shape the value case, savings, export income, and storage comparison without changing the deterministic generation output.",
+    studyReference: "Study reference",
+  },
+  zh: {
+    workspace: "项目工作区",
+    studioProgressLabel: "项目进度：设计工作室",
+    studioAriaLanguage: "工作室语言",
+    studioStepEyebrow: "设计工作室",
+    studioTitle: "配置建筑与光伏设计。",
+    studioIntro: "使用 Modernité Solar Studio 建模建筑、选择产品与饰面，并定义适合光伏的配置。",
+    currentSite: "当前场地",
+    market: "市场",
+    studioProgress: "工作室进度",
+    activeSurfacesConfigured: (count: number) => `已配置 ${count} 个有效光伏面`,
+    fallbackAddress: "英国伦敦 SW1A 1HF，30 St James's Street",
+    environmentTab: "环境",
+    environmentControls: "环境控制",
+    configurationComplete: "配置已完成",
+    nextEnergyTitle: "下一步，完善家庭能耗。",
+    nextEnergyBody: "使用已提供的建筑、产品和饰面控件配置项目。照明作为环境控制保留在 Studio 内；文件导出放在最终结果阶段。",
+    step05: "步骤 05",
+    homeEnergyCta: "填写家庭能耗",
+    configurationRequired: "需要完成配置",
+    configurationRequiredBody: "请在产品步骤中添加至少一个支持的光伏产品，之后即可进行项目计算。",
+    calculationNotStarted: "计算尚未开始",
+    addProductBeforeEnergy: "请先在产品步骤中添加至少一个光伏产品，再继续填写家庭能耗。",
+    addProductBeforeStudy: "请先在产品步骤中添加至少一个光伏产品，再计算项目研究。",
+    energyBack: "返回设计工作室",
+    energyEyebrow: "家庭能耗",
+    energyTitle: "个性化评估光伏设计价值。",
+    energyIntro: "设计工作室定义建筑和光伏表面；这里补充家庭用电、费率假设、储能偏好和 25 年规划视图。",
+    configuredBuilding: "已配置建筑",
+    viewInStudio: "在设计工作室查看",
+    detachedHouse: "UK01 · 独栋住宅",
+    residential: "住宅",
+    houseSurfaces: "含 4 个有效光伏面的住宅",
+    activeSolarSurfaces: "有效光伏面",
+    fourOfSix: "6 个表面中的 4 个",
+    totalRoofArea: "屋顶总面积",
+    buildingFootprint: "建筑占地面积",
+    energyNoteTitle: "能耗输入将帮助计算节省、自用率和回本周期。",
+    energyNoteBody: "我们会把建筑设计与家庭用电结合，模拟 25 年真实使用表现。",
+    planningInputs: "规划输入",
+    energyCashTitle: "家庭能耗与现金流",
+    energyFormIntro: "请在配置客户 Studio 后完成这些信息。它们会影响家庭需求、储能对比和 25 年规划视图，不改变已保留的建筑或产品库。",
+    electricityUse: "用电量",
+    chooseSource: "选择来源",
+    useBill: "使用电费账单",
+    enterAnnual: "输入年度 kWh",
+    notSure: "不确定",
+    aiEstimate: "使用保守估算",
+    annualUse: "年度用电量",
+    householdRhythm: "家庭使用节奏",
+    estimatedDemandOnly: "仅用于估算需求",
+    peopleLiving: "居住人数",
+    dayQuestion: "白天通常有人在家吗？",
+    occupancy: { usually: "通常", sometimes: "有时", rarely: "很少" },
+    electricHome: "家中有哪些电力系统？",
+    selectAny: "选择所有适用项",
+    services: { electricHeating: "电采暖", heatPump: "热泵", electricHotWater: "电热水", evCharger: "电动车充电" },
+    homeEnergyOption: "家庭能源方案",
+    compareStorage: "在发电后对比储能",
+    solarOnly: "仅光伏",
+    exportSurplus: "余电上网",
+    addBattery: "添加电池",
+    increaseOnSite: "提高本地自用",
+    usableBattery: "可用电池容量",
+    batteryPrice: "电池价格",
+    optional: "可选",
+    cashInputs: "可选现金流输入",
+    installedSolarPrice: "已安装光伏价格",
+    quoteNote: "价格用于生成 25 年现金流参考线，并非安装报价。",
+    waitingStudio: "等待设计工作室",
+    calculateResults: "计算项目结果",
+    planningProfile: "规划概览",
+    livePreview: "实时预览",
+    estimatedAnnualUse: "预估年度家庭用电",
+    homeProfile: "家庭画像",
+    directSolarUse: "预计光伏直接自用",
+    aboutPercent: (value: number) => `约 ${value}%`,
+    electricLoads: "家庭电力负载",
+    storageScenario: "储能场景",
+    planningCostUsed: "采用的规划成本",
+    estimateLabel: "估算",
+    energyBill: "电费账单",
+    moderniteEstimate: "Modernité 估算",
+    person: "人",
+    people: "人",
+    daytimePresence: "白天在家",
+    noMajorLoads: "未选择主要电力负载",
+    batteryConsidered: (kwh: number) => `考虑 ${kwh} kWh 电池`,
+    solarOnlyBaseline: "仅光伏基准",
+    connectsTo: "这些答案会连接到",
+    connectors: ["光伏直接覆盖", "电费节省", "上网收益", "光伏与电池对比", "25 年现金流", "结果解释"],
+    calculationEyebrow: "正在计算项目研究",
+    calculationTitle: "正在准备你的个性化项目展望。",
+    calculationErrorTitle: "该研究需要再次检查。",
+    calculationBody: "正在应用已配置表面、家庭用电、费率假设、储能偏好和本地气候数据。",
+    calculationStages: ["表面模型", "家庭需求", "发电区间", "场景价值"],
+    returnStudio: "返回设计工作室",
+    resultsBack: "更新家庭能耗",
+    resultsEyebrow: "项目研究 · 已批准经验模型",
+    resultsTitle: "从已配置表面到完整项目展望。",
+    resultsIntro: "发电量使用已批准的产品经验系数和本地区域气候曲线。家庭答案会影响价值、节省、上网收益和储能对比，但不会改变确定性的发电输出。",
+    studyReference: "研究编号",
+  },
+  "zh-Hant": {
+    workspace: "專案工作區",
+    studioProgressLabel: "專案進度：設計工作室",
+    studioAriaLanguage: "工作室語言",
+    studioStepEyebrow: "設計工作室",
+    studioTitle: "配置建築與光伏設計。",
+    studioIntro: "使用 Modernité Solar Studio 建模建築、選擇產品與飾面，並定義適合光伏的配置。",
+    currentSite: "目前場地",
+    market: "市場",
+    studioProgress: "工作室進度",
+    activeSurfacesConfigured: (count: number) => `已配置 ${count} 個有效光伏面`,
+    fallbackAddress: "英國倫敦 SW1A 1HF，30 St James's Street",
+    environmentTab: "環境",
+    environmentControls: "環境控制",
+    configurationComplete: "配置已完成",
+    nextEnergyTitle: "下一步，完善家庭能耗。",
+    nextEnergyBody: "使用已提供的建築、產品和飾面控制項配置專案。照明作為環境控制保留在 Studio 內；檔案匯出放在最終結果階段。",
+    step05: "步驟 05",
+    homeEnergyCta: "填寫家庭能耗",
+    configurationRequired: "需要完成配置",
+    configurationRequiredBody: "請在產品步驟中新增至少一個支援的光伏產品，之後即可進行專案計算。",
+    calculationNotStarted: "計算尚未開始",
+    addProductBeforeEnergy: "請先在產品步驟中新增至少一個光伏產品，再繼續填寫家庭能耗。",
+    addProductBeforeStudy: "請先在產品步驟中新增至少一個光伏產品，再計算專案研究。",
+    energyBack: "返回設計工作室",
+    energyEyebrow: "家庭能耗",
+    energyTitle: "個性化評估光伏設計價值。",
+    energyIntro: "設計工作室定義建築和光伏表面；這裡補充家庭用電、費率假設、儲能偏好和 25 年規劃視圖。",
+    configuredBuilding: "已配置建築",
+    viewInStudio: "在設計工作室查看",
+    detachedHouse: "UK01 · 獨棟住宅",
+    residential: "住宅",
+    houseSurfaces: "含 4 個有效光伏面的住宅",
+    activeSolarSurfaces: "有效光伏面",
+    fourOfSix: "6 個表面中的 4 個",
+    totalRoofArea: "屋頂總面積",
+    buildingFootprint: "建築佔地面積",
+    energyNoteTitle: "能耗輸入將幫助計算節省、自用率和回本週期。",
+    energyNoteBody: "我們會把建築設計與家庭用電結合，模擬 25 年真實使用表現。",
+    planningInputs: "規劃輸入",
+    energyCashTitle: "家庭能耗與現金流",
+    energyFormIntro: "請在配置客戶 Studio 後完成這些資訊。它們會影響家庭需求、儲能對比和 25 年規劃視圖，不改變已保留的建築或產品庫。",
+    electricityUse: "用電量",
+    chooseSource: "選擇來源",
+    useBill: "使用電費帳單",
+    enterAnnual: "輸入年度 kWh",
+    notSure: "不確定",
+    aiEstimate: "使用保守估算",
+    annualUse: "年度用電量",
+    householdRhythm: "家庭使用節奏",
+    estimatedDemandOnly: "僅用於估算需求",
+    peopleLiving: "居住人數",
+    dayQuestion: "白天通常有人在家嗎？",
+    occupancy: { usually: "通常", sometimes: "有時", rarely: "很少" },
+    electricHome: "家中有哪些電力系統？",
+    selectAny: "選擇所有適用項",
+    services: { electricHeating: "電採暖", heatPump: "熱泵", electricHotWater: "電熱水", evCharger: "電動車充電" },
+    homeEnergyOption: "家庭能源方案",
+    compareStorage: "在發電後對比儲能",
+    solarOnly: "僅光伏",
+    exportSurplus: "餘電上網",
+    addBattery: "新增電池",
+    increaseOnSite: "提高本地自用",
+    usableBattery: "可用電池容量",
+    batteryPrice: "電池價格",
+    optional: "可選",
+    cashInputs: "可選現金流輸入",
+    installedSolarPrice: "已安裝光伏價格",
+    quoteNote: "價格用於生成 25 年現金流參考線，並非安裝報價。",
+    waitingStudio: "等待設計工作室",
+    calculateResults: "計算專案結果",
+    planningProfile: "規劃概覽",
+    livePreview: "即時預覽",
+    estimatedAnnualUse: "預估年度家庭用電",
+    homeProfile: "家庭畫像",
+    directSolarUse: "預計光伏直接自用",
+    aboutPercent: (value: number) => `約 ${value}%`,
+    electricLoads: "家庭電力負載",
+    storageScenario: "儲能場景",
+    planningCostUsed: "採用的規劃成本",
+    estimateLabel: "估算",
+    energyBill: "電費帳單",
+    moderniteEstimate: "Modernité 估算",
+    person: "人",
+    people: "人",
+    daytimePresence: "白天在家",
+    noMajorLoads: "未選擇主要電力負載",
+    batteryConsidered: (kwh: number) => `考慮 ${kwh} kWh 電池`,
+    solarOnlyBaseline: "僅光伏基準",
+    connectsTo: "這些答案會連接到",
+    connectors: ["光伏直接覆蓋", "電費節省", "上網收益", "光伏與電池對比", "25 年現金流", "結果解釋"],
+    calculationEyebrow: "正在計算專案研究",
+    calculationTitle: "正在準備你的個性化專案展望。",
+    calculationErrorTitle: "該研究需要再次檢查。",
+    calculationBody: "正在套用已配置表面、家庭用電、費率假設、儲能偏好和本地氣候資料。",
+    calculationStages: ["表面模型", "家庭需求", "發電區間", "場景價值"],
+    returnStudio: "返回設計工作室",
+    resultsBack: "更新家庭能耗",
+    resultsEyebrow: "專案研究 · 已批准經驗模型",
+    resultsTitle: "從已配置表面到完整專案展望。",
+    resultsIntro: "發電量使用已批准的產品經驗係數和本地區域氣候曲線。家庭答案會影響價值、節省、上網收益和儲能對比，但不會改變確定性的發電輸出。",
+    studyReference: "研究編號",
+  },
+} as const;
+
+function outerCopy(language: StudioLanguage) {
+  if (language === "zh" || language === "zh-Hant") return OUTER_UI_COPY[language];
+  return OUTER_UI_COPY.en;
+}
 
 function routeFromPath(pathname: string): GatewayRoute {
   const normalizedPath =
@@ -612,12 +929,13 @@ function DesignAssistant({ stage }: { stage: "design" | "energy" }) {
   );
 }
 
-function estimateEnergyPreview(settings: HomeEnergySettings) {
+function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage) {
+  const text = outerCopy(language);
   const services = [
-    settings.electricHeating ? "Electric heating" : null,
-    settings.heatPump ? "Heat pump" : null,
-    settings.electricHotWater ? "Electric hot water" : null,
-    settings.evCharger ? "EV charging" : null,
+    settings.electricHeating ? text.services.electricHeating : null,
+    settings.heatPump ? text.services.heatPump : null,
+    settings.electricHotWater ? text.services.electricHotWater : null,
+    settings.evCharger ? text.services.evCharger : null,
   ].filter(Boolean) as string[];
   const estimatedDemand = Math.max(
     1600,
@@ -637,49 +955,52 @@ function estimateEnergyPreview(settings: HomeEnergySettings) {
     annualDemand,
     directUse,
     projectPrice,
-    source: settings.demandMode === "bill" ? "Energy bill" : "Modernité estimate",
-    profile: `${settings.householdSize} ${settings.householdSize === 1 ? "person" : "people"} · ${settings.daytimeOccupancy} daytime presence`,
-    services: services.length ? services.join(" · ") : "No major electric loads selected",
-    battery: settings.batteryMode === "solar-battery" ? `${settings.batteryCapacityKwh} kWh battery considered` : "Solar-only baseline",
+    source: settings.demandMode === "bill" ? text.energyBill : text.moderniteEstimate,
+    profile: `${settings.householdSize} ${settings.householdSize === 1 ? text.person : text.people} · ${text.occupancy[settings.daytimeOccupancy]} ${text.daytimePresence}`,
+    services: services.length ? services.join(" · ") : text.noMajorLoads,
+    battery: settings.batteryMode === "solar-battery" ? text.batteryConsidered(settings.batteryCapacityKwh) : text.solarOnlyBaseline,
   };
 }
 
-function EnergyPlanningPreview({ settings }: { settings: HomeEnergySettings }) {
-  const preview = estimateEnergyPreview(settings);
+function EnergyPlanningPreview({ settings, language }: { settings: HomeEnergySettings; language: StudioLanguage }) {
+  const text = outerCopy(language);
+  const preview = estimateEnergyPreview(settings, language);
   return (
     <aside className="energy-planning-preview" aria-label="Live planning profile">
       <div className="energy-preview-heading">
-        <p className="mini-label">Your planning profile</p>
-        <span><i /> Live preview</span>
+        <p className="mini-label">{text.planningProfile}</p>
+        <span><i /> {text.livePreview}</span>
       </div>
       <div className="energy-preview-meter">
-        <small>Estimated annual household use</small>
+        <small>{text.estimatedAnnualUse}</small>
         <strong>{preview.annualDemand.toLocaleString()} <em>kWh / year</em></strong>
         <div><span style={{ width: `${Math.min(100, Math.max(18, (preview.annualDemand / 9000) * 100))}%` }} /></div>
         <p>{preview.source}</p>
       </div>
       <dl className="energy-preview-facts">
-        <div><dt><Home size={14} /> Home profile</dt><dd>{preview.profile}</dd></div>
-        <div><dt><SunMedium size={14} /> Expected direct solar use</dt><dd>About {preview.directUse}%</dd></div>
-        <div><dt><Zap size={14} /> Electric home loads</dt><dd>{preview.services}</dd></div>
-        <div><dt><BatteryCharging size={14} /> Storage scenario</dt><dd>{preview.battery}</dd></div>
-        <div><dt><TrendingUp size={14} /> Planning cost used</dt><dd>£{Math.round(preview.projectPrice).toLocaleString()} estimate</dd></div>
+        <div><dt><Home size={14} /> {text.homeProfile}</dt><dd>{preview.profile}</dd></div>
+        <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}</dd></div>
+        <div><dt><Zap size={14} /> {text.electricLoads}</dt><dd>{preview.services}</dd></div>
+        <div><dt><BatteryCharging size={14} /> {text.storageScenario}</dt><dd>{preview.battery}</dd></div>
+        <div><dt><TrendingUp size={14} /> {text.planningCostUsed}</dt><dd>£{Math.round(preview.projectPrice).toLocaleString()} {text.estimateLabel}</dd></div>
       </dl>
       <div className="energy-preview-connectors">
-        <p className="mini-label">These answers connect to</p>
-        {["Direct solar coverage", "Bill saving", "Export income", "Solar vs battery", "25-year cash flow", "Result explanation"].map((item) => <span key={item}><Check size={12} /> {item}</span>)}
+        <p className="mini-label">{text.connectsTo}</p>
+        {text.connectors.map((item) => <span key={item}><Check size={12} /> {item}</span>)}
       </div>
     </aside>
   );
 }
 
-function HomeEnergyPanel({ settings, disabled, onChange, onPrepare }: {
+function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language }: {
   settings: HomeEnergySettings;
   disabled: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
   onPrepare: () => void;
+  language: StudioLanguage;
 }) {
   const [open, setOpen] = useState(true);
+  const text = outerCopy(language);
   const setNumber = (field: "annualDemandKwh" | "householdSize" | "batteryCapacityKwh" | "projectPriceGbp" | "batteryPriceGbp", value: string) => {
     const numeric = value === "" ? null : Number(value);
     onChange({ [field]: numeric === null || Number.isNaN(numeric) ? null : numeric } as Partial<HomeEnergySettings>);
@@ -688,83 +1009,85 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare }: {
     <aside className={`home-energy-panel ${open ? "is-open" : ""}`} aria-label="Household energy choices">
       <label className="home-energy-toggle">
         <input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} />
-        <span><Lightbulb size={16} /><i>Planning inputs</i><b>Home energy & cash position</b></span>
+        <span><Lightbulb size={16} /><i>{text.planningInputs}</i><b>{text.energyCashTitle}</b></span>
         <ChevronDown size={16} />
       </label>
       {open && <div className="home-energy-form">
-        <p className="energy-intro">Complete these after configuring the customer Studio. They shape household demand, storage comparison and the 25-year planning view—not the retained building or product library.</p>
+        <p className="energy-intro">{text.energyFormIntro}</p>
         <section className="energy-field-group">
-          <div className="energy-field-heading"><span>Electricity use</span><small>Choose a source</small></div>
+          <div className="energy-field-heading"><span>{text.electricityUse}</span><small>{text.chooseSource}</small></div>
           <div className="energy-choice-grid">
-            <button type="button" className={settings.demandMode === "bill" ? "is-selected" : ""} onClick={() => onChange({ demandMode: "bill" })}><b>Use my energy bill</b><small>Enter annual kWh</small></button>
-            <button type="button" className={settings.demandMode === "estimate" ? "is-selected" : ""} onClick={() => onChange({ demandMode: "estimate", annualDemandKwh: null })}><b>I’m not sure</b><small>Use a cautious AI estimate</small></button>
+            <button type="button" className={settings.demandMode === "bill" ? "is-selected" : ""} onClick={() => onChange({ demandMode: "bill" })}><b>{text.useBill}</b><small>{text.enterAnnual}</small></button>
+            <button type="button" className={settings.demandMode === "estimate" ? "is-selected" : ""} onClick={() => onChange({ demandMode: "estimate", annualDemandKwh: null })}><b>{text.notSure}</b><small>{text.aiEstimate}</small></button>
           </div>
-          {settings.demandMode === "bill" && <label className="energy-number"><span>Annual electricity use</span><input type="number" inputMode="numeric" min="500" max="100000" value={settings.annualDemandKwh ?? ""} onChange={(event) => setNumber("annualDemandKwh", event.target.value)} placeholder="e.g. 4,200" /><em>kWh/year</em></label>}
+          {settings.demandMode === "bill" && <label className="energy-number"><span>{text.annualUse}</span><input type="number" inputMode="numeric" min="500" max="100000" value={settings.annualDemandKwh ?? ""} onChange={(event) => setNumber("annualDemandKwh", event.target.value)} placeholder="e.g. 4,200" /><em>kWh/year</em></label>}
         </section>
         <section className="energy-field-group energy-household">
-          <div className="energy-field-heading"><span>Household rhythm</span><small>For an estimated demand only</small></div>
-          <label className="energy-number"><Users size={15} /><span>People living here</span><input type="number" min="1" max="12" value={settings.householdSize} onChange={(event) => onChange({ householdSize: Math.max(1, Math.min(12, Number(event.target.value) || 1)) })} /></label>
-          <div className="occupancy-choice" role="group" aria-label="Daytime occupancy"><span>Is someone usually home during the day?</span>{(["usually", "sometimes", "rarely"] as const).map((option) => <button key={option} type="button" className={settings.daytimeOccupancy === option ? "is-selected" : ""} onClick={() => onChange({ daytimeOccupancy: option })}>{option}</button>)}</div>
+          <div className="energy-field-heading"><span>{text.householdRhythm}</span><small>{text.estimatedDemandOnly}</small></div>
+          <label className="energy-number"><Users size={15} /><span>{text.peopleLiving}</span><input type="number" min="1" max="12" value={settings.householdSize} onChange={(event) => onChange({ householdSize: Math.max(1, Math.min(12, Number(event.target.value) || 1)) })} /></label>
+          <div className="occupancy-choice" role="group" aria-label="Daytime occupancy"><span>{text.dayQuestion}</span>{(["usually", "sometimes", "rarely"] as const).map((option) => <button key={option} type="button" className={settings.daytimeOccupancy === option ? "is-selected" : ""} onClick={() => onChange({ daytimeOccupancy: option })}>{text.occupancy[option]}</button>)}</div>
         </section>
         <section className="energy-field-group">
-          <div className="energy-field-heading"><span>What is electric at home?</span><small>Select any that apply</small></div>
+          <div className="energy-field-heading"><span>{text.electricHome}</span><small>{text.selectAny}</small></div>
           <div className="energy-service-list">
             {([
-              ["electricHeating", "Electric heating"],
-              ["heatPump", "Heat pump"],
-              ["electricHotWater", "Electric hot water"],
-              ["evCharger", "EV charging"],
+              ["electricHeating", text.services.electricHeating],
+              ["heatPump", text.services.heatPump],
+              ["electricHotWater", text.services.electricHotWater],
+              ["evCharger", text.services.evCharger],
             ] as const).map(([field, label]) => <label key={field}><input type="checkbox" checked={settings[field]} onChange={(event) => onChange({ [field]: event.target.checked })} /><span>{label}</span><Check size={13} /></label>)}
           </div>
         </section>
         <section className="energy-field-group">
-          <div className="energy-field-heading"><span>Home energy option</span><small>Compare storage after generation</small></div>
+          <div className="energy-field-heading"><span>{text.homeEnergyOption}</span><small>{text.compareStorage}</small></div>
           <div className="energy-choice-grid energy-choice-grid--two">
-            <button type="button" className={settings.batteryMode === "solar-only" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-only" })}><b>Solar only</b><small>Export surplus energy</small></button>
-            <button type="button" className={settings.batteryMode === "solar-battery" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-battery" })}><BatteryCharging size={15} /><b>Add a battery</b><small>Increase on-site use</small></button>
+            <button type="button" className={settings.batteryMode === "solar-only" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-only" })}><b>{text.solarOnly}</b><small>{text.exportSurplus}</small></button>
+            <button type="button" className={settings.batteryMode === "solar-battery" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-battery" })}><BatteryCharging size={15} /><b>{text.addBattery}</b><small>{text.increaseOnSite}</small></button>
           </div>
-          {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>Usable battery</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>Battery price</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder="Optional" /><em>GBP</em></label></div>}
+          {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>{text.usableBattery}</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label></div>}
         </section>
-        <details className="cash-position-options"><summary>Optional cash-position inputs</summary><label className="energy-number"><span>Installed solar price</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder="Optional" /><em>GBP</em></label><small>A price enables an indicative 25-year cash-position line. It is not a quotation.</small></details>
-        <button type="button" className="energy-prepare-study" onClick={onPrepare} disabled={disabled}><Sparkles size={15} /> {disabled ? "Waiting for Design Studio" : "Calculate project results"}<ArrowRight size={15} /></button>
+        <details className="cash-position-options"><summary>{text.cashInputs}</summary><label className="energy-number"><span>{text.installedSolarPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label><small>{text.quoteNote}</small></details>
+        <button type="button" className="energy-prepare-study" onClick={onPrepare} disabled={disabled}><Sparkles size={15} /> {disabled ? text.waitingStudio : text.calculateResults}<ArrowRight size={15} /></button>
       </div>}
     </aside>
   );
 }
 
-function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate }: {
+function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, language }: {
   settings: HomeEnergySettings;
   canCalculate: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
   onPrepare: () => void;
   onNavigate: (route: GatewayRoute) => void;
+  language: StudioLanguage;
 }) {
+  const text = outerCopy(language);
   return (
     <section className="energy-page gateway-page">
       <div className="energy-page-intro">
         <div className="energy-chapter-mark" aria-hidden="true"><span>05</span><i /></div>
         <div>
-          <button className="back-link" type="button" onClick={() => onNavigate("studio")}><ArrowLeft size={15} /> Back to Design Studio</button>
-          <p className="eyebrow"><Lightbulb size={14} /> Household energy</p>
-          <h1>Personalise the value of your solar design.</h1>
-          <p>The Design Studio defines the building and solar surfaces. These inputs connect household demand, tariff assumptions, storage preference, and a 25-year planning view before the study is calculated.</p>
+          <button className="back-link" type="button" onClick={() => onNavigate("studio")}><ArrowLeft size={15} /> {text.energyBack}</button>
+          <p className="eyebrow"><Lightbulb size={14} /> {text.energyEyebrow}</p>
+          <h1>{text.energyTitle}</h1>
+          <p>{text.energyIntro}</p>
         </div>
       </div>
       <div className="energy-page-workbench">
         <aside className="configured-building-card">
-          <div className="configured-building-card__title"><span><Home size={19} /></span><div><p className="mini-label">Your configured building</p><button type="button" onClick={() => onNavigate("studio")}>View in Design Studio <ArrowRight size={14} /></button></div></div>
+          <div className="configured-building-card__title"><span><Home size={19} /></span><div><p className="mini-label">{text.configuredBuilding}</p><button type="button" onClick={() => onNavigate("studio")}>{text.viewInStudio} <ArrowRight size={14} /></button></div></div>
           <img src={BUILDING_PREVIEW_URL} alt="Configured detached house model preview" />
           <div className="configured-building-facts">
-            <span><MapPinned size={15} /><b>UK01 · Detached house</b><small>United Kingdom</small></span>
-            <span><Home size={15} /><b>Residential</b><small>House with 4 active surfaces</small></span>
-            <span><BarChart3 size={15} /><b>Active solar surfaces</b><small>4 of 6 surfaces</small></span>
-            <span><Pencil size={15} /><b>Total roof area</b><small>183.6 m²</small></span>
-            <span><FileText size={15} /><b>Building footprint</b><small>91.8 m²</small></span>
+            <span><MapPinned size={15} /><b>{text.detachedHouse}</b><small>{language === "zh" || language === "zh-Hant" ? "英国" : "United Kingdom"}</small></span>
+            <span><Home size={15} /><b>{text.residential}</b><small>{text.houseSurfaces}</small></span>
+            <span><BarChart3 size={15} /><b>{text.activeSolarSurfaces}</b><small>{text.fourOfSix}</small></span>
+            <span><Pencil size={15} /><b>{text.totalRoofArea}</b><small>183.6 m²</small></span>
+            <span><FileText size={15} /><b>{text.buildingFootprint}</b><small>91.8 m²</small></span>
           </div>
-          <div className="energy-note-card"><Lightbulb size={24} /><p><b>Your energy inputs help us calculate savings, self-consumption and payback.</b><small>We combine your building design with household energy use to model real-world performance over 25 years.</small></p></div>
+          <div className="energy-note-card"><Lightbulb size={24} /><p><b>{text.energyNoteTitle}</b><small>{text.energyNoteBody}</small></p></div>
         </aside>
-        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} />
-        <EnergyPlanningPreview settings={settings} />
+        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} />
+        <EnergyPlanningPreview settings={settings} language={language} />
       </div>
     </section>
   );
@@ -795,6 +1118,7 @@ function StudioPage({
   const studioRegion = STUDIO_REGION_BY_MARKET[market.key];
   const workflow = WORKFLOW_LABELS[language];
   const bridgeCopy = STUDIO_BRIDGE_COPY[language];
+  const text = outerCopy(language);
   const studioLocationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
   const studioJourney = [
     { id: "project", label: workflow.project, complete: true },
@@ -879,20 +1203,21 @@ function StudioPage({
     }
     if (studioTabs[3]) {
       const name = studioTabs[3].querySelector<HTMLElement>(".tab-name");
-      if (name) name.textContent = "Environment";
-      studioTabs[3].setAttribute("aria-label", "Environment controls");
+      if (name) name.textContent = text.environmentTab;
+      studioTabs[3].setAttribute("aria-label", text.environmentControls);
     }
     root.dataset.hostWorkflow = "results-finalised";
 
     if (context.location) {
       const { label, coordinates } = context.location;
-      const key = `${coordinates.lat.toFixed(6)}:${coordinates.lng.toFixed(6)}:${label}`;
+      const addressLabel = cleanAddressLabel(label, language);
+      const key = `${coordinates.lat.toFixed(6)}:${coordinates.lng.toFixed(6)}:${language}:${addressLabel}`;
       if (root.dataset.hostLocation !== key) {
         const year = new Date().getUTCFullYear() - 1;
         const timezone = studioWindow.ModerniteLocationCore?.timezone?.(coordinates.lat, coordinates.lng, year);
         const query = studioDocument.querySelector<HTMLInputElement>("#mb-query");
         if (query) {
-          query.value = label;
+          query.value = addressLabel;
           query.dispatchEvent(new Event("change", { bubbles: true }));
         }
         studioWindow.ModerniteEnergyApp?.setSite?.({
@@ -900,7 +1225,7 @@ function StudioPage({
           lon: coordinates.lng,
           tz: timezone?.tz ?? 0,
           zone: timezone?.zone ?? "",
-          address: label,
+          address: addressLabel,
           level: "address",
           year,
         });
@@ -921,7 +1246,7 @@ function StudioPage({
         }
       }
     }
-  }, [context.location, context.siteArea, language, studioRegion]);
+  }, [context.location, context.siteArea, language, studioRegion, text.environmentControls, text.environmentTab]);
 
   useEffect(() => {
     if (frameReady) applyStudioContext();
@@ -932,7 +1257,7 @@ function StudioPage({
     const supportedSurfaces = mapStudioSnapshotToSurfaces(snapshot);
     setConfiguredSurfaceCount(supportedSurfaces.length);
     if (supportedSurfaces.length === 0) {
-      setConfigurationNotice("Add at least one solar product in the supplied Products step before continuing to household energy.");
+      setConfigurationNotice(text.addProductBeforeEnergy);
       return;
     }
     setConfigurationNotice(null);
@@ -944,13 +1269,13 @@ function StudioPage({
     const supportedSurfaces = mapStudioSnapshotToSurfaces(snapshot);
     setConfiguredSurfaceCount(supportedSurfaces.length);
     if (supportedSurfaces.length === 0) {
-      setConfigurationNotice("Add at least one solar product in the supplied Products step before calculating the project study.");
+      setConfigurationNotice(text.addProductBeforeStudy);
       onNavigate("studio");
       return;
     }
     setConfigurationNotice(null);
     onRunCalculation(snapshot);
-  }, [getWorkflowSnapshot, onNavigate, onRunCalculation]);
+  }, [getWorkflowSnapshot, onNavigate, onRunCalculation, text.addProductBeforeStudy]);
 
   useEffect(() => {
     if (!frameReady) return;
@@ -991,7 +1316,7 @@ function StudioPage({
           <span className="brand-mark"><Leaf size={16} strokeWidth={2.2} /></span>
           <span><strong>MODERNITÉ</strong><small>BUILDING INTEGRATED SOLAR</small></span>
         </button>
-        <div className="studio-bridge-journey" aria-label="Project progress: Design Studio">
+        <div className="studio-bridge-journey" aria-label={text.studioProgressLabel}>
           {studioJourney.map((step, index) => <div className="studio-bridge-journey__segment" key={step.id}>
             <span className={`${step.complete ? "is-complete" : ""} ${step.id === "studio" ? "is-current" : ""}`}>
               <i>{step.complete ? <Check size={10} /> : `0${index + 1}`}</i>
@@ -1005,13 +1330,13 @@ function StudioPage({
           <span className="studio-bridge-context__site"><MapPinned size={13} /> <i>{bridgeCopy.siteContext}</i> {market.shortName}{studioLocationLabel ? ` · ${studioLocationLabel}` : ""}</span>
           <label className="studio-language-control">
             <Globe2 size={13} aria-hidden="true" />
-            <span className="sr-only">Project workspace</span>
-            <select value={language} onChange={(event) => onLanguageChange(event.target.value as StudioLanguage)} aria-label="Studio language">
+            <span className="sr-only">{text.workspace}</span>
+            <select value={language} onChange={(event) => onLanguageChange(event.target.value as StudioLanguage)} aria-label={text.studioAriaLanguage}>
               {STUDIO_LANGUAGES.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}
             </select>
             <ChevronDown size={12} aria-hidden="true" />
           </label>
-          <span className="gateway-status"><i /> Project workspace</span>
+          <span className="gateway-status"><i /> {text.workspace}</span>
           <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
           <button type="button" className="studio-calculate" onClick={continueToEnergy}><ArrowRight size={14} /> {bridgeCopy.prepareStudy}</button>
         </div>
@@ -1019,15 +1344,15 @@ function StudioPage({
       <section className="studio-host-intro">
         <div className="studio-host-chapter" aria-hidden="true"><span>04</span><i /></div>
         <div>
-          <p className="eyebrow">Design Studio</p>
-          <h1>Configure your building and solar design.</h1>
-          <p>Use the Modernité Solar Studio to model your building, select products and finishes, and define the solar-ready configuration.</p>
+          <p className="eyebrow">{text.studioStepEyebrow}</p>
+          <h1>{text.studioTitle}</h1>
+          <p>{text.studioIntro}</p>
         </div>
       </section>
       <section className="studio-host-context">
-        <span><MapPinned size={22} /><small>Current site</small><b>{context.location?.label ?? "30 St James's Street, London SW1A 1HF, United Kingdom"}</b></span>
-        <span><Globe2 size={22} /><small>Market</small><b>{market.name}</b></span>
-        <span><Home size={22} /><small>Studio progress</small><b>{configuredSurfaceCount || 4} active solar surfaces configured</b><i /></span>
+        <span><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b></span>
+        <span><Globe2 size={22} /><small>{text.market}</small><b>{market.name}</b></span>
+        <span><Home size={22} /><small>{text.studioProgress}</small><b>{text.activeSurfacesConfigured(configuredSurfaceCount || 4)}</b><i /></span>
         <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
         <button type="button" className="studio-calculate" onClick={continueToEnergy}>{bridgeCopy.prepareStudy} <ArrowRight size={14} /></button>
       </section>
@@ -1046,30 +1371,28 @@ function StudioPage({
         />
       </div>
       <div className="studio-aftercare" aria-label="Next project step">
-        <div className="studio-aftercare-copy"><p className="mini-label">Configuration complete</p><h2>Next, personalise household energy.</h2><p>Use the supplied Building, Products and Finishes controls to configure the project. Lighting remains available as an environment control inside the Studio; file export now belongs to the final Results stage.</p></div>
-        <button type="button" className="studio-aftercare-action" onClick={continueToEnergy}><span><small>Step 05</small><b>Tell us about home energy</b></span><ArrowRight size={17} /></button>
+        <div className="studio-aftercare-copy"><p className="mini-label">{text.configurationComplete}</p><h2>{text.nextEnergyTitle}</h2><p>{text.nextEnergyBody}</p></div>
+        <button type="button" className="studio-aftercare-action" onClick={continueToEnergy}><span><small>{text.step05}</small><b>{text.homeEnergyCta}</b></span><ArrowRight size={17} /></button>
       </div>
-      {studyReady && configuredSurfaceCount === 0 && <div className="studio-configuration-notice" role="status"><CircleHelp size={15} /><span><b>Configuration required</b><small>Add a supported solar product in Products; the project calculation will then become available.</small></span></div>}
-      {configurationNotice && <div className="studio-configuration-notice is-alert" role="alert"><CircleHelp size={15} /><span><b>Calculation not started</b><small>{configurationNotice}</small></span></div>}
+      {studyReady && configuredSurfaceCount === 0 && <div className="studio-configuration-notice" role="status"><CircleHelp size={15} /><span><b>{text.configurationRequired}</b><small>{text.configurationRequiredBody}</small></span></div>}
+      {configurationNotice && <div className="studio-configuration-notice is-alert" role="alert"><CircleHelp size={15} /><span><b>{text.calculationNotStarted}</b><small>{configurationNotice}</small></span></div>}
     </main>
   );
 }
 
-function CalculationLoadingPage({ error, onBack }: { error: string | null; onBack: () => void }) {
+function CalculationLoadingPage({ error, onBack, language }: { error: string | null; onBack: () => void; language: StudioLanguage }) {
+  const text = outerCopy(language);
   return (
     <section className="calculation-page" aria-live="polite">
       <div className="calculation-card">
         <div className="calculation-orbit" aria-hidden="true"><Orbit size={34} /></div>
-        <p className="eyebrow"><Database size={14} /> Calculating project study</p>
-        <h1>{error ? "The study needs another look." : "Preparing your personalised project outlook."}</h1>
-        <p>{error || "Applying your configured surfaces, household use, tariff assumptions, storage preference, and local climate profile."}</p>
+        <p className="eyebrow"><Database size={14} /> {text.calculationEyebrow}</p>
+        <h1>{error ? text.calculationErrorTitle : text.calculationTitle}</h1>
+        <p>{error || text.calculationBody}</p>
         {!error && <div className="calculation-stages" aria-label="Calculation stages">
-          <span className="is-active"><i /> Surface model</span>
-          <span><i /> Home demand</span>
-          <span><i /> Generation range</span>
-          <span><i /> Scenario value</span>
+          {text.calculationStages.map((stage, index) => <span key={stage} className={index === 0 ? "is-active" : ""}><i /> {stage}</span>)}
         </div>}
-        {error && <button type="button" className="button-primary" onClick={onBack}>Return to Design Studio <ArrowLeft size={16} /></button>}
+        {error && <button type="button" className="button-primary" onClick={onBack}>{text.returnStudio} <ArrowLeft size={16} /></button>}
       </div>
     </section>
   );
@@ -1314,14 +1637,15 @@ function GenerationRangeCard({ study, scenario }: { study: ProjectCalculation; s
   </section>;
 }
 
-function ResultsPage({ study, preferredBatteryMode, onNavigate }: { study: ProjectCalculation; preferredBatteryMode: HomeEnergySettings["batteryMode"]; onNavigate: (route: GatewayRoute) => void }) {
+function ResultsPage({ study, preferredBatteryMode, onNavigate, language }: { study: ProjectCalculation; preferredBatteryMode: HomeEnergySettings["batteryMode"]; onNavigate: (route: GatewayRoute) => void; language: StudioLanguage }) {
+  const text = outerCopy(language);
   const recommended = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh)[0];
   const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
   const demandLabel = study.energy.source === "bill" ? "Your energy bill" : study.energy.source === "ai-estimate" ? "AI household estimate" : "Cautious household estimate";
   return (
     <section className="results-page gateway-page">
-      <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> Update home energy</button><p className="eyebrow"><Sparkles size={14} /> Project study · approved empirical model</p><h1>From configured surfaces to a complete project outlook.</h1><p>Generation uses the approved product-specific empirical coefficients and a local regional climate profile. Household answers shape the value case, savings, export income, and storage comparison without changing the deterministic generation output.</p></div><div className="result-case"><span>Study reference</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
+      <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> {text.resultsBack}</button><p className="eyebrow"><Sparkles size={14} /> {text.resultsEyebrow}</p><h1>{text.resultsTitle}</h1><p>{text.resultsIntro}</p></div><div className="result-case"><span>{text.studyReference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
       <div className="results-layout"><main className="results-report">
         <GenerationRangeCard study={study} scenario={scenario} />
         <div className="result-main-grid">
@@ -1517,10 +1841,11 @@ export default function App() {
             window.dispatchEvent(new Event("modernite:study-request"));
           }}
           onNavigate={navigate}
+          language={studioLanguage}
         />}
-        {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} />}
-        {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} />}
-        {route === "results" && !study && <CalculationLoadingPage error="No active project study is available. Return to Design Studio and prepare a new study." onBack={() => navigate("studio")} />}
+        {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} language={studioLanguage} />}
+        {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} />}
+        {route === "results" && !study && <CalculationLoadingPage error="No active project study is available. Return to Design Studio and prepare a new study." onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
       {(["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route) && <PersistentStudyAssistant route={route} study={study} />}

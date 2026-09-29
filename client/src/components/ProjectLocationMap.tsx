@@ -56,7 +56,14 @@ type MapText = {
   points: string;
   openData: string;
   editHint: string;
+  streetView: string;
   googleLater: string;
+  mapLayers: string;
+  zoomControls: string;
+  centerSelected: string;
+  movePoint: (index: number) => string;
+  draftPoint: (index: number) => string;
+  closeOutlineAtFirst: string;
   zoomIn: string;
   zoomOut: string;
   detailView: string;
@@ -87,7 +94,14 @@ const EN_TEXT: MapText = {
   points: "points",
   openData: "Aerial map with OpenStreetMap search",
   editHint: "Drag any numbered point to refine the boundary",
+  streetView: "Google Street View",
   googleLater: "Google Street View can be connected later with the Google Maps API.",
+  mapLayers: "Map layers",
+  zoomControls: "Map zoom",
+  centerSelected: "Center on selected site",
+  movePoint: (index) => `Move point ${index}`,
+  draftPoint: (index) => `Draft point ${index}`,
+  closeOutlineAtFirst: "Close outline at point 1",
   zoomIn: "Zoom in",
   zoomOut: "Zoom out",
   detailView: "Close-up view",
@@ -118,7 +132,14 @@ const ZH_TEXT: MapText = {
   points: "个顶点",
   openData: "航拍地图与 OpenStreetMap 搜索",
   editHint: "拖动任意编号顶点即可微调边界",
+  streetView: "Google 街景",
   googleLater: "Google Street View 可在后续接入 Google Maps API 后启用。",
+  mapLayers: "地图图层",
+  zoomControls: "地图缩放",
+  centerSelected: "回到已选场地",
+  movePoint: (index) => `移动第 ${index} 个点`,
+  draftPoint: (index) => `草稿第 ${index} 个点`,
+  closeOutlineAtFirst: "点击第 1 点闭合边界",
   zoomIn: "放大",
   zoomOut: "缩小",
   detailView: "拉近查看",
@@ -133,6 +154,7 @@ const MAP_TEXT: Record<GatewayLanguage, MapText> = {
   es: EN_TEXT,
   it: EN_TEXT,
 };
+const READY_STATUS_TEXTS = Object.values(MAP_TEXT).map((item) => item.ready);
 
 const TILE_SIZE = 256;
 const EARTH_RADIUS = 6_371_000;
@@ -159,8 +181,18 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function areaLabel(areaM2: number) {
-  return `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(areaM2)} m²`;
+function localeForLanguage(language: GatewayLanguage) {
+  if (language === "zh") return "zh-CN";
+  if (language === "zh-Hant") return "zh-TW";
+  if (language === "ja") return "ja-JP";
+  if (language === "fr") return "fr-FR";
+  if (language === "es") return "es-ES";
+  if (language === "it") return "it-IT";
+  return "en-GB";
+}
+
+function areaLabel(areaM2: number, language: GatewayLanguage) {
+  return `${new Intl.NumberFormat(localeForLanguage(language), { maximumFractionDigits: 1 }).format(areaM2)} m²`;
 }
 
 function nominatimLanguage(language: GatewayLanguage) {
@@ -169,17 +201,52 @@ function nominatimLanguage(language: GatewayLanguage) {
   return language;
 }
 
+function hasCjk(value: string) {
+  return /[\u3400-\u9fff]/.test(value);
+}
+
+function isCjkLanguage(language: GatewayLanguage) {
+  return language === "zh" || language === "zh-Hant" || language === "ja";
+}
+
+function normaliseAddressPart(part: string) {
+  return part.replace(/\s+/g, " ").trim();
+}
+
 function stripLocalisedAliases(value: string) {
   return value
     .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part && !/[\u3400-\u9fff]/.test(part))
-    .map((part) => part.split(";").map((item) => item.trim()).find((item) => item && !/[\u3400-\u9fff]/.test(item)) ?? "")
+    .map(normaliseAddressPart)
+    .filter((part) => part && !hasCjk(part))
+    .map((part) => part.split(";").map(normaliseAddressPart).find((item) => item && !hasCjk(item)) ?? "")
     .filter(Boolean)
     .join(", ");
 }
 
+function stripToLocalisedAddress(value: string) {
+  const seen = new Set<string>();
+  const postcodePattern = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+  const parts = value
+    .split(",")
+    .map((part) => {
+      const aliases = part.split(";").map(normaliseAddressPart).filter(Boolean);
+      const local = aliases.find(hasCjk);
+      if (local) return local;
+      const first = aliases[0] ?? "";
+      return postcodePattern.test(first) ? first.toUpperCase() : "";
+    })
+    .filter(Boolean)
+    .filter((part) => {
+      const key = part.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  return parts.join("，");
+}
+
 export function cleanAddressLabel(value: string, language: GatewayLanguage) {
+  if (isCjkLanguage(language)) return stripToLocalisedAddress(value) || stripLocalisedAliases(value) || value;
   if (language === "en") return stripLocalisedAliases(value) || value;
   return value;
 }
@@ -202,7 +269,7 @@ type NominatimAddress = {
 };
 
 function formatNominatimAddress(result: { display_name?: string; address?: NominatimAddress }, language: GatewayLanguage, fallback: string) {
-  if (language === "en" && result.address) {
+  if (result.address) {
     const address = result.address;
     const parts = [
       address.postcode,
@@ -217,14 +284,17 @@ function formatNominatimAddress(result: { display_name?: string; address?: Nomin
     const seen = new Set<string>();
     const label = parts
       .map((part) => part?.trim())
-      .filter((part): part is string => Boolean(part && !/[\u3400-\u9fff]/.test(part)))
+      .filter((part): part is string => {
+        if (!part) return false;
+        return isCjkLanguage(language) ? (hasCjk(part) || /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(part)) : !hasCjk(part);
+      })
       .filter((part) => {
         const key = part.toLowerCase();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })
-      .join(", ");
+      .join(isCjkLanguage(language) ? "，" : ", ");
     if (label) return label;
   }
   return cleanAddressLabel(result.display_name ?? fallback, language);
@@ -357,10 +427,15 @@ export function ProjectLocationMap({
   useEffect(() => {
     setCenter(initialLocation?.coordinates ?? market.coordinates);
     setZoom(clamp(Math.max(market.zoom, initialLocation ? 18 : 16), MIN_ZOOM, MAX_ZOOM));
-    setMarker(initialLocation ?? null);
+    setMarker(initialLocation ? { ...initialLocation, label: cleanAddressLabel(initialLocation.label, language) } : null);
     setQuery("");
     setStatus(text.ready);
-  }, [initialLocation, market, text.ready]);
+  }, [initialLocation, market]);
+
+  useEffect(() => {
+    setMarker((current) => current ? { ...current, label: cleanAddressLabel(current.label, language) } : current);
+    setStatus((current) => READY_STATUS_TEXTS.includes(current) ? text.ready : current);
+  }, [language, text.ready]);
 
   useEffect(() => {
     if (isUsablePath(initialArea?.path)) {
@@ -430,8 +505,8 @@ export function ProjectLocationMap({
     emittedAreaKeyRef.current = pathKey(path);
     setArea(selection);
     onAreaChange(selection);
-    setStatus(text.outlined(areaLabel(selection.areaM2), path.length));
-  }, [onAreaChange, text]);
+    setStatus(text.outlined(areaLabel(selection.areaM2, language), path.length));
+  }, [language, onAreaChange, text]);
 
   const finishDrawing = useCallback(() => {
     if (draftPath.length < 3) {
@@ -447,13 +522,14 @@ export function ProjectLocationMap({
 
   const selectLocation = useCallback((coordinates: LatLng, label?: string) => {
     const fallback = `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`;
-    const selection = { coordinates, label: label || fallback };
+    const displayLabel = label ? cleanAddressLabel(label, language) : fallback;
+    const selection = { coordinates, label: displayLabel };
     setMarker(selection);
     setCenter(coordinates);
     setZoom((current) => Math.max(current, 18));
-    setStatus(label || text.selected);
+    setStatus(displayLabel || text.selected);
     onLocationChange(selection);
-  }, [onLocationChange, text.selected]);
+  }, [language, onLocationChange, text.selected]);
 
   const locate = useCallback(async (address: string) => {
     const trimmed = address.trim();
@@ -594,7 +670,7 @@ export function ProjectLocationMap({
       if (key !== emittedAreaKeyRef.current) {
         emittedAreaKeyRef.current = key;
         onAreaChange(area);
-        setStatus(text.outlined(areaLabel(area.areaM2), area.path.length));
+        setStatus(text.outlined(areaLabel(area.areaM2, language), area.path.length));
       }
     }
     if (!drawingActive && drag?.type === "pan" && !drag.moved) {
@@ -692,7 +768,7 @@ export function ProjectLocationMap({
                 className="osm-html-vertex osm-html-vertex--area"
                 style={{ left: point.x, top: point.y }}
                 onPointerDown={(event) => beginVertexDrag(event, index)}
-                aria-label={`Move point ${index + 1}`}
+                aria-label={text.movePoint(index + 1)}
               >
                 {index + 1}
               </button>
@@ -704,19 +780,19 @@ export function ProjectLocationMap({
                 className={`osm-html-vertex osm-html-vertex--draft ${index === 0 ? "is-first" : ""} ${index === 0 && closeReady ? "is-close-ready" : ""}`}
                 style={{ left: point.x, top: point.y }}
                 onPointerDown={index === 0 ? closeFromFirstDraftPoint : undefined}
-                aria-label={index === 0 && draftPath.length >= 3 ? "Close outline at point 1" : `Draft point ${index + 1}`}
+                aria-label={index === 0 && draftPath.length >= 3 ? text.closeOutlineAtFirst : text.draftPoint(index + 1)}
               >
                 {index + 1}
               </button>
             ))}
           </div>
         )}
-        {marker && <div className="osm-site-marker" style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}><MapPin size={24} /></div>}
-        <div className="osm-control-stack" aria-label="Map zoom">
+        {marker && <div className="osm-site-marker" style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}><MapPin size={24} /><span>{cleanAddressLabel(marker.label, language)}</span></div>}
+        <div className="osm-control-stack" aria-label={text.zoomControls}>
           <button type="button" aria-label={text.zoomIn} onClick={() => setZoomAroundCenter(zoom + 1)}>+</button>
           <button type="button" aria-label={text.zoomOut} onClick={() => setZoomAroundCenter(zoom - 1)}>−</button>
           <button type="button" className="osm-detail-button" aria-label={text.detailView} title={text.detailView} onClick={focusDetailView}>1:1</button>
-          <button type="button" aria-label="Center on selected site" onClick={() => setCenter(marker?.coordinates ?? market.coordinates)}><Crosshair size={16} /></button>
+          <button type="button" aria-label={text.centerSelected} onClick={() => setCenter(marker?.coordinates ?? market.coordinates)}><Crosshair size={16} /></button>
         </div>
         <div className="osm-attribution">
           {mapMode === "aerial" ? "Imagery © Esri, Maxar, Earthstar Geographics" : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>}
@@ -729,7 +805,7 @@ export function ProjectLocationMap({
         <button type="button" onClick={() => void locate(query)} disabled={!query.trim()}>{locateLabel}</button>
       </div>
 
-      <div className="site-map-mode-control" aria-label="Map layers">
+      <div className="site-map-mode-control" aria-label={text.mapLayers}>
         <button type="button" className={mapMode === "aerial" ? "is-active" : ""} onClick={() => setMapMode("aerial")}><Navigation size={14} /> {text.aerial}</button>
         <button type="button" className={mapMode === "road" ? "is-active" : ""} onClick={() => setMapMode("road")}><Navigation size={14} /> {text.road}</button>
       </div>
@@ -747,11 +823,11 @@ export function ProjectLocationMap({
           {drawingActive && <div className={`site-trace-progress ${closeReady ? "is-close-ready" : ""}`} aria-live="polite"><span>{draftPath.length}</span><b>{text.points}</b><i>{closeReady ? text.closeCue : text.drawCue}</i></div>}
           <p className="site-map-trace-help">{text.traceHelp}</p>
         </div>
-        <button type="button" className="site-street-view" disabled title={text.googleLater}><EyeOff size={15} /><span><b>Google Street View</b><small>{text.googleLater}</small></span></button>
+        <button type="button" className="site-street-view" disabled title={text.googleLater}><EyeOff size={15} /><span><b>{text.streetView}</b><small>{text.googleLater}</small></span></button>
       </div>
 
       {drawingActive && <div className={`site-draw-cue ${closeReady ? "is-close-ready" : ""}`}><Pencil size={15} /><span>{closeReady ? text.closeCue : text.drawCue}</span></div>}
-      {area && <div className="site-area-readout" aria-live="polite"><span><Ruler size={16} /></span><div><small>{text.outlinedArea}</small><strong>{areaLabel(area.areaM2)}</strong></div><em>{area.path.length} {text.points}</em><p>{text.editHint}</p></div>}
+      {area && <div className="site-area-readout" aria-live="polite"><span><Ruler size={16} /></span><div><small>{text.outlinedArea}</small><strong>{areaLabel(area.areaM2, language)}</strong></div><em>{area.path.length} {text.points}</em><p>{text.editHint}</p></div>}
       <div className="site-map-status"><span><MapPin size={14} aria-hidden="true" /> {status}</span><span><Crosshair size={14} aria-hidden="true" /> {text.openData}</span></div>
     </section>
   );
