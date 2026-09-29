@@ -4467,3 +4467,94 @@ body {
       linear-gradient(90deg, rgba(251,253,249,.98) 0%, rgba(251,253,249,.82) 31%, rgba(251,253,249,.36) 49%, rgba(251,253,249,0) 67%) !important;
   }
 }
+
+/* Entry composition polish: reduce the left/right split and give the headline a calmer, wider rhythm. */
+.gateway-shell--entry .entry-background::after {
+  background:
+    radial-gradient(ellipse 58% 74% at 18% 42%, rgba(251, 253, 249, .9) 0%, rgba(251, 253, 249, .7) 34%, rgba(251, 253, 249, .22) 58%, rgba(251, 253, 249, 0) 78%),
+    linear-gradient(90deg, rgba(251, 253, 249, .58) 0%, rgba(251, 253, 249, .34) 24%, rgba(251, 253, 249, .08) 48%, rgba(251, 253, 249, 0) 68%) !important;
+}
+.gateway-shell--entry .entry-copy {
+  max-width: min(920px, 58vw) !important;
+  padding-left: clamp(58px, 5.9vw, 94px) !important;
+}
+.gateway-shell--entry .entry-copy .eyebrow {
+  letter-spacing: 8px !important;
+}
+.gateway-shell--entry .entry-copy h1 {
+  max-width: 920px !important;
+  margin-top: 24px !important;
+  margin-bottom: 22px !important;
+  font-size: clamp(64px, 4.55vw, 80px) !important;
+  letter-spacing: -3.5px !important;
+  line-height: .98 !important;
+}
+.gateway-shell--entry .entry-copy h1 em {
+  margin-top: 6px !important;
+  font-size: .86em !important;
+  letter-spacing: -2.4px !important;
+}
+.gateway-shell--entry .entry-lede {
+  max-width: 560px !important;
+  font-size: clamp(18px, 1.18vw, 22px) !important;
+}
+.gateway-shell--entry .entry-actions {
+  margin-top: clamp(48px, 6.2vh, 78px) !important;
+}
+
+@media (min-width: 1600px) {
+  .gateway-shell--entry .entry-copy h1 {
+    white-space: nowrap !important;
+  }
+  .gateway-shell--entry .entry-copy h1 br {
+    display: block !important;
+  }
+  .gateway-shell--entry .entry-copy h1 em {
+    white-space: normal !important;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 930px) {
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(60px, 4.35vw, 76px) !important;
+  }
+  .gateway-shell--entry .entry-actions {
+    margin-top: clamp(136px, 18vh, 168px) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .gateway-shell--entry .entry-copy {
+    max-width: 62vw !important;
+  }
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(54px, 5.8vw, 70px) !important;
+    white-space: normal !important;
+  }
+}
+
+.gateway-shell--entry .entry-page {
+  background-color: #fbfdf9 !important;
+}
+
+.gateway-shell--entry .entry-background {
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: 58% bottom !important;
+}
+
+@media (min-width: 1280px) and (min-aspect-ratio: 2/1) {
+  .gateway-shell--entry .entry-background img {
+    width: 100% !important;
+    height: calc(100% + 76px) !important;
+    object-fit: cover !important;
+    object-position: 58% bottom !important;
+    transform: translateY(-76px) !important;
+  }
+
+  .gateway-shell--entry .entry-background::after {
+    background:
+      radial-gradient(ellipse 66% 78% at 18% 43%, rgba(251, 253, 249, .78) 0%, rgba(251, 253, 249, .5) 35%, rgba(251, 253, 249, .16) 59%, rgba(251, 253, 249, 0) 80%),
+      linear-gradient(90deg, rgba(251, 253, 249, .44) 0%, rgba(251, 253, 249, .24) 22%, rgba(251, 253, 249, .05) 45%, rgba(251, 253, 249, 0) 67%) !important;
+  }
+}

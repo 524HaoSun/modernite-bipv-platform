@@ -702,7 +702,11 @@ function EntryPage({ copy, language, onLanguageChange, onStart, onNavigate }: {
 }) {
   return (
     <section className="entry-page gateway-page">
-      <div className="entry-background backgroundAtmosphere" aria-hidden="true">
+      <div
+        className="entry-background backgroundAtmosphere"
+        style={{ backgroundImage: `url(${ENTRY_REFERENCE_URL})` }}
+        aria-hidden="true"
+      >
         <img src={ENTRY_REFERENCE_URL} alt="" />
         <span className="entry-haze entry-haze--left" />
         <span className="entry-haze entry-haze--right" />
