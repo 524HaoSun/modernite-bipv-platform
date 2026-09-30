@@ -1985,10 +1985,11 @@ body {
 }
 
 .market-page .globe-workbench-footer--compact {
-  top: 244px !important;
+  top: 74px !important;
+  right: clamp(24px, 4vw, 88px) !important;
   bottom: auto !important;
-  left: clamp(56px, 5.6vw, 90px) !important;
-  width: min(300px, 24vw) !important;
+  left: auto !important;
+  width: min(360px, 28vw) !important;
 }
 
 .market-page .globe-workbench-footer--compact .button-primary {
@@ -4441,7 +4442,7 @@ body {
 /* Market zoom resilience: keep controls separated when browser zoom reduces the viewport. */
 @media (max-width: 1120px), (max-height: 680px) {
   .market-page {
-    min-height: 720px !important;
+    min-height: 820px !important;
     overflow-y: auto !important;
   }
 
@@ -4480,9 +4481,11 @@ body {
   }
 
   .market-page .globe-workbench-footer--compact {
-    top: 530px !important;
-    left: clamp(56px, 5.6vw, 90px) !important;
-    width: 220px !important;
+    top: 72px !important;
+    right: clamp(16px, 3vw, 36px) !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: min(320px, 42vw) !important;
   }
 
   .market-page .globe-workbench-footer--compact .button-primary {
