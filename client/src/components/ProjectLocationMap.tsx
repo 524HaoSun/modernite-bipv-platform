@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, Eye, EyeOff, MapPin, Navigation, Pencil, Ruler, Search, Undo2 } from "lucide-react";
+import { googleGeocode, googleTileSession, googleTileUrl, googleViewportCopyright } from "@/lib/google-maps";
+import { trpc } from "@/lib/trpc";
 
 export type MarketKey = "GB" | "EU" | "CA" | "JP";
 
@@ -382,7 +384,8 @@ function normaliseTileX(x: number, zoom: number) {
   return ((x % max) + max) % max;
 }
 
-function tileUrl(mode: MapMode, zoom: number, x: number, y: number) {
+function tileUrl(mode: MapMode, zoom: number, x: number, y: number, google?: { key: string; session: string } | null) {
+  if (google) return googleTileUrl(google.key, google.session, zoom, x, y);
   if (mode === "aerial") return `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
   return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
 }
@@ -407,6 +410,12 @@ export function ProjectLocationMap({
   const [center, setCenter] = useState<LatLng>(initialLocation?.coordinates ?? market.coordinates);
   const [zoom, setZoom] = useState(clamp(Math.max(market.zoom, 16), MIN_ZOOM, MAX_ZOOM));
   const [mapMode, setMapMode] = useState<MapMode>("aerial");
+  const mapsConfig = trpc.site.publicConfig.useQuery(undefined, { staleTime: Infinity, retry: 1 });
+  const googleKey = mapsConfig.data?.googleMapsApiKey ?? null;
+  const googleLanguage = nominatimLanguage(language);
+  const googleRegion = (countryRestriction(market) ?? "gb").toUpperCase();
+  const [googleSessions, setGoogleSessions] = useState<Partial<Record<MapMode, string | false>>>({});
+  const [googleCopyright, setGoogleCopyright] = useState("");
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [marker, setMarker] = useState<ProjectLocationSelection | null>(initialLocation ?? null);
   const [area, setArea] = useState<SiteAreaSelection | null>(isUsablePath(initialArea?.path) ? initialArea ?? null : null);
@@ -467,8 +476,45 @@ export function ProjectLocationMap({
     return pointToLatLng({ x: centerPoint.x + localX - size.width / 2, y: centerPoint.y + localY - size.height / 2 }, zoom);
   }, [centerPoint, size.height, size.width, zoom]);
 
+  useEffect(() => {
+    setGoogleSessions({});
+  }, [googleKey, googleLanguage, googleRegion]);
+
+  useEffect(() => {
+    if (!googleKey || googleSessions[mapMode] !== undefined) return;
+    let cancelled = false;
+    googleTileSession(googleKey, mapMode === "aerial" ? "satellite" : "roadmap", googleLanguage, googleRegion)
+      .then(({ session }) => !cancelled && setGoogleSessions((current) => ({ ...current, [mapMode]: session })))
+      .catch(() => !cancelled && setGoogleSessions((current) => ({ ...current, [mapMode]: false })));
+    return () => {
+      cancelled = true;
+    };
+  }, [googleKey, googleLanguage, googleRegion, googleSessions, mapMode]);
+
+  const googleSession = googleSessions[mapMode];
+  const googleTiles = googleKey && googleSession ? { key: googleKey, session: googleSession } : null;
+  const tileSourcePending = mapsConfig.isLoading || (Boolean(googleKey) && googleSession === undefined);
+
+  useEffect(() => {
+    if (!googleTiles || !size.width || !size.height) return;
+    const north = pointToLatLng({ x: centerPoint.x, y: centerPoint.y - size.height / 2 }, zoom).lat;
+    const south = pointToLatLng({ x: centerPoint.x, y: centerPoint.y + size.height / 2 }, zoom).lat;
+    const west = pointToLatLng({ x: centerPoint.x - size.width / 2, y: centerPoint.y }, zoom).lng;
+    const east = pointToLatLng({ x: centerPoint.x + size.width / 2, y: centerPoint.y }, zoom).lng;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      googleViewportCopyright(googleTiles.key, googleTiles.session, zoom, { north, south, east, west })
+        .then((copyright) => !cancelled && setGoogleCopyright(copyright))
+        .catch(() => {});
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [googleTiles?.key, googleTiles?.session, centerPoint.x, centerPoint.y, size.height, size.width, zoom]);
+
   const tiles = useMemo(() => {
-    if (!size.width || !size.height) return [];
+    if (!size.width || !size.height || tileSourcePending) return [];
     const startX = Math.floor((centerPoint.x - size.width / 2) / TILE_SIZE) - 1;
     const endX = Math.floor((centerPoint.x + size.width / 2) / TILE_SIZE) + 1;
     const startY = Math.max(0, Math.floor((centerPoint.y - size.height / 2) / TILE_SIZE) - 1);
@@ -479,14 +525,14 @@ export function ProjectLocationMap({
         const tileX = normaliseTileX(x, zoom);
         output.push({
           key: `${zoom}-${x}-${y}`,
-          url: tileUrl(mapMode, zoom, tileX, y),
+          url: tileUrl(mapMode, zoom, tileX, y, googleTiles),
           left: x * TILE_SIZE - centerPoint.x + size.width / 2,
           top: y * TILE_SIZE - centerPoint.y + size.height / 2,
         });
       }
     }
     return output;
-  }, [centerPoint, mapMode, size.height, size.width, zoom]);
+  }, [centerPoint, mapMode, size.height, size.width, zoom, tileSourcePending, googleTiles?.key, googleTiles?.session]);
 
   const polygonPoints = useMemo(() => (area?.path ?? []).map(projectToScreen).map((point) => `${point.x},${point.y}`).join(" "), [area, projectToScreen]);
   const draftPoints = useMemo(() => {
@@ -543,6 +589,13 @@ export function ProjectLocationMap({
       return;
     }
     setStatus(text.locating);
+    if (googleKey) {
+      const found = await googleGeocode(googleKey, trimmed, nominatimLanguage(language), country).catch(() => null);
+      if (found && Number.isFinite(found.coordinates.lat) && Number.isFinite(found.coordinates.lng)) {
+        selectLocation(found.coordinates, cleanAddressLabel(found.label, language));
+        return;
+      }
+    }
     const requestLanguage = nominatimLanguage(language);
     const params = new URLSearchParams({ format: "jsonv2", addressdetails: "1", limit: "1", q: trimmed, "accept-language": requestLanguage });
     if (country) params.set("countrycodes", country);
@@ -563,7 +616,7 @@ export function ProjectLocationMap({
     } catch {
       setStatus(text.unavailable);
     }
-  }, [language, market, selectLocation, text.locating, text.unavailable]);
+  }, [googleKey, language, market, selectLocation, text.locating, text.unavailable]);
 
   const startDrawing = useCallback(() => {
     setArea(null);
@@ -797,7 +850,7 @@ export function ProjectLocationMap({
           <button type="button" aria-label={text.centerSelected} onClick={() => setCenter(marker?.coordinates ?? market.coordinates)}><Crosshair size={16} /></button>
         </div>
         <div className="osm-attribution">
-          {mapMode === "aerial" ? "Imagery © Esri, Maxar, Earthstar Geographics" : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>}
+          {googleTiles ? <><span className="google-map-logo" aria-label="Google">Google</span> {googleCopyright || "Map data © Google"}</> : mapMode === "aerial" ? "Imagery © Esri, Maxar, Earthstar Geographics" : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>}
         </div>
       </div>
 

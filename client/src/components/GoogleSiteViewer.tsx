@@ -1,28 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, ExternalLink, Footprints, X } from "lucide-react";
+import { loadGoogleMaps } from "@/lib/google-maps";
 import { trpc } from "@/lib/trpc";
 
 type LatLng = { lat: number; lng: number };
 type ViewMode = "street" | "earth";
-
-const CALLBACK = "__moderniteGoogleMapsReady";
-let loader: Promise<void> | null = null;
-
-function loadGoogleMaps(apiKey: string) {
-  if (typeof window.google?.maps?.importLibrary === "function") return Promise.resolve();
-  loader ??= new Promise<void>((resolve, reject) => {
-    (window as unknown as Record<string, () => void>)[CALLBACK] = () => resolve();
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=${CALLBACK}`;
-    script.async = true;
-    script.onerror = () => {
-      loader = null;
-      reject(new Error("Google Maps could not be loaded."));
-    };
-    document.head.append(script);
-  });
-  return loader;
-}
 
 function headingBetween(from: LatLng, to: LatLng) {
   const rad = Math.PI / 180;
