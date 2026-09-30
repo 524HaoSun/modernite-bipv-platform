@@ -26,6 +26,11 @@ export type BuildingFootprint = {
   floorsSource?: "osm-levels" | "osm-height";
   heightM?: number;
   distanceM?: number;
+  /** OSM `building=*` value, e.g. house, detached, semidetached_house, terrace, apartments. */
+  buildingTag?: string;
+  /** Neighbouring outlines sharing a party wall (0 detached, 1 semi / end-terrace, 2+ mid-terrace). */
+  attachedSides?: number;
+  center?: LatLng;
   note: string;
 };
 
@@ -169,6 +174,8 @@ export function footprintFromOverpass(elements: OverpassElement[], site: LatLng,
     front = sides.filter((side) => side.length >= side.other - 1e-6).reduce((best, side) => (-side.normal.y > -best.normal.y ? side : best));
   }
 
+  const attachedSides = buildings.filter((other) => other !== chosen && other.xy.filter((p) => closestOnPath(p, chosen.xy, true).distance <= 0.6).length >= 2).length;
+  const centroid = chosen.ring.reduce((sum, p) => ({ lat: sum.lat + p.lat / chosen.ring.length, lng: sum.lng + p.lng / chosen.ring.length }), { lat: 0, lng: 0 });
   const tags = chosen.element.tags ?? {};
   const levels = Number.parseFloat(tags["building:levels"] ?? "");
   const heightM = parseMetres(tags.height);
@@ -188,6 +195,9 @@ export function footprintFromOverpass(elements: OverpassElement[], site: LatLng,
     floorsSource: Number.isFinite(levels) && levels >= 1 ? "osm-levels" : heightM ? "osm-height" : undefined,
     heightM,
     distanceM: round1(chosen.distance),
+    buildingTag: tags.building,
+    attachedSides,
+    center: centroid,
     note: `OpenStreetMap way ${chosen.element.id}; width and depth from the minimum bounding rectangle${frontSource === "road" ? `, front facing ${roadName ?? "the nearest road"}` : ", front taken as the south-facing long side"}.`,
   };
 }

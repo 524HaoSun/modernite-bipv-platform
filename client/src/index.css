@@ -5051,6 +5051,24 @@ html:lang(ja) .eyebrow {
 .building-match-actions label { display: inline-flex; align-items: center; gap: 6px; color: #3d5a47; font-size: 10.5px; font-weight: 700; cursor: pointer; }
 .building-match-actions label.is-on { color: #1f6a43; }
 .building-match-note { display: flex; align-items: center; gap: 6px; margin: 0; color: #718475; font-size: 10px; line-height: 1.45; }
+.building-profile-facts { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; }
+.building-profile-facts span { padding: 2px 7px; border-radius: 999px; color: #2f5a41; background: #e6f0e3; font-size: 10px; font-weight: 700; }
+.building-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 8px; }
+.building-profile-grid label { position: relative; display: grid; gap: 3px; min-width: 0; }
+.building-profile-grid label.is-wide { grid-column: 1 / -1; }
+.building-profile-grid label > span { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; color: #5b7160; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.building-profile-grid input, .building-profile-grid select { width: 100%; min-width: 0; height: 28px; padding: 0 26px 0 8px; border: 1px solid #cfdccd; border-radius: 7px; color: #22392a; background: #fff; font: inherit; font-size: 11.5px; font-weight: 700; }
+.building-profile-grid select { padding-right: 8px; }
+.building-profile-grid input:focus, .building-profile-grid select:focus { outline: 2px solid rgba(47,90,65,.25); border-color: #6f9a7c; }
+.building-profile-grid input:disabled { color: #9aa99d; background: #f1f4f0; }
+.building-profile-grid label > i { position: absolute; right: 8px; bottom: 7px; max-width: calc(100% - 60px); overflow: hidden; color: #7a8c7e; font-size: 10px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+.building-profile-grid label.is-wide > i { right: 8px; }
+.building-source { flex: none; padding: 1px 5px; border-radius: 4px; font-size: 8.5px; font-style: normal; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+.building-source.is-osm { color: #2c5d8a; background: #e3eef8; }
+.building-source.is-google-solar, .building-source.is-google-elevation { color: #8a5a12; background: #fbf0dc; }
+.building-source.is-estimated { color: #5d5a7a; background: #ecebf5; }
+.building-source.is-catalog { color: #6b7a6e; background: #edf1ec; }
+.building-source.is-user { color: #fff; background: #2f5a41; }
 .spin { animation: modernite-spin 1s linear infinite; }
 @keyframes modernite-spin { to { transform: rotate(360deg); } }
 

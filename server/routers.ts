@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getBuildingFootprint } from "./building-service";
+import { getBuildingProfile } from "./building-profile-service";
 import { getGoogleSolarReference } from "./google-solar-service";
 import { ENV } from "./_core/env";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -36,6 +37,9 @@ export const appRouter = router({
     buildingFootprint: publicProcedure
       .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }))
       .query(({ input }) => getBuildingFootprint(input.lat, input.lng)),
+    buildingProfile: publicProcedure
+      .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180), market: z.enum(["GB", "EU", "CA", "JP"]) }))
+      .query(({ input }) => getBuildingProfile(input.lat, input.lng, input.market)),
     // The Maps key is a browser key restricted to the preview origins and Maps JS / Map Tiles.
     publicConfig: publicProcedure.query(() => ({ googleMapsApiKey: ENV.googleMapsBrowserKey || null })),
   }),

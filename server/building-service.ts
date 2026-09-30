@@ -1,6 +1,7 @@
 import { footprintFromOverpass, type BuildingFootprint, type OverpassElement } from "../lib/building-footprint";
 
-const OVERPASS_ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const OVERPASS_ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const STAGGER_MS = 2500;
 const TIMEOUT_MS = 25_000;
 const TTL_MS = 24 * 60 * 60 * 1000;
 const cache = new Map<string, { value: BuildingFootprint; expiresAt: number }>();
@@ -10,10 +11,13 @@ function query(lat: number, lng: number) {
   return `[out:json][timeout:20];(way(around:50,${lat},${lng})["building"];way(around:120,${lat},${lng})["highway"];);out tags geom;`;
 }
 
+/** Public Overpass mirrors are individually flaky, so they are raced with a short stagger. */
 async function requestOverpass(lat: number, lng: number): Promise<OverpassElement[]> {
-  let lastError: unknown;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    const controller = new AbortController();
+  const controllers = OVERPASS_ENDPOINTS.map(() => new AbortController());
+  const attempts = OVERPASS_ENDPOINTS.map(async (endpoint, index) => {
+    const controller = controllers[index];
+    if (index) await new Promise((resolve) => setTimeout(resolve, index * STAGGER_MS));
+    if (controller.signal.aborted) throw new Error("cancelled");
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const response = await fetch(endpoint, {
@@ -25,13 +29,17 @@ async function requestOverpass(lat: number, lng: number): Promise<OverpassElemen
       if (!response.ok) throw new Error(`Overpass ${response.status}`);
       const payload = (await response.json()) as { elements?: OverpassElement[] };
       return payload.elements ?? [];
-    } catch (error) {
-      lastError = error;
     } finally {
       clearTimeout(timer);
     }
+  });
+  try {
+    return await Promise.any(attempts);
+  } catch {
+    throw new Error("Overpass unavailable");
+  } finally {
+    controllers.forEach((controller) => controller.abort());
   }
-  throw lastError instanceof Error ? lastError : new Error("Overpass unavailable");
 }
 
 export async function getBuildingFootprint(lat: number, lng: number): Promise<BuildingFootprint> {

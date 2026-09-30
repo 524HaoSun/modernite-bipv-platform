@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Applies the host's rendering-quality patch to a customer Solar Studio build.
 // Usage: node scripts/patch-studio-render.mjs <customer-studio.html> [output=client/public/studio.html]
-// Only renderer / camera / post-processing statements and the advisor endpoint check are touched;
+// Only renderer / camera / post-processing statements, the advisor endpoint check and the
+// building-core roof parameters are touched;
 // the energy, system, location and shading scripts stay byte-identical (tests/customer-core-parity.test.ts).
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const MARKER = '<meta name="modernite-render-patch" content="v2">';
+const MARKER = '<meta name="modernite-render-patch" content="v3">';
 
 const FXAA_VERTEX = "varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}";
 const FXAA_FRAGMENT = [
@@ -69,6 +70,23 @@ const PATCHES = [
     id: "advisor-same-origin",
     find: 'if(R=new URL(Wt("advisor-endpoint").value),R.protocol!=="https:"||R.username',
     replace: 'if(R=new URL(Wt("advisor-endpoint").value,location.href),R.protocol!=="https:"&&R.origin!==location.origin||R.username',
+  },
+  {
+    // Roof form and pitch come from the fixed building type; these three patches let
+    // ModerniteEnergyBridge.setDimensions() override them (from the map's roof model or the user).
+    id: "parametric-roof-values",
+    find: "return {...{width:base.width*units,depth:base.depth,floors:base.floors,storeyHeight:base.storeyHeight||2.95,wwr:.2},...(saved||{})};",
+    replace: "return {...{width:base.width*units,depth:base.depth,floors:base.floors,storeyHeight:base.storeyHeight||2.95,wwr:.2,roofForm:base.roofForm,pitch:base.pitch},...(saved||{})};",
+  },
+  {
+    id: "parametric-roof-config",
+    find: "wwr:d.wwr,parametric:true};}",
+    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{})};}",
+  },
+  {
+    id: "parametric-roof-cache",
+    find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
+    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{})};",
   },
 ];
 

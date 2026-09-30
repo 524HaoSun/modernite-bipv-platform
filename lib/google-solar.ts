@@ -10,6 +10,9 @@ export type GoogleSolarRoofSegment = {
   areaM2: number;
   groundAreaM2: number;
   sunshineMedianHoursPerYear: number | null;
+  center?: { lat: number; lng: number };
+  /** Roof plane height at `center`, metres above sea level (subtract ground elevation for building height). */
+  planeHeightAslM?: number;
 };
 
 export type GoogleSolarReference = {
@@ -24,14 +27,17 @@ export type GoogleSolarReference = {
   maxArrayPanelsCount?: number;
   maxSunshineHoursPerYear?: number;
   roofSegments?: GoogleSolarRoofSegment[];
+  boundingBox?: { sw: { lat: number; lng: number }; ne: { lat: number; lng: number } };
   note: string;
 };
 
 type LatLng = { latitude?: number; longitude?: number };
 type SizeAndSunshine = { areaMeters2?: number; groundAreaMeters2?: number; sunshineQuantiles?: number[] };
+type Box = { sw?: LatLng; ne?: LatLng };
 type BuildingInsights = {
   name?: string;
   center?: LatLng;
+  boundingBox?: Box;
   imageryQuality?: string;
   imageryDate?: { year?: number; month?: number; day?: number };
   solarPotential?: {
@@ -39,7 +45,7 @@ type BuildingInsights = {
     maxArrayAreaMeters2?: number;
     maxSunshineHoursPerYear?: number;
     wholeRoofStats?: SizeAndSunshine;
-    roofSegmentStats?: ({ pitchDegrees?: number; azimuthDegrees?: number; stats?: SizeAndSunshine })[];
+    roofSegmentStats?: ({ pitchDegrees?: number; azimuthDegrees?: number; stats?: SizeAndSunshine; center?: LatLng; planeHeightAtCenterMeters?: number })[];
   };
   error?: { code?: number; status?: string; message?: string };
 };
@@ -52,6 +58,8 @@ function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: numb
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
   return 2 * r * Math.asin(Math.sqrt(h));
 }
+
+const toLatLng = (p?: LatLng) => (p?.latitude !== undefined && p?.longitude !== undefined ? { lat: p.latitude, lng: p.longitude } : undefined);
 
 const round = (value: number | undefined, digits = 1) => (Number.isFinite(value) ? Number((value as number).toFixed(digits)) : undefined);
 
@@ -71,6 +79,8 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
       areaM2: round(segment.stats?.areaMeters2) ?? 0,
       groundAreaM2: round(segment.stats?.groundAreaMeters2) ?? 0,
       sunshineMedianHoursPerYear: quantiles.length ? round(quantiles[Math.floor(quantiles.length / 2)], 0) ?? null : null,
+      center: toLatLng(segment.center),
+      planeHeightAslM: round(segment.planeHeightAtCenterMeters, 2),
     };
   }).sort((a, b) => b.areaM2 - a.areaM2);
   return {
@@ -85,6 +95,7 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
     maxArrayPanelsCount: potential?.maxArrayPanelsCount,
     maxSunshineHoursPerYear: round(potential?.maxSunshineHoursPerYear, 0),
     roofSegments: segments,
+    boundingBox: toLatLng(payload.boundingBox?.sw) && toLatLng(payload.boundingBox?.ne) ? { sw: toLatLng(payload.boundingBox?.sw)!, ne: toLatLng(payload.boundingBox?.ne)! } : undefined,
     note: "Google Solar roof model (aerial imagery and DSM). Used as a roof-geometry reference only; generation follows the customer empirical model.",
   };
 }

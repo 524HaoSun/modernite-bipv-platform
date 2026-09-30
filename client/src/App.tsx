@@ -33,7 +33,9 @@ import {
   Zap,
   X,
 } from "lucide-react";
-import { BuildingMatchCard, type BuildingMatch } from "@/components/BuildingMatchCard";
+import { BuildingProfileCard, type AppliedBuilding } from "@/components/BuildingProfileCard";
+import { studioDimensions } from "../../lib/building-profile";
+import { studioTypeById } from "../../lib/studio-catalog";
 import { GoogleSiteViewer } from "@/components/GoogleSiteViewer";
 import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
@@ -73,12 +75,12 @@ type ProjectContext = {
   europeanCountry: EuropeanMarket | null;
   location: ProjectLocationSelection | null;
   siteArea: SiteAreaSelection | null;
-  buildingMatch?: BuildingMatch | null;
+  building?: AppliedBuilding | null;
   energySettings: HomeEnergySettings;
   updatedAt: number;
 };
 
-type StudioDimensions = { width: number; depth: number; floors: number; storeyHeight: number; wwr: number; units?: number };
+type StudioDimensions = { width: number; depth: number; floors: number; storeyHeight: number; wwr: number; units?: number; roofForm?: string; pitch?: number };
 type StudioWindow = Window & {
   ModerniteEnergyBridge?: {
     snapshot?: () => StudioCalculationSnapshot;
@@ -563,7 +565,7 @@ function loadContext(): ProjectContext {
         europeanCountry: marketKey === "EU" ? parsed.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : parsed.europeanCountry ?? null,
         location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
         siteArea: parsed.siteArea ?? DEFAULT_SITE_AREA,
-        buildingMatch: parsed.buildingMatch ?? null,
+        building: parsed.building ?? null,
         energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings },
         updatedAt: parsed.updatedAt ?? Date.now(),
       };
@@ -841,14 +843,14 @@ function MarketPage({ market, europeanCountry, copy, onMarketChange, onEuropeanC
   );
 }
 
-function LocationPage({ language, market, context, copy, onLocationChange, onAreaChange, onBuildingMatchChange, onNavigate }: {
+function LocationPage({ language, market, context, copy, onLocationChange, onAreaChange, onBuildingChange, onNavigate }: {
   language: StudioLanguage;
   market: Market;
   context: ProjectContext;
   copy: GatewayCopy;
   onLocationChange: (selection: ProjectLocationSelection) => void;
   onAreaChange: (selection: SiteAreaSelection | null) => void;
-  onBuildingMatchChange: (match: BuildingMatch | null) => void;
+  onBuildingChange: (building: AppliedBuilding | null) => void;
   onNavigate: (route: GatewayRoute) => void;
 }) {
   const [viewerMode, setViewerMode] = useState<"street" | "earth" | null>(null);
@@ -896,13 +898,14 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
             <span><b>3</b><i className={context.siteArea ? "is-complete" : ""} /> {locationText.trace}</span>
             <span><b>4</b><i /> {locationText.continue}</span>
           </div>
-          {context.location && <BuildingMatchCard
-            key={`${context.location.coordinates.lat.toFixed(5)}:${context.location.coordinates.lng.toFixed(5)}`}
+          {context.location && <BuildingProfileCard
+            key={`${context.location.coordinates.lat.toFixed(5)}:${context.location.coordinates.lng.toFixed(5)}:${context.marketKey}`}
             language={language}
             coordinates={context.location.coordinates}
-            match={context.buildingMatch}
-            onUseOutline={(footprint) => footprint.path && footprint.footprintAreaM2 && onAreaChange({ areaM2: footprint.footprintAreaM2, path: footprint.path })}
-            onMatchChange={onBuildingMatchChange}
+            marketKey={context.marketKey}
+            applied={context.building}
+            onApply={onBuildingChange}
+            onUseOutline={(path, areaM2) => onAreaChange({ areaM2, path })}
             onOpenViewer={setViewerMode}
           />}
           <p className="location-help">{locationText.retain}</p>
@@ -1257,7 +1260,7 @@ function StudioPage({
       }
     }
 
-    if (context.siteArea) {
+    if (context.siteArea && !context.building) {
       const areaKey = `${studioRegion}:${context.siteArea.areaM2.toFixed(2)}:${context.siteArea.path.length}`;
       if (root.dataset.hostSiteArea !== areaKey) {
         const footprintField = studioDocument.querySelector<HTMLInputElement>('#modernite-building-controls [data-building-field="footprint"]');
@@ -1270,31 +1273,35 @@ function StudioPage({
       }
     }
 
-    const match = context.buildingMatch;
+    const building = context.building;
     const bridge = studioWindow.ModerniteEnergyBridge;
-    if (match && bridge?.dimensions && bridge.setDimensions) {
-      const buildingKey = `${studioRegion}:${match.osmId}:${match.widthM}:${match.depthM}:${match.floors ?? ""}:${match.frontAzimuthDeg}`;
+    const buildingType = building ? studioTypeById(building.typeId) : undefined;
+    if (building && buildingType && buildingType.region === studioRegion && bridge?.dimensions && bridge.setDimensions) {
+      const buildingKey = JSON.stringify([building.typeId, building.widthM, building.depthM, building.floors, building.storeyHeightM, building.roofForm, building.roofPitchDeg, building.frontAzimuthDeg]);
       if (root.dataset.hostBuilding !== buildingKey) {
-        const current = bridge.dimensions();
-        const units = current.units ?? 1;
-        const clampTo = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value * 10) / 10));
+        const houseSelect = studioDocument.querySelector<HTMLSelectElement>("#house-select");
+        if (houseSelect && houseSelect.value !== building.typeId && Array.from(houseSelect.options).some((option) => option.value === building.typeId)) {
+          houseSelect.value = building.typeId;
+          houseSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        const dimensions = studioDimensions(buildingType, building, bridge.dimensions().wwr ?? 0.2);
         try {
-          bridge.setDimensions({
-            width: clampTo(match.widthM, 4 * units, 150),
-            depth: clampTo(match.depthM, 4, 100),
-            floors: match.floors ? Math.min(60, Math.max(1, Math.round(match.floors))) : current.floors,
-            storeyHeight: current.storeyHeight,
-            wwr: current.wwr,
-          });
-          studioWindow.ModerniteEnergyApp?.setOrientation?.(match.frontAzimuthDeg % 360);
+          try {
+            bridge.setDimensions(dimensions);
+          } catch (error) {
+            console.warn("[studio] roof override rejected, keeping the building type's roof", error);
+            const { roofForm: _roofForm, pitch: _pitch, ...plain } = dimensions;
+            bridge.setDimensions(plain);
+          }
+          studioWindow.ModerniteEnergyApp?.setOrientation?.(building.frontAzimuthDeg % 360);
           studioWindow.dispatchEvent(new Event("modernite-model-change"));
           root.dataset.hostBuilding = buildingKey;
         } catch (error) {
-          console.warn("[studio] building match not applied", error);
+          console.warn("[studio] building parameters not applied", error);
         }
       }
     }
-  }, [context.buildingMatch, context.location, context.siteArea, language, studioRegion, weatherSource]);
+  }, [context.building, context.location, context.siteArea, language, studioRegion, weatherSource]);
 
   useEffect(() => {
     if (frameReady) applyStudioContext();
@@ -1817,11 +1824,11 @@ export default function App() {
   }, []);
 
   const updateLocation = useCallback((location: ProjectLocationSelection) => {
-    setContext((current) => ({ ...current, location, buildingMatch: null, updatedAt: Date.now() }));
+    setContext((current) => ({ ...current, location, building: null, updatedAt: Date.now() }));
   }, []);
 
-  const updateBuildingMatch = useCallback((buildingMatch: BuildingMatch | null) => {
-    setContext((current) => ({ ...current, buildingMatch, updatedAt: Date.now() }));
+  const updateBuilding = useCallback((building: AppliedBuilding | null) => {
+    setContext((current) => ({ ...current, building, updatedAt: Date.now() }));
   }, []);
 
   const updateSiteArea = useCallback((siteArea: SiteAreaSelection | null) => {
@@ -1900,7 +1907,7 @@ export default function App() {
         <GatewayHeader route={route} language={studioLanguage} copy={copy} canOpenStudio={Boolean(context.location)} onLanguageChange={setStudioLanguage} onNavigate={navigate} />
         {route === "entry" && <EntryPage copy={copy} language={studioLanguage} onLanguageChange={setStudioLanguage} onStart={beginProject} onNavigate={navigate} />}
         {route === "market" && <MarketPage market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
-        {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onBuildingMatchChange={updateBuildingMatch} onNavigate={navigate} />}
+        {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onBuildingChange={updateBuilding} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
           settings={context.energySettings}
           canCalculate={Boolean(context.location)}

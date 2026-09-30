@@ -24,10 +24,10 @@ It is the customer's V31 build (SHA-256 `e0017ad9761f374c16b6b230771f0dae2c07215
 node scripts/patch-studio-render.mjs <customer-studio.html> client/public/studio.html
 ```
 
-The patch only touches renderer, camera and post-processing statements (FXAA, SSAO camera sync, adaptive near plane, desktop pixel ratio) and lets the Modernite advisor's online mode use a same-origin endpoint (`/api/studio-advisor`, served by the host with the configured LLM); the energy, system, location and shading scripts stay byte-identical. Expected SHA-256 after patching:
+The patch only touches renderer, camera and post-processing statements (FXAA, SSAO camera sync, adaptive near plane, desktop pixel ratio), lets the Modernite advisor's online mode use a same-origin endpoint (`/api/studio-advisor`, served by the host with the configured LLM), and lets `setDimensions` override roof form and pitch (used by the map-derived building profile); the energy, system, location and shading scripts stay byte-identical. Expected SHA-256 after patching:
 
 ```text
-d305ed98aa6d7120c7906044be597feb1a0f45e703d6dbac735ddeaa03ab7192
+f55be74a211b73ad5907f3084d0125a77958cead3a01b8374880551e5ba094a6
 ```
 
 The `.gitattributes` file marks this runtime as `-text` so Git line-ending normalization does not change its bytes.
