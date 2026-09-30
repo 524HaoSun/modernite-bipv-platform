@@ -4642,3 +4642,378 @@ body {
       linear-gradient(90deg, rgba(251, 253, 249, .44) 0%, rgba(251, 253, 249, .24) 22%, rgba(251, 253, 249, .05) 45%, rgba(251, 253, 249, 0) 67%) !important;
   }
 }
+
+/* Cross-device resilience: protect every gateway page from browser zoom, OS scaling, and longer translations. */
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow: auto !important;
+}
+
+.gateway-shell {
+  min-height: 100dvh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.gateway-page,
+.entry-page,
+.market-page,
+.location-page,
+.energy-page,
+.calculation-page,
+.results-page {
+  min-width: 0 !important;
+}
+
+.gateway-header,
+.studio-bridge-bar {
+  min-width: 0 !important;
+}
+
+.brand-lockup,
+.studio-bridge-brand,
+.gateway-tools,
+.studio-bridge-context,
+.journey-rail,
+.studio-bridge-journey {
+  min-width: 0 !important;
+}
+
+.journey-rail,
+.studio-bridge-journey {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+}
+
+.journey-rail::-webkit-scrollbar,
+.studio-bridge-journey::-webkit-scrollbar {
+  display: none;
+}
+
+.journey-rail__segment,
+.studio-bridge-journey__segment {
+  flex: 0 0 auto;
+}
+
+.gateway-tools,
+.studio-bridge-context {
+  white-space: nowrap;
+}
+
+.studio-language-control,
+.gateway-status,
+.studio-bridge-context__site {
+  max-width: 100%;
+}
+
+.studio-language-control select {
+  min-width: 0;
+}
+
+html:lang(zh) .journey-rail button,
+html:lang(zh) .studio-bridge-journey__segment > span,
+html:lang(ja) .journey-rail button,
+html:lang(ja) .studio-bridge-journey__segment > span {
+  letter-spacing: 0 !important;
+}
+
+html:lang(zh) .eyebrow,
+html:lang(ja) .eyebrow {
+  letter-spacing: 3px !important;
+}
+
+@media (max-width: 1320px), (max-height: 760px) {
+  .gateway-header {
+    grid-template-columns: minmax(205px, auto) minmax(0, 1fr) minmax(180px, auto) !important;
+    gap: 12px !important;
+    padding-inline: clamp(18px, 2.4vw, 30px) !important;
+  }
+
+  .journey-rail {
+    justify-content: flex-start !important;
+    min-width: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  .journey-rail button {
+    gap: 6px !important;
+    padding-inline: 4px !important;
+    font-size: 11px !important;
+  }
+
+  .journey-rail__segment > i {
+    width: 18px !important;
+    margin-inline: 2px !important;
+  }
+
+  .gateway-tools {
+    gap: 8px !important;
+  }
+
+  .gateway-status {
+    font-size: 12px !important;
+  }
+
+  .studio-language-control {
+    min-height: 34px !important;
+  }
+
+  .studio-language-control select {
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+
+  .market-page,
+  .location-page,
+  .energy-page,
+  .results-page {
+    height: auto !important;
+    min-height: calc(100dvh - 72px) !important;
+    overflow: visible !important;
+    padding-inline: clamp(28px, 4.2vw, 64px) !important;
+  }
+
+  .market-intro-copy h1,
+  .location-scene-copy h1,
+  .energy-page-intro h1,
+  .results-topline h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .market-page .globe-workbench-footer--compact {
+    top: 78px !important;
+    right: clamp(18px, 3vw, 42px) !important;
+    width: min(310px, 34vw) !important;
+  }
+
+  .market-page .globe-workbench-footer--compact .button-primary {
+    min-height: 50px !important;
+    font-size: 13px !important;
+  }
+
+  .market-page .globe-stage {
+    right: clamp(-28px, -1vw, -8px) !important;
+    width: min(46vw, 520px) !important;
+    height: min(58vh, 480px) !important;
+  }
+
+  .market-page .market-globe {
+    width: min(520px, 106%) !important;
+  }
+
+  .market-page .globe-market-rail {
+    top: 320px !important;
+    width: 220px !important;
+  }
+
+  .market-page .globe-library {
+    top: 320px !important;
+    left: clamp(292px, 31vw, 338px) !important;
+    width: min(410px, 42vw) !important;
+  }
+
+  .location-workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 310px) !important;
+    gap: 20px !important;
+  }
+
+  .location-map-shell,
+  .location-map {
+    min-height: 540px !important;
+  }
+
+  .site-area-readout {
+    width: min(480px, calc(100% - 280px)) !important;
+    min-width: 0 !important;
+  }
+
+  .studio-bridge-bar {
+    grid-template-columns: minmax(190px, auto) minmax(0, 1fr) minmax(180px, auto) !important;
+    height: auto !important;
+    min-height: 66px !important;
+    gap: 12px !important;
+    padding: 10px 18px !important;
+  }
+
+  .studio-bridge-brand strong {
+    font-size: 15px !important;
+    letter-spacing: 3.5px !important;
+  }
+
+  .studio-bridge-brand small,
+  .studio-bridge-context__site,
+  .studio-bridge-context .gateway-status {
+    display: none !important;
+  }
+
+  .studio-bridge-journey {
+    justify-content: flex-start !important;
+  }
+
+  .customer-studio-shell {
+    overflow-y: auto !important;
+  }
+
+  .studio-host-intro,
+  .studio-host-context {
+    margin-inline: clamp(18px, 3vw, 32px) !important;
+  }
+
+  .studio-host-context {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .customer-studio-stage {
+    height: auto !important;
+    min-height: min(520px, calc(100dvh - 250px)) !important;
+  }
+
+  .customer-studio-frame {
+    min-height: min(520px, calc(100dvh - 250px)) !important;
+  }
+
+  .studio-aftercare {
+    margin-inline: clamp(18px, 3vw, 32px) !important;
+  }
+
+  .energy-page-workbench {
+    grid-template-columns: minmax(240px, 310px) minmax(0, 1fr) !important;
+    max-width: 1120px !important;
+  }
+
+  .energy-planning-preview {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: minmax(220px, .72fr) minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .energy-preview-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .results-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .results-side-rail {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .results-page .result-assistant {
+    position: static !important;
+  }
+}
+
+@media (max-width: 980px), (max-height: 640px) {
+  .gateway-header {
+    grid-template-columns: minmax(180px, 1fr) auto !important;
+    height: auto !important;
+    min-height: 68px !important;
+    row-gap: 8px !important;
+    padding-block: 10px !important;
+  }
+
+  .journey-rail {
+    grid-column: 1 / -1 !important;
+    border-top: 1px solid rgba(216, 225, 221, .8);
+    padding-top: 8px !important;
+  }
+
+  .gateway-tools {
+    justify-content: flex-end !important;
+  }
+
+  .gateway-status {
+    display: none !important;
+  }
+
+  .market-page .market-intro-grid {
+    max-width: min(560px, 58vw) !important;
+  }
+
+  .market-page .market-intro-copy h1 {
+    font-size: clamp(36px, 5.2vw, 48px) !important;
+  }
+
+  .market-page .market-intro-copy > p:last-child {
+    font-size: 13px !important;
+  }
+
+  .market-page .globe-workbench-footer--compact {
+    position: absolute !important;
+    top: 82px !important;
+    right: 20px !important;
+    width: min(280px, 38vw) !important;
+  }
+
+  .market-page .globe-stage {
+    top: 92px !important;
+    width: min(43vw, 430px) !important;
+    height: min(48vh, 390px) !important;
+  }
+
+  .market-page .globe-market-rail,
+  .market-page .globe-library {
+    top: 330px !important;
+  }
+
+  .market-page .globe-library {
+    width: min(390px, 46vw) !important;
+  }
+
+  .location-workbench {
+    grid-template-columns: 1fr !important;
+  }
+
+  .location-panel {
+    min-height: 0 !important;
+  }
+
+  .site-area-readout {
+    right: 14px !important;
+    left: 14px !important;
+    bottom: 18px !important;
+    width: auto !important;
+    transform: none !important;
+  }
+
+  .studio-bridge-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .studio-bridge-context .studio-language-control {
+    max-width: 118px !important;
+  }
+
+  .studio-host-context {
+    grid-template-columns: 1fr !important;
+  }
+
+  .energy-page-workbench,
+  .energy-planning-preview,
+  .results-side-rail,
+  .validation-grid,
+  .source-ledger dl {
+    grid-template-columns: 1fr !important;
+  }
+
+  .configured-building-card {
+    display: none !important;
+  }
+
+  .energy-page-intro {
+    grid-template-columns: 1fr !important;
+  }
+
+  .energy-chapter-mark {
+    display: none !important;
+  }
+}
