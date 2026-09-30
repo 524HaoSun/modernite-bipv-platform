@@ -78,7 +78,6 @@ export const EUROPEAN_MARKETS: EuropeanMarket[] = [
   { id: 616, name: "Poland", shortName: "PL", coordinates: { lat: 51.92, lng: 19.15 } },
   { id: 620, name: "Portugal", shortName: "PT", coordinates: { lat: 39.4, lng: -8.22 } },
   { id: 642, name: "Romania", shortName: "RO", coordinates: { lat: 45.94, lng: 24.97 } },
-  { id: 643, name: "Russia", shortName: "RU", coordinates: { lat: 55.75, lng: 37.62 } },
   { id: 674, name: "San Marino", shortName: "SM", coordinates: { lat: 43.94, lng: 12.46 } },
   { id: 688, name: "Serbia", shortName: "RS", coordinates: { lat: 44.01, lng: 21 } },
   { id: 703, name: "Slovakia", shortName: "SK", coordinates: { lat: 48.67, lng: 19.7 } },

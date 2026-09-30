@@ -1984,6 +1984,18 @@ body {
   box-shadow: 0 20px 42px rgba(10, 74, 55, .24);
 }
 
+.market-page .globe-workbench-footer--compact {
+  top: 244px !important;
+  bottom: auto !important;
+  left: clamp(56px, 5.6vw, 90px) !important;
+  width: min(300px, 24vw) !important;
+}
+
+.market-page .globe-workbench-footer--compact .button-primary {
+  min-height: 58px !important;
+  border-radius: 14px !important;
+}
+
 .location-map-shell,
 .location-panel {
   min-height: min(600px, calc(100dvh - 260px));
