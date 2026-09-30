@@ -16,6 +16,15 @@ describe("customer V31 Studio runtime", () => {
     expect(fs.existsSync(publicRuntime)).toBe(true);
   });
 
+  it("ships the service worker the studio registers for offline install", () => {
+    const runtimeText = fs.readFileSync(publicRuntime, "utf8");
+    const worker = fs.readFileSync(path.join(projectRoot, "client/public/sw.js"), "utf8");
+    expect(runtimeText).toContain('navigator.serviceWorker.register("./sw.js"');
+    expect(runtimeText).toContain('type:"CHECK_OFFLINE"');
+    expect(worker).toContain('"CHECK_OFFLINE"');
+    expect(worker).toContain("ready:");
+  });
+
   it("preserves the verified V31 runtime shipped in the handoff", () => {
     const runtime = fs.readFileSync(publicRuntime);
     const runtimeText = runtime.toString("utf8");
