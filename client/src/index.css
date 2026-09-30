@@ -4438,6 +4438,75 @@ body {
   }
 }
 
+/* Market zoom resilience: keep controls separated when browser zoom reduces the viewport. */
+@media (max-width: 1120px), (max-height: 680px) {
+  .market-page {
+    min-height: 720px !important;
+    overflow-y: auto !important;
+  }
+
+  .market-page .market-intro-grid {
+    max-width: min(500px, 52vw) !important;
+  }
+
+  .market-page .market-intro-copy h1 {
+    max-width: 450px !important;
+    font-size: clamp(38px, 4.9vw, 52px) !important;
+  }
+
+  .market-page .market-intro-copy > p:last-child {
+    max-width: 430px !important;
+    font-size: 14px !important;
+  }
+
+  .market-page .globe-market-rail {
+    top: 310px !important;
+    width: 220px !important;
+    gap: 9px !important;
+  }
+
+  .market-page .globe-market-rail__item {
+    min-height: 46px !important;
+    padding: 0 12px !important;
+  }
+
+  .market-page .globe-market-rail__item .country-flag {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .market-page .globe-market-rail__item span {
+    font-size: 13px !important;
+  }
+
+  .market-page .globe-workbench-footer--compact {
+    top: 530px !important;
+    left: clamp(56px, 5.6vw, 90px) !important;
+    width: 220px !important;
+  }
+
+  .market-page .globe-workbench-footer--compact .button-primary {
+    min-height: 52px !important;
+  }
+
+  .market-page .globe-library {
+    top: 310px !important;
+    left: clamp(292px, 30vw, 340px) !important;
+    width: min(420px, 42vw) !important;
+  }
+
+  .market-page .globe-library-list--countries {
+    max-height: 190px !important;
+  }
+
+  .market-page .globe-stage {
+    top: 58px !important;
+    right: -18px !important;
+    width: min(49vw, 540px) !important;
+    height: min(62vh, 500px) !important;
+  }
+}
+
 /* Entry viewport resilience: keep the supplied hero art and CTA visible on short, wide desktop screens. */
 @media (min-width: 900px) and (max-height: 930px) {
   .gateway-shell--entry {
