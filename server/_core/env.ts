@@ -9,5 +9,6 @@ export const ENV = {
   forgeApiKey: process.env.LLM_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? "",
   llmModel: process.env.LLM_MODEL ?? "",
   googleSolarApiKey: process.env.GOOGLE_SOLAR_API_KEY ?? "",
+  googleMapsBrowserKey: process.env.GOOGLE_MAPS_BROWSER_KEY ?? "",
   weatherCacheDir: process.env.WEATHER_CACHE_DIR ?? ".cache/weather",
 };

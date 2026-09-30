@@ -64,7 +64,7 @@ describe("V28-aligned entry gateway", () => {
     expect(map).toContain("COUNTRY_NAME_TERMS");
     expect(map).toContain("item.type !== \"country\"");
     expect(map).toContain("calculateArea");
-    expect(map).toContain("Google Street View can be connected later");
+    expect(map).toContain("onOpenStreetView");
     expect(map).toContain("Trace area");
     expect(map).toContain('site-map-tool-card ${drawingActive ? "is-drawing" : ""}');
     expect(map).toContain("handlePointerUp");
@@ -80,7 +80,7 @@ describe("V28-aligned entry gateway", () => {
     expect(app).not.toContain('aria-label="Change selected market"');
     expect(map).toContain('type MapMode = "aerial" | "road"');
     expect(map).toContain("setMapMode");
-    expect(map).toContain("Google Maps API");
+    expect(map).toContain("Street View and photorealistic 3D");
     expect(map).not.toContain("map.setTilt(45)");
     expect(map).not.toContain("45° view");
   });

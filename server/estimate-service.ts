@@ -5,7 +5,7 @@ import { PROFILES, type Weather } from "../lib/customer-energy-core";
 import type { HomeEnergySettings, StudioCalculationSnapshot } from "../lib/studio-calculation";
 import { invokeLLM } from "./_core/llm";
 import { getGoogleSolarReference } from "./google-solar-service";
-import { getPvgisTmyWeather } from "./weather-service";
+import { DEFAULT_WEATHER_SOURCE, WEATHER_SOURCES, getWeatherWithFallback, type WeatherSource } from "./weather-service";
 
 export type ProjectCalculationInput = {
   market: "GB" | "EU" | "CA" | "JP";
@@ -14,6 +14,7 @@ export type ProjectCalculationInput = {
   timezone?: number;
   timezoneName?: string;
   buildingNorthDeg?: number;
+  weatherSource?: WeatherSource;
   studioSnapshot: StudioCalculationSnapshot;
   energySettings?: HomeEnergySettings;
 };
@@ -44,13 +45,13 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
   const location = { lat: input.coordinates.lat, lon: input.coordinates.lng, tz: timezone, zone: input.timezoneName ?? "" };
   const year = new Date().getUTCFullYear() - 1;
   const [weatherResult, googleSolar] = await Promise.all([
-    getPvgisTmyWeather({ ...location, address: input.address, year }).then(
-      (weather): { weather: Weather; error?: string } => ({ weather }),
+    getWeatherWithFallback(input.weatherSource ?? DEFAULT_WEATHER_SOURCE, { ...location, address: input.address, year }).then(
+      ({ weather, errors }): { weather: Weather; error?: string } => ({ weather, error: errors.length ? errors.join("; ") : undefined }),
       (error: unknown) => ({ weather: syntheticWeatherFor(input.market, location), error: error instanceof Error ? error.message : String(error) }),
     ),
     getGoogleSolarReference(input.coordinates.lat, input.coordinates.lng).catch(() => null),
   ]);
-  if (weatherResult.error) console.warn("[study] PVGIS unavailable, using customer synthetic climate:", weatherResult.error);
+  if (weatherResult.error) console.warn(`[study] weather fallback (${weatherResult.weather.source}):`, weatherResult.error);
 
   const study = runCustomerStudy({
     market: input.market,
@@ -112,7 +113,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
   const facts = factPack(study);
   try {
     const response = await invokeLLM({
-      model: "gpt-5.5",
+      model: "gpt-6-luna",
       messages: [
         {
           role: "system",
@@ -153,7 +154,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
 export async function askDesignAssistant(question: string, stage: "design" | "energy") {
   try {
     const response = await invokeLLM({
-      model: "gpt-5.5",
+      model: "gpt-6-luna",
       messages: [
         {
           role: "system",
@@ -177,6 +178,7 @@ export const projectCalculationInputSchema = z.object({
   timezone: z.number().finite().min(-14).max(14).optional(),
   timezoneName: z.string().max(64).optional(),
   buildingNorthDeg: z.number().finite().min(-360).max(720).optional(),
+  weatherSource: z.enum(WEATHER_SOURCES).optional(),
   studioSnapshot: z.object({
     building: z.object({
       id: z.string().min(1).max(80),

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { synthetic } from "../lib/customer-energy-core";
+import { NASA_POWER_PARAMS, type NasaPowerPayload } from "../lib/nasa-power";
 import type { PvgisTmyPayload } from "../lib/pvgis-tmy";
 
 process.env.WEATHER_CACHE_DIR = mkdtempSync(path.join(os.tmpdir(), "modernite-weather-"));
@@ -22,6 +23,29 @@ function fakeTmy(): PvgisTmyPayload {
         return { "time(UTC)": stamp, T2m: row.ta, RH: 80, "G(h)": row.ghi, "Gb(n)": row.dni, "Gd(h)": row.dhi, "IR(h)": 300, WS10m: 3 };
       }),
     },
+  };
+}
+
+function fakeNasa(year = new Date().getUTCFullYear() - 1): NasaPowerPayload {
+  const rows = synthetic("UK", { lat: 51.5, lon: -0.12, tz: 0 }).rows;
+  const parameter: Record<string, Record<string, number>> = Object.fromEntries(Object.values(NASA_POWER_PARAMS).map((param) => [param, {}]));
+  const start = Date.UTC(year, 0, 1), hours = (Date.UTC(year + 1, 0, 1) - start) / 3_600_000;
+  for (let i = 0; i < hours; i++) {
+    const row = rows[i % rows.length];
+    const key = new Date(start + i * 3_600_000).toISOString().slice(0, 13).replace(/[-T]/g, "");
+    Object.assign(parameter.T2M, { [key]: row.ta });
+    Object.assign(parameter.ALLSKY_SFC_SW_DWN, { [key]: row.ghi });
+    Object.assign(parameter.ALLSKY_SFC_SW_DIFF, { [key]: row.dhi });
+    Object.assign(parameter.ALLSKY_SFC_SW_DNI, { [key]: row.dni });
+    Object.assign(parameter.ALLSKY_SFC_LW_DWN, { [key]: 300 });
+    Object.assign(parameter.RH2M, { [key]: 80 });
+    Object.assign(parameter.WS10M, { [key]: 3 });
+  }
+  const radiation = { units: "Wh/m^2" };
+  return {
+    header: { time_standard: "UTC", fill_value: -999 },
+    parameters: { T2M: { units: "C" }, ALLSKY_SFC_SW_DWN: radiation, ALLSKY_SFC_SW_DIFF: radiation, ALLSKY_SFC_SW_DNI: radiation, ALLSKY_SFC_LW_DWN: radiation, RH2M: { units: "%" }, WS10M: { units: "m/s" } },
+    properties: { parameter },
   };
 }
 
@@ -52,10 +76,28 @@ describe("project study calculation service", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.unstubAllGlobals());
 
-  it("runs the customer V31 hourly model on PVGIS TMY weather for the site", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(fakeTmy()), { status: 200 }));
+  it("uses NASA POWER by default, as the customer Studio does", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeNasa()), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, studioSnapshot: snapshot, energySettings });
+    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.51, lng: -0.13 }, timezone: 0, studioSnapshot: snapshot, energySettings });
+
+    expect(fetchMock.mock.calls[0][0]).toContain("power.larc.nasa.gov/api/temporal/hourly/point");
+    expect(study.validation.status).toBe("nasa-power");
+    expect(study.weather.source).toBe("NASA POWER / CERES / MERRA-2");
+    expect(study.weather.hours).toBeGreaterThanOrEqual(8760);
+  });
+
+  it("falls back to PVGIS when NASA POWER is unavailable", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => (url.includes("power.larc.nasa.gov") ? new Response("down", { status: 503 }) : new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    vi.stubGlobal("fetch", fetchMock);
+    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.52, lng: -0.14 }, timezone: 0, studioSnapshot: snapshot, energySettings });
+    expect(study.validation.status).toBe("pvgis-tmy");
+  });
+
+  it("runs the customer V31 hourly model on PVGIS TMY weather when selected", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings });
 
     expect(fetchMock.mock.calls[0][0]).toContain("re.jrc.ec.europa.eu/api/v5_3/tmy");
     expect(study.caseId).toMatch(/^MOD-[A-F0-9]{8}$/);
@@ -72,7 +114,7 @@ describe("project study calculation service", () => {
     expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.annualCashFlows).toHaveLength(25);
   });
 
-  it("falls back to the customer synthetic climate when PVGIS is unavailable", async () => {
+  it("falls back to the customer synthetic climate when no site weather is reachable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     const study = await runProjectCalculation({ market: "JP", address: "Tokyo", coordinates: { lat: 35.68, lng: 139.69 }, timezone: 9, studioSnapshot: snapshot });
     expect(study.validation.status).toBe("customer-synthetic");

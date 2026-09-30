@@ -59,7 +59,7 @@ export class ManusPlanningAIProvider implements PlanningAIProvider {
 
   async estimateAnnualDemand(input: PlanningDemandInput): Promise<PlanningDemandOutput> {
     const response = await invokeLLM({
-      model: "gpt-5-mini",
+      model: "gpt-6-luna",
       messages: [
         {
           role: "system",

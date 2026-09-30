@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, EyeOff, MapPin, Navigation, Pencil, Ruler, Search, Undo2 } from "lucide-react";
+import { Crosshair, Eye, EyeOff, MapPin, Navigation, Pencil, Ruler, Search, Undo2 } from "lucide-react";
 
 export type MarketKey = "GB" | "EU" | "CA" | "JP";
 
@@ -95,7 +95,7 @@ const EN_TEXT: MapText = {
   openData: "Aerial map with OpenStreetMap search",
   editHint: "Drag any numbered point to refine the boundary",
   streetView: "Google Street View",
-  googleLater: "Google Street View can be connected later with the Google Maps API.",
+  googleLater: "Street View and photorealistic 3D of this address.",
   mapLayers: "Map layers",
   zoomControls: "Map zoom",
   centerSelected: "Center on selected site",
@@ -133,7 +133,7 @@ const ZH_TEXT: MapText = {
   openData: "航拍地图与 OpenStreetMap 搜索",
   editHint: "拖动任意编号顶点即可微调边界",
   streetView: "Google 街景",
-  googleLater: "Google Street View 可在后续接入 Google Maps API 后启用。",
+  googleLater: "查看该地址的街景与写实三维。",
   mapLayers: "地图图层",
   zoomControls: "地图缩放",
   centerSelected: "回到已选场地",
@@ -175,6 +175,7 @@ type ProjectLocationMapProps = {
   initialArea?: SiteAreaSelection | null;
   onLocationChange: (selection: ProjectLocationSelection) => void;
   onAreaChange: (selection: SiteAreaSelection | null) => void;
+  onOpenStreetView?: () => void;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -396,6 +397,7 @@ export function ProjectLocationMap({
   initialArea,
   onLocationChange,
   onAreaChange,
+  onOpenStreetView,
 }: ProjectLocationMapProps) {
   const text = MAP_TEXT[language] ?? MAP_TEXT.en;
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -823,7 +825,7 @@ export function ProjectLocationMap({
           {drawingActive && <div className={`site-trace-progress ${closeReady ? "is-close-ready" : ""}`} aria-live="polite"><span>{draftPath.length}</span><b>{text.points}</b><i>{closeReady ? text.closeCue : text.drawCue}</i></div>}
           <p className="site-map-trace-help">{text.traceHelp}</p>
         </div>
-        <button type="button" className="site-street-view" disabled title={text.googleLater}><EyeOff size={15} /><span><b>{text.streetView}</b><small>{text.googleLater}</small></span></button>
+        <button type="button" className="site-street-view" disabled={!onOpenStreetView || !marker} title={text.googleLater} onClick={onOpenStreetView}>{onOpenStreetView && marker ? <Eye size={15} /> : <EyeOff size={15} />}<span><b>{text.streetView}</b><small>{text.googleLater}</small></span></button>
       </div>
 
       {drawingActive && <div className={`site-draw-cue ${closeReady ? "is-close-ready" : ""}`}><Pencil size={15} /><span>{closeReady ? text.closeCue : text.drawCue}</span></div>}

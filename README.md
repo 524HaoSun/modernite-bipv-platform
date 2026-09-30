@@ -12,16 +12,22 @@ Private migration baseline for the Modernite BIPV platform, including the React/
 
 ## Protected Studio Runtime
 
-Do not edit, format, minify, regenerate, or move:
+Do not edit, format, minify or move by hand:
 
 ```text
 client/public/studio.html
 ```
 
-Expected SHA-256:
+It is the customer's V31 build (SHA-256 `e0017ad9761f374c16b6b230771f0dae2c072158cfa0100067c158575c225441`) with the host rendering patch applied. Regenerate it from a customer file with:
+
+```bash
+node scripts/patch-studio-render.mjs <customer-studio.html> client/public/studio.html
+```
+
+The patch only touches renderer, camera and post-processing statements (FXAA, SSAO camera sync, adaptive near plane, desktop pixel ratio); the energy, system, location and shading scripts stay byte-identical. Expected SHA-256 after patching:
 
 ```text
-e0017ad9761f374c16b6b230771f0dae2c072158cfa0100067c158575c225441
+a8d17fe7120861e3eca2db058ef59312ecbd2bba0a662b18169760e70f129d90
 ```
 
 The `.gitattributes` file marks this runtime as `-text` so Git line-ending normalization does not change its bytes.

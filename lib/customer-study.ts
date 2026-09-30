@@ -8,8 +8,10 @@ import { buildPlanningInput, productForSnapshot, regionForMarket, type HomeEnerg
 
 export type Market = "GB" | "EU" | "CA" | "JP";
 
+export type WeatherKind = "nasa-power" | "pvgis-tmy" | "customer-synthetic";
+
 export type WeatherProvenance = {
-  kind: "pvgis-tmy" | "customer-synthetic";
+  kind: WeatherKind;
   name: string;
   source: string;
   sourceURL?: string;
@@ -21,7 +23,7 @@ export type WeatherProvenance = {
 };
 
 export type ProjectValidation = {
-  status: "pvgis-tmy" | "customer-synthetic";
+  status: WeatherKind;
   empiricalAnnualKwh: number;
   database: string;
   note: string;
@@ -136,7 +138,7 @@ function weatherProvenance(weather: core.Weather): WeatherProvenance {
   const rows = weather.rows;
   const total = (key: "ghi" | "dni" | "dhi") => rows.reduce((sum, row) => sum + row[key], 0) / 1000;
   return {
-    kind: weather.synthetic ? "customer-synthetic" : "pvgis-tmy",
+    kind: weather.synthetic ? "customer-synthetic" : String(weather.source ?? "").startsWith("NASA POWER") ? "nasa-power" : "pvgis-tmy",
     name: weather.name,
     source: weather.source ?? (weather.synthetic ? "Customer V31 synthetic regional climate" : "Hourly weather"),
     sourceURL: weather.sourceURL,
@@ -253,7 +255,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
 
   const ledger: LedgerEntry[] = [
     { id: "location", label: "Site", value: `${input.address} (${input.coordinates.lat.toFixed(4)}, ${input.coordinates.lng.toFixed(4)}, UTC${input.timezone >= 0 ? "+" : ""}${input.timezone})`, provenance: "user", stepNumber: 1, fieldKey: "location" },
-    { id: "irradiance", label: "Hourly weather", value: `${weather.source} · GHI ${weather.annualGhiKwhM2} / DNI ${weather.annualDniKwhM2} / DHI ${weather.annualDhiKwhM2} kWh/m² · mean ${weather.meanAirTemperatureC} °C`, provenance: "data", stepNumber: 1, fieldKey: "irradiance", note: synthetic ? "Customer V31 synthetic regional climate — PVGIS was not available." : undefined },
+    { id: "irradiance", label: "Hourly weather", value: `${weather.source} · GHI ${weather.annualGhiKwhM2} / DNI ${weather.annualDniKwhM2} / DHI ${weather.annualDhiKwhM2} kWh/m² · mean ${weather.meanAirTemperatureC} °C`, provenance: "data", stepNumber: 1, fieldKey: "irradiance", note: synthetic ? "Customer V31 synthetic regional climate — site weather (NASA POWER / PVGIS) was not available." : weather.kind === "nasa-power" ? "Historical year from NASA POWER, as used by the customer Studio (not a typical year)." : undefined },
     { id: "generation", label: "Generation model", value: "Customer V31 hourly model: solar position → isotropic plane-of-array (beam / sky diffuse / ground reflected, albedo 0.2) → empirical cell temperature and efficiency → 90% AC factor", provenance: "manufacturer", stepNumber: 2, fieldKey: "generation" },
     { id: "capacity", label: "Product capacity", value: `${sim.kwp.toFixed(2)} kWp across ${surfaceResults.length} surfaces`, provenance: "manufacturer", stepNumber: 3, fieldKey: "capacity" },
     { id: "orientation", label: "Building orientation", value: `Studio model rotated ${north}° (front façade azimuth)`, provenance: "user", stepNumber: 3, fieldKey: "orientation" },
@@ -286,8 +288,10 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     schedule,
     ledger,
     summary: synthetic
-      ? "This study runs the customer V31 hourly model on the customer's synthetic regional climate because PVGIS was unavailable. Re-run when PVGIS is reachable for site-specific weather."
-      : "This study runs the customer V31 hourly model on a PVGIS typical meteorological year for the selected site.",
+      ? "This study runs the customer V31 hourly model on the customer's synthetic regional climate because site weather was unavailable. Re-run when NASA POWER or PVGIS is reachable."
+      : weather.kind === "nasa-power"
+        ? `This study runs the customer V31 hourly model on the NASA POWER ${input.weather.year ?? ""} hourly year for the selected site.`
+        : "This study runs the customer V31 hourly model on a PVGIS typical meteorological year for the selected site.",
     engine: {
       method: "deterministic",
       irradianceDatabase: weather.source,
@@ -304,7 +308,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       empiricalAnnualKwh: Math.round(annualGeneration),
       database: weather.source,
       note: synthetic
-        ? "PVGIS could not be reached, so the customer's built-in synthetic regional climate was used. Figures are indicative only."
+        ? "NASA POWER and PVGIS could not be reached, so the customer's built-in synthetic regional climate was used. Figures are indicative only."
         : `Hourly ${weather.source} weather for the site (${weather.hours} hours). The customer V31 model is the only generation calculation.`,
     },
     energy: {

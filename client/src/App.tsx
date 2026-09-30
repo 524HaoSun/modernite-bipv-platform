@@ -33,6 +33,8 @@ import {
   Zap,
   X,
 } from "lucide-react";
+import { BuildingMatchCard, type BuildingMatch } from "@/components/BuildingMatchCard";
+import { GoogleSiteViewer } from "@/components/GoogleSiteViewer";
 import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
@@ -70,16 +72,23 @@ type ProjectContext = {
   europeanCountry: EuropeanMarket | null;
   location: ProjectLocationSelection | null;
   siteArea: SiteAreaSelection | null;
+  buildingMatch?: BuildingMatch | null;
   energySettings: HomeEnergySettings;
   updatedAt: number;
 };
 
+type StudioDimensions = { width: number; depth: number; floors: number; storeyHeight: number; wwr: number; units?: number };
 type StudioWindow = Window & {
-  ModerniteEnergyBridge?: { snapshot?: () => StudioCalculationSnapshot };
+  ModerniteEnergyBridge?: {
+    snapshot?: () => StudioCalculationSnapshot;
+    dimensions?: () => StudioDimensions;
+    setDimensions?: (dimensions: StudioDimensions) => void;
+  };
   ModerniteEnergyApp?: {
     setSite?: (site: Record<string, unknown>) => void;
     acceptWeather?: (weather: Weather) => void;
     getOrientation?: () => number;
+    setOrientation?: (azimuth: number) => void;
   };
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
@@ -559,6 +568,7 @@ function loadContext(): ProjectContext {
         europeanCountry: marketKey === "EU" ? parsed.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : parsed.europeanCountry ?? null,
         location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
         siteArea: parsed.siteArea ?? DEFAULT_SITE_AREA,
+        buildingMatch: parsed.buildingMatch ?? null,
         energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings },
         updatedAt: parsed.updatedAt ?? Date.now(),
       };
@@ -587,7 +597,22 @@ function loadSavedStudy(): ProjectCalculation | null {
   }
 }
 
-export type StudyRequestExtras = { timezone?: number; timezoneName?: string; buildingNorthDeg?: number };
+export type WeatherSourceKey = "nasa-power" | "pvgis-tmy";
+export type StudyRequestExtras = { timezone?: number; timezoneName?: string; buildingNorthDeg?: number; weatherSource?: WeatherSourceKey };
+
+const WEATHER_SOURCE_STORAGE_KEY = "modernite-weather-source";
+const WEATHER_SOURCE_LABELS: Record<WeatherSourceKey, { short: string; loading: string }> = {
+  "nasa-power": { short: "NASA POWER", loading: "Loading NASA POWER weather…" },
+  "pvgis-tmy": { short: "PVGIS TMY", loading: "Loading PVGIS weather…" },
+};
+
+function readWeatherSource(): WeatherSourceKey {
+  try {
+    return window.localStorage.getItem(WEATHER_SOURCE_STORAGE_KEY) === "pvgis-tmy" ? "pvgis-tmy" : "nasa-power";
+  } catch {
+    return "nasa-power";
+  }
+}
 
 function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSnapshot = DEMO_STUDIO_SNAPSHOT, extras: StudyRequestExtras = {}): ProjectCalculation {
   const marketKey = context?.marketKey ?? "EU";
@@ -821,15 +846,17 @@ function MarketPage({ market, europeanCountry, copy, onMarketChange, onEuropeanC
   );
 }
 
-function LocationPage({ language, market, context, copy, onLocationChange, onAreaChange, onNavigate }: {
+function LocationPage({ language, market, context, copy, onLocationChange, onAreaChange, onBuildingMatchChange, onNavigate }: {
   language: StudioLanguage;
   market: Market;
   context: ProjectContext;
   copy: GatewayCopy;
   onLocationChange: (selection: ProjectLocationSelection) => void;
   onAreaChange: (selection: SiteAreaSelection | null) => void;
+  onBuildingMatchChange: (match: BuildingMatch | null) => void;
   onNavigate: (route: GatewayRoute) => void;
 }) {
+  const [viewerMode, setViewerMode] = useState<"street" | "earth" | null>(null);
   const outlinedArea = context.siteArea ? new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(context.siteArea.areaM2) : null;
   const locationText = LOCATION_PAGE_TEXT[language];
   const locationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
@@ -855,6 +882,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           initialArea={context.siteArea}
           onLocationChange={onLocationChange}
           onAreaChange={onAreaChange}
+          onOpenStreetView={() => setViewerMode("street")}
         />
         <aside className="location-panel location-panel--site">
           <div className="location-panel-heading"><span>03</span><div><p className="mini-label">{copy.projectContext}</p><h2>{locationText.siteBrief}</h2></div></div>
@@ -873,12 +901,22 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
             <span><b>3</b><i className={context.siteArea ? "is-complete" : ""} /> {locationText.trace}</span>
             <span><b>4</b><i /> {locationText.continue}</span>
           </div>
+          {context.location && <BuildingMatchCard
+            key={`${context.location.coordinates.lat.toFixed(5)}:${context.location.coordinates.lng.toFixed(5)}`}
+            language={language}
+            coordinates={context.location.coordinates}
+            match={context.buildingMatch}
+            onUseOutline={(footprint) => footprint.path && footprint.footprintAreaM2 && onAreaChange({ areaM2: footprint.footprintAreaM2, path: footprint.path })}
+            onMatchChange={onBuildingMatchChange}
+            onOpenViewer={setViewerMode}
+          />}
           <p className="location-help">{locationText.retain}</p>
           <button type="button" className="button-primary wide" onClick={() => onNavigate("studio")} disabled={!context.location}>
             {locationText.continueStudio} <ArrowRight size={16} />
           </button>
         </aside>
       </div>
+      {viewerMode && context.location && <GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} initialMode={viewerMode} onClose={() => setViewerMode(null)} />}
     </section>
   );
 }
@@ -1101,6 +1139,7 @@ function StudioPage({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const weatherAbortRef = useRef<AbortController | null>(null);
   const [weatherState, setWeatherState] = useState<{ status: "idle" | "loading" | "ready" | "error"; label: string }>({ status: "idle", label: "" });
+  const [weatherSource, setWeatherSource] = useState<WeatherSourceKey>(readWeatherSource);
   const [frameReady, setFrameReady] = useState(false);
   const [studyReady, setStudyReady] = useState(false);
   const [configuredSurfaceCount, setConfiguredSurfaceCount] = useState(0);
@@ -1201,7 +1240,7 @@ function StudioPage({
     if (context.location) {
       const { label, coordinates } = context.location;
       const addressLabel = cleanAddressLabel(label, language);
-      const key = `${coordinates.lat.toFixed(6)}:${coordinates.lng.toFixed(6)}:${language}:${addressLabel}`;
+      const key = `${coordinates.lat.toFixed(6)}:${coordinates.lng.toFixed(6)}:${language}:${addressLabel}:${weatherSource}`;
       if (root.dataset.hostLocation !== key) {
         const year = new Date().getUTCFullYear() - 1;
         const timezone = studioWindow.ModerniteLocationCore?.timezone?.(coordinates.lat, coordinates.lng, year);
@@ -1225,19 +1264,20 @@ function StudioPage({
         weatherAbortRef.current?.abort();
         const controller = new AbortController();
         weatherAbortRef.current = controller;
-        setWeatherState({ status: "loading", label: "PVGIS weather loading…" });
+        const sourceLabel = WEATHER_SOURCE_LABELS[weatherSource];
+        setWeatherState({ status: "loading", label: sourceLabel.loading });
         const weatherQuery = new URLSearchParams({ lat: String(site.lat), lon: String(site.lon), tz: String(site.tz), zone: site.zone, year: String(year), address: addressLabel });
-        fetch(`${APP_BASE_PATH}/api/weather/pvgis-tmy?${weatherQuery}`, { signal: controller.signal })
+        fetch(`${APP_BASE_PATH}/api/weather/${weatherSource}?${weatherQuery}`, { signal: controller.signal })
           .then(async (response) => {
             const body = await response.json() as CompactWeather & { error?: string };
             if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
             studioWindow.ModerniteEnergyApp?.acceptWeather?.(expandWeather(body));
             studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
-            setWeatherState({ status: "ready", label: String(body.source ?? "PVGIS TMY") });
+            setWeatherState({ status: "ready", label: String(body.source ?? sourceLabel.short) });
           })
           .catch((error: unknown) => {
             if (controller.signal.aborted) return;
-            setWeatherState({ status: "error", label: `PVGIS unavailable — Studio uses its synthetic climate (${error instanceof Error ? error.message : "error"})` });
+            setWeatherState({ status: "error", label: `${sourceLabel.short} unavailable — Studio uses its synthetic climate (${error instanceof Error ? error.message : "error"})` });
           });
       }
     }
@@ -1254,7 +1294,32 @@ function StudioPage({
         }
       }
     }
-  }, [context.location, context.siteArea, language, studioRegion, text.environmentControls, text.environmentTab]);
+
+    const match = context.buildingMatch;
+    const bridge = studioWindow.ModerniteEnergyBridge;
+    if (match && bridge?.dimensions && bridge.setDimensions) {
+      const buildingKey = `${studioRegion}:${match.osmId}:${match.widthM}:${match.depthM}:${match.floors ?? ""}:${match.frontAzimuthDeg}`;
+      if (root.dataset.hostBuilding !== buildingKey) {
+        const current = bridge.dimensions();
+        const units = current.units ?? 1;
+        const clampTo = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value * 10) / 10));
+        try {
+          bridge.setDimensions({
+            width: clampTo(match.widthM, 4 * units, 150),
+            depth: clampTo(match.depthM, 4, 100),
+            floors: match.floors ? Math.min(60, Math.max(1, Math.round(match.floors))) : current.floors,
+            storeyHeight: current.storeyHeight,
+            wwr: current.wwr,
+          });
+          studioWindow.ModerniteEnergyApp?.setOrientation?.(match.frontAzimuthDeg % 360);
+          studioWindow.dispatchEvent(new Event("modernite-model-change"));
+          root.dataset.hostBuilding = buildingKey;
+        } catch (error) {
+          console.warn("[studio] building match not applied", error);
+        }
+      }
+    }
+  }, [context.buildingMatch, context.location, context.siteArea, language, studioRegion, text.environmentControls, text.environmentTab, weatherSource]);
 
   useEffect(() => {
     if (frameReady) applyStudioContext();
@@ -1277,8 +1342,17 @@ function StudioPage({
     const coordinates = context.location?.coordinates;
     const zone = coordinates ? studioWindow?.ModerniteLocationCore?.timezone?.(coordinates.lat, coordinates.lng, new Date().getUTCFullYear() - 1) : undefined;
     const north = studioWindow?.ModerniteEnergyApp?.getOrientation?.();
-    return { timezone: zone?.tz, timezoneName: zone?.zone, buildingNorthDeg: Number.isFinite(north) ? north : undefined };
-  }, [context.location]);
+    return { timezone: zone?.tz, timezoneName: zone?.zone, buildingNorthDeg: Number.isFinite(north) ? north : undefined, weatherSource };
+  }, [context.location, weatherSource]);
+
+  const changeWeatherSource = useCallback((next: WeatherSourceKey) => {
+    try {
+      window.localStorage.setItem(WEATHER_SOURCE_STORAGE_KEY, next);
+    } catch {
+      // Storage can be unavailable in private browsing; the choice still applies to this session.
+    }
+    setWeatherSource(next);
+  }, []);
 
   const requestCalculation = useCallback(() => {
     const snapshot = getWorkflowSnapshot();
@@ -1366,7 +1440,7 @@ function StudioPage({
         </div>
       </section>
       <section className="studio-host-context">
-        <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}><SunMedium size={11} aria-hidden="true" /> {weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? "Loading PVGIS weather…" : "PVGIS unavailable · synthetic climate"}</em>}</span>
+        <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">Weather source</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label="Weather source">{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? WEATHER_SOURCE_LABELS[weatherSource].loading : `${WEATHER_SOURCE_LABELS[weatherSource].short} unavailable · synthetic climate`}</em>}</span>}</span>
         <span><Globe2 size={22} /><small>{text.market}</small><b>{market.name}</b></span>
         <span><Home size={22} /><small>{text.studioProgress}</small><b>{text.activeSurfacesConfigured(configuredSurfaceCount || 4)}</b><i /></span>
         <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
@@ -1641,7 +1715,7 @@ function GenerationRangeCard({ study, scenario }: { study: ProjectCalculation; s
   const band = Math.max(1, range.high - range.low);
   const representativePosition = ((range.representative - range.low) / band) * 100;
   return <section className="result-section generation-range-card generation-hero-card">
-    <div className="range-card-top"><div><p className="mini-label">Project study result</p><strong>{range.representative.toLocaleString()} <small>kWh / year</small></strong><p>Representative annual generation from {study.result.surfaces.length} configured BIPV surfaces.</p></div><span><i /> Local empirical · PVGIS connector ready</span></div>
+    <div className="range-card-top"><div><p className="mini-label">Project study result</p><strong>{range.representative.toLocaleString()} <small>kWh / year</small></strong><p>Representative annual generation from {study.result.surfaces.length} configured BIPV surfaces.</p></div><span><i /> Customer V31 model · {study.weather.kind === "customer-synthetic" ? "synthetic climate" : study.weather.kind === "nasa-power" ? "NASA POWER weather" : "PVGIS weather"}</span></div>
     <div className="range-insight-grid">
       <div className="range-window"><div className="range-window-head"><span>Annual estimate range</span><b>{range.low.toLocaleString()} – {range.high.toLocaleString()} kWh / year</b></div><div className="range-points"><span><i>Low</i><b>{range.low.toLocaleString()}</b></span><span className="is-main"><i>Representative</i><b>{range.representative.toLocaleString()}</b></span><span><i>High</i><b>{range.high.toLocaleString()}</b></span></div><div className="range-track"><em style={{ left: "0%" }} /><strong style={{ left: `${representativePosition}%` }} /><em style={{ left: "100%" }} /></div><p>Use this range to discuss conservative, representative, and upper planning cases.</p></div>
       <div className="hero-result-metrics">
@@ -1675,7 +1749,7 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate, language }: { st
         <MonthlyProfileChart study={study} />
         <ScenarioComparisonPanel scenarios={study.result.scenarios} scenario={scenario} onSelect={setScenarioId} />
         <CashPositionChart scenarios={study.result.scenarios} scenario={scenario} />
-        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>{study.weather.kind === "pvgis-tmy" ? "Customer V31 hourly model · PVGIS weather" : "Customer V31 hourly model · synthetic climate"}</h2></div><span className={`validation-status ${study.validation.status}`}>{study.weather.kind === "pvgis-tmy" ? "Site weather" : "Indicative"}</span></div><div className="validation-grid"><div><span>Annual generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Hourly weather</span><strong>{study.weather.source}</strong></div><div><span>Horizontal irradiation</span><strong>GHI {study.weather.annualGhiKwhM2} · DNI {study.weather.annualDniKwhM2} · DHI {study.weather.annualDhiKwhM2} kWh/m²</strong></div><div><span>Solar used on site</span><strong>{Math.round(sim.selfConsumption * 100)}% self-consumption · {Math.round(sim.selfSufficiency * 100)}% self-sufficiency</strong></div><div><span>With {sim.battery.nominalKwh} kWh battery</span><strong>{Math.round(sim.battery.selfConsumedKwh).toLocaleString()} kWh used on site</strong></div><div><span>Inverter (≤1% clipping)</span><strong>{sim.inverterKw} kW · recommended battery {sim.recommendedBatteryKwh} kWh</strong></div></div><p className="result-note">{study.validation.note}</p></section>
+        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>{study.weather.kind === "nasa-power" ? "Customer V31 hourly model · NASA POWER weather" : study.weather.kind === "pvgis-tmy" ? "Customer V31 hourly model · PVGIS weather" : "Customer V31 hourly model · synthetic climate"}</h2></div><span className={`validation-status ${study.validation.status}`}>{study.weather.kind === "customer-synthetic" ? "Indicative" : "Site weather"}</span></div><div className="validation-grid"><div><span>Annual generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Hourly weather</span><strong>{study.weather.source}</strong></div><div><span>Horizontal irradiation</span><strong>GHI {study.weather.annualGhiKwhM2} · DNI {study.weather.annualDniKwhM2} · DHI {study.weather.annualDhiKwhM2} kWh/m²</strong></div><div><span>Solar used on site</span><strong>{Math.round(sim.selfConsumption * 100)}% self-consumption · {Math.round(sim.selfSufficiency * 100)}% self-sufficiency</strong></div><div><span>With {sim.battery.nominalKwh} kWh battery</span><strong>{Math.round(sim.battery.selfConsumedKwh).toLocaleString()} kWh used on site</strong></div><div><span>Inverter (≤1% clipping)</span><strong>{sim.inverterKw} kW · recommended battery {sim.recommendedBatteryKwh} kWh</strong></div></div><p className="result-note">{study.validation.note}</p></section>
         {solar && <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">External reference</p><h2>Google Solar roof model</h2></div><span className={`validation-status ${solar.status}`}>{solar.status === "ok" ? `${solar.imageryQuality ?? ""} imagery` : "Unavailable"}</span></div>{solar.status === "ok" ? <><div className="validation-grid"><div><span>Roof segments</span><strong>{solar.roofSegments?.length ?? 0}</strong></div><div><span>Usable panel area</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div><div><span>Peak sunshine</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} h/year</strong></div></div><div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>Segment {index + 1}</strong><span>{segment.pitchDeg}° pitch · {segment.azimuthDeg}° azimuth</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} h/year</b></article>)}</div></> : null}<p className="result-note">{solar.note}{solar.distanceM !== undefined ? ` Nearest modelled building is ${solar.distanceM} m from the pin.` : ""}</p></section>}
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Configured surfaces</p><h2>Generation by surface</h2></div></div><div className="surface-list">{study.result.surfaces.map((surface: SurfaceResult) => <article className="surface-row" key={surface.surfaceId}><div><strong>{surface.surfaceLabel}</strong><span>{surface.productName}{surface.finishName ? ` · ${surface.finishName}` : ""}</span></div><span>{surface.areaM2.toFixed(1)} m²</span><b>{Math.round(surface.annualKwh).toLocaleString()} kWh/year</b></article>)}</div>{recommended && <p className="result-note"><CircleHelp size={14} /> The largest configured contribution is {recommended.surfaceLabel} ({Math.round(recommended.annualKwh).toLocaleString()} kWh/year).</p>}</section>
         <section className="result-section source-ledger"><div className="result-section-heading"><div><p className="mini-label">Method ledger</p><h2>Inputs held in the study</h2></div></div><dl>{study.result.ledger.map((entry: LedgerEntry) => <div key={entry.id}><dt>{entry.label}</dt><dd>{entry.value}</dd></div>)}</dl></section>
@@ -1768,7 +1842,11 @@ export default function App() {
   }, []);
 
   const updateLocation = useCallback((location: ProjectLocationSelection) => {
-    setContext((current) => ({ ...current, location, updatedAt: Date.now() }));
+    setContext((current) => ({ ...current, location, buildingMatch: null, updatedAt: Date.now() }));
+  }, []);
+
+  const updateBuildingMatch = useCallback((buildingMatch: BuildingMatch | null) => {
+    setContext((current) => ({ ...current, buildingMatch, updatedAt: Date.now() }));
   }, []);
 
   const updateSiteArea = useCallback((siteArea: SiteAreaSelection | null) => {
@@ -1847,7 +1925,7 @@ export default function App() {
         <GatewayHeader route={route} language={studioLanguage} copy={copy} canOpenStudio={Boolean(context.location)} onLanguageChange={setStudioLanguage} onNavigate={navigate} />
         {route === "entry" && <EntryPage copy={copy} language={studioLanguage} onLanguageChange={setStudioLanguage} onStart={beginProject} onNavigate={navigate} />}
         {route === "market" && <MarketPage market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
-        {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onNavigate={navigate} />}
+        {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onBuildingMatchChange={updateBuildingMatch} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
           settings={context.energySettings}
           canCalculate={Boolean(context.location)}

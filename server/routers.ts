@@ -1,6 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
+import { getBuildingFootprint } from "./building-service";
 import { getGoogleSolarReference } from "./google-solar-service";
+import { ENV } from "./_core/env";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -31,6 +33,11 @@ export const appRouter = router({
     solarInsights: publicProcedure
       .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }))
       .query(({ input }) => getGoogleSolarReference(input.lat, input.lng)),
+    buildingFootprint: publicProcedure
+      .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }))
+      .query(({ input }) => getBuildingFootprint(input.lat, input.lng)),
+    // The Maps key is a browser key restricted to the preview origins and Maps JS / Map Tiles.
+    publicConfig: publicProcedure.query(() => ({ googleMapsApiKey: ENV.googleMapsBrowserKey || null })),
   }),
 
   projectStudy: router({

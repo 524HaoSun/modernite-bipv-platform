@@ -152,7 +152,20 @@ function vitePluginManusDebugCollector(): Plugin {
 // `jsxLocPlugin` injects a DOM-only `data-loc` prop into every JSX element.
 // React Three Fiber receives that prop on Three.js objects and attempts to
 // apply it as an object property, causing /products to crash at runtime.
-const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function vitePluginOptionalAnalytics(): Plugin {
+  let endpoint = "";
+  return {
+    name: "optional-analytics",
+    configResolved(config) {
+      endpoint = config.env.VITE_ANALYTICS_ENDPOINT ?? "";
+    },
+    transformIndexHtml(html) {
+      return endpoint ? html : html.replace(/\s*<script[^>]*%VITE_ANALYTICS_ENDPOINT%[\s\S]*?<\/script>/, "");
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginOptionalAnalytics()];
 
 export default defineConfig({
   base: process.env.GITHUB_PAGES === "true" ? "/modernite-bipv-platform/" : "/",
