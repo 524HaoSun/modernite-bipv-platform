@@ -1,43 +1,28 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { createEmpiricalEstimate } from "../lib/estimate-engine";
-import { localClimateMethodNote, localEmpiricalClimateSeries } from "../lib/local-climate";
-import { buildPlanningInput, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../lib/studio-calculation";
-import type { EstimateResult, Surface } from "../types/solar";
+import { runCustomerStudy, syntheticWeatherFor, type CustomerStudy } from "../lib/customer-study";
+import { PROFILES, type Weather } from "../lib/customer-energy-core";
+import type { HomeEnergySettings, StudioCalculationSnapshot } from "../lib/studio-calculation";
 import { invokeLLM } from "./_core/llm";
-import { createPlanningAIProvider } from "./planning-ai";
+import { getGoogleSolarReference } from "./google-solar-service";
+import { getPvgisTmyWeather } from "./weather-service";
 
 export type ProjectCalculationInput = {
   market: "GB" | "EU" | "CA" | "JP";
   address: string;
   coordinates: { lat: number; lng: number };
+  timezone?: number;
+  timezoneName?: string;
+  buildingNorthDeg?: number;
   studioSnapshot: StudioCalculationSnapshot;
   energySettings?: HomeEnergySettings;
 };
 
-export type ProjectValidation = {
-  status: "not-connected";
-  annualKwh: number | null;
-  standardDeviationKwh: number | null;
-  empiricalAnnualKwh: number;
-  deltaKwh: number | null;
-  deltaPercent: number | null;
-  specificYield: number | null;
-  endpoint: "v5_3/PVcalc" | null;
-  database: string | null;
-  note: string;
-};
+export type { ProjectValidation } from "../lib/customer-study";
 
-export type ProjectCalculation = {
+export type ProjectCalculation = CustomerStudy & {
   caseId: string;
   createdAt: string;
-  result: EstimateResult;
-  validation: ProjectValidation;
-  energy: {
-    annualDemandKwh: number;
-    source: "bill" | "ai-estimate" | "fallback-estimate";
-    note: string;
-  };
 };
 
 type StoredStudy = ProjectCalculation & { expiresAt: number };
@@ -51,92 +36,40 @@ function purgeExpiredStudies() {
   }
 }
 
-function conservativeDemandFallback(settings: HomeEnergySettings | undefined) {
-  const people = Math.max(1, Math.min(12, Math.round(settings?.householdSize ?? 2)));
-  const occupancy = settings?.daytimeOccupancy === "usually" ? 500 : settings?.daytimeOccupancy === "rarely" ? -250 : 0;
-  const heat = settings?.electricHeating ? 7_000 : settings?.heatPump ? 3_800 : 0;
-  const hotWater = settings?.electricHotWater ? 1_300 : 0;
-  const ev = settings?.evCharger ? 2_100 : 0;
-  return Math.max(1_600, Math.round(1_450 + people * 900 + occupancy + heat + hotWater + ev));
-}
-
-async function resolveAnnualDemand(settings: HomeEnergySettings | undefined) {
-  if (settings?.demandMode === "bill" && settings.annualDemandKwh && settings.annualDemandKwh > 0) {
-    return { annualDemandKwh: Math.round(settings.annualDemandKwh), source: "bill" as const, note: "Annual demand supplied from the household energy bill." };
-  }
-  const fallback = conservativeDemandFallback(settings);
-  if (!settings) {
-    return { annualDemandKwh: fallback, source: "fallback-estimate" as const, note: "A cautious household estimate was used because a bill was not provided." };
-  }
-  try {
-    const estimate = await createPlanningAIProvider().estimateAnnualDemand({
-      householdSize: settings.householdSize ?? 2,
-      daytimeOccupancy: settings.daytimeOccupancy ?? "sometimes",
-      electricHeating: settings.electricHeating ?? false,
-      heatPump: settings.heatPump ?? false,
-      electricHotWater: settings.electricHotWater ?? false,
-      evCharger: settings.evCharger ?? false,
-      deterministicFallbackKwh: fallback,
-    });
-    return {
-      annualDemandKwh: estimate.annualDemandKwh,
-      source: estimate.provider === "manus" ? "ai-estimate" as const : "fallback-estimate" as const,
-      note: estimate.note,
-    };
-  } catch {
-    return { annualDemandKwh: fallback, source: "fallback-estimate" as const, note: "A cautious household estimate was used because a bill was not provided." };
-  }
-}
-
 export async function runProjectCalculation(input: ProjectCalculationInput): Promise<ProjectCalculation> {
-  const region = regionForMarket(input.market);
-  const demand = await resolveAnnualDemand(input.energySettings);
-  const planning = buildPlanningInput({
-    region,
-    label: input.address,
+  if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && PROFILES[surface.profile])) {
+    throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
+  }
+  const timezone = Number.isFinite(input.timezone) ? input.timezone! : Math.round(input.coordinates.lng / 15);
+  const location = { lat: input.coordinates.lat, lon: input.coordinates.lng, tz: timezone, zone: input.timezoneName ?? "" };
+  const year = new Date().getUTCFullYear() - 1;
+  const [weatherResult, googleSolar] = await Promise.all([
+    getPvgisTmyWeather({ ...location, address: input.address, year }).then(
+      (weather): { weather: Weather; error?: string } => ({ weather }),
+      (error: unknown) => ({ weather: syntheticWeatherFor(input.market, location), error: error instanceof Error ? error.message : String(error) }),
+    ),
+    getGoogleSolarReference(input.coordinates.lat, input.coordinates.lng).catch(() => null),
+  ]);
+  if (weatherResult.error) console.warn("[study] PVGIS unavailable, using customer synthetic climate:", weatherResult.error);
+
+  const study = runCustomerStudy({
+    market: input.market,
+    address: input.address,
     coordinates: input.coordinates,
+    timezone,
     snapshot: input.studioSnapshot,
-    energySettings: {
-      demandMode: input.energySettings?.demandMode ?? "estimate",
-      annualDemandKwh: demand.annualDemandKwh,
-      householdSize: input.energySettings?.householdSize ?? 2,
-      daytimeOccupancy: input.energySettings?.daytimeOccupancy ?? "sometimes",
-      electricHeating: input.energySettings?.electricHeating ?? false,
-      heatPump: input.energySettings?.heatPump ?? false,
-      electricHotWater: input.energySettings?.electricHotWater ?? false,
-      evCharger: input.energySettings?.evCharger ?? false,
-      batteryMode: input.energySettings?.batteryMode ?? "solar-only",
-      batteryCapacityKwh: input.energySettings?.batteryCapacityKwh ?? 5,
-      projectPriceGbp: input.energySettings?.projectPriceGbp ?? null,
-      batteryPriceGbp: input.energySettings?.batteryPriceGbp ?? null,
-    },
+    buildingNorthDeg: input.buildingNorthDeg,
+    energySettings: input.energySettings,
+    weather: weatherResult.weather,
+    googleSolar,
   });
-  if (!planning.surfaces.length) throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
-
-  const result = createEmpiricalEstimate(planning, (surface) => localEmpiricalClimateSeries({
-    region,
-    azimuthDeg: surface.azimuthDeg,
-    tiltDeg: surface.tiltDeg,
-  }));
-
-  const validation: ProjectValidation = {
-    status: "not-connected",
-    annualKwh: null,
-    standardDeviationKwh: null,
-    empiricalAnnualKwh: result.range.representative,
-    deltaKwh: null,
-    deltaPercent: null,
-    specificYield: null,
-    endpoint: null,
-    database: result.engine.irradianceDatabase,
-    note: `${localClimateMethodNote(region)} The local empirical model is the active primary calculation. An external validation provider can be connected later, but it never blocks this result.`,
-  };
-
   const caseId = `MOD-${randomUUID().slice(0, 8).toUpperCase()}`;
-  const study: StoredStudy = { caseId, createdAt: new Date().toISOString(), result, validation, energy: demand, expiresAt: Date.now() + STUDY_TTL_MS };
+  study.result.caseNumber = caseId;
+  const stored: StoredStudy = { ...study, caseId, createdAt: new Date().toISOString(), expiresAt: Date.now() + STUDY_TTL_MS };
   purgeExpiredStudies();
-  studies.set(caseId, study);
-  return study;
+  studies.set(caseId, stored);
+  const { expiresAt: _expiresAt, ...response } = stored;
+  return response;
 }
 
 const insightSchema = z.object({
@@ -162,6 +95,9 @@ function factPack(study: StoredStudy) {
     empiricalRangeKwh: study.result.range,
     capacityKwp: Number(study.result.totalCapacityKwp.toFixed(2)),
     surfaces: study.result.surfaces.map((surface) => ({ label: surface.surfaceLabel, product: surface.productName, areaM2: Number(surface.areaM2.toFixed(1)), annualKwh: Math.round(surface.annualKwh) })),
+    weather: study.weather,
+    simulation: study.simulation,
+    googleSolar: study.googleSolar,
     validation: study.validation,
     householdDemand: study.energy,
     method: study.result.engine.conversionRule,
@@ -176,7 +112,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
   const facts = factPack(study);
   try {
     const response = await invokeLLM({
-      model: "gpt-5-mini",
+      model: "gpt-5.5",
       messages: [
         {
           role: "system",
@@ -208,7 +144,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
     return {
       answer: `The deterministic study estimates ${study.result.range.representative.toLocaleString()} kWh/year from ${study.result.totalCapacityKwp.toFixed(2)} kWp. The detailed surface breakdown and source ledger remain the authoritative record for this study.`,
       evidence: ["Deterministic empirical calculation completed", `Study reference: ${study.caseId}`],
-      assumptions: ["The result uses the selected Studio geometry and the local empirical climate profile."],
+      assumptions: [`The result uses the selected Studio geometry and ${study.weather.source}.`],
       followUp: ["Review the surface-level output", "Confirm location weather inside Solar Studio"],
     };
   }
@@ -217,7 +153,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
 export async function askDesignAssistant(question: string, stage: "design" | "energy") {
   try {
     const response = await invokeLLM({
-      model: "gpt-5-mini",
+      model: "gpt-5.5",
       messages: [
         {
           role: "system",
@@ -238,6 +174,9 @@ export const projectCalculationInputSchema = z.object({
   market: z.enum(["GB", "EU", "CA", "JP"]),
   address: z.string().trim().min(2).max(300),
   coordinates: z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }),
+  timezone: z.number().finite().min(-14).max(14).optional(),
+  timezoneName: z.string().max(64).optional(),
+  buildingNorthDeg: z.number().finite().min(-360).max(720).optional(),
   studioSnapshot: z.object({
     building: z.object({
       id: z.string().min(1).max(80),
@@ -246,6 +185,8 @@ export const projectCalculationInputSchema = z.object({
       floors: z.number().finite().positive().max(100).optional(),
       storeyHeight: z.number().finite().positive().max(30).optional(),
       usage: z.enum(["office", "residential"]).optional(),
+      wwr: z.number().finite().min(0).max(0.95).optional(),
+      glazedArea: z.number().finite().min(0).max(100_000).optional(),
     }),
     surfaces: z.array(z.object({
       id: z.string().min(1).max(160),
@@ -256,7 +197,10 @@ export const projectCalculationInputSchema = z.object({
       az: z.number().finite().min(0).max(360),
       enabled: z.boolean().optional(),
       role: z.string().max(80).optional(),
-    })).max(80),
+      linked: z.boolean().optional(),
+      u: z.number().finite().min(0).max(10).optional(),
+      g: z.number().finite().min(0).max(1).optional(),
+    })).max(200),
   }),
   energySettings: z.object({
     demandMode: z.enum(["bill", "estimate"]),

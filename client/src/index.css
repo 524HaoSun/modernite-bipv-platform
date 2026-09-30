@@ -5017,3 +5017,10 @@ html:lang(ja) .eyebrow {
     display: none !important;
   }
 }
+
+.studio-weather-chip { display: inline-flex; align-items: center; gap: 5px; width: fit-content; margin-top: 4px; padding: 2px 8px; border: 1px solid #d3e0d1; border-radius: 999px; color: #456a54; background: rgba(255,255,255,.72); font-size: 10px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.studio-weather-chip.is-loading { color: #7b8c7f; }
+.studio-weather-chip.is-error { border-color: #e4cf9c; color: #735a30; background: rgba(255,250,238,.9); }
+.studio-host-context .studio-site-context { grid-template-rows: auto auto auto; }
+.studio-host-context .studio-site-context > svg { grid-row: 1 / span 3; }
+.studio-host-context .studio-site-context > .studio-weather-chip { grid-column: 2; grid-row: 3; }

@@ -12,7 +12,7 @@ describe("empirical coefficient generation model", () => {
 
   it("contains the 17 customer-supplied product profiles, including the façade-grey temperature coefficient", () => {
     expect(Object.keys(EMPIRICAL_PRODUCT_PROFILES)).toHaveLength(17);
-    expect(EMPIRICAL_PRODUCT_PROFILES["facade-grey"]).toEqual({ powerDensityWpM2: 120, directRiseKPerWm2: 0.03806, diffuseReflectedRiseKPerWm2: 0.03567 });
+    expect(EMPIRICAL_PRODUCT_PROFILES["facade-grey"]).toEqual({ powerDensityWpM2: 120, directRiseKPerWm2: 0.03806, diffuseReflectedRiseKPerWm2: 0.03515 });
     expect(EMPIRICAL_PRODUCT_PROFILES["tile-windsor:colour"].powerDensityWpM2).toBe(98.42);
     expect(EMPIRICAL_PRODUCT_PROFILES["facade-light"].powerDensityWpM2).toBe(100);
   });

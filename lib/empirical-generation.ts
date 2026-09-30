@@ -42,10 +42,10 @@ export const EMPIRICAL_PRODUCT_PROFILES: Readonly<Record<string, EmpiricalProduc
   railing: { powerDensityWpM2: 105, directRiseKPerWm2: 0.0256, diffuseReflectedRiseKPerWm2: 0.02418 },
   "window-edge": { powerDensityWpM2: 100, directRiseKPerWm2: 0.03814, diffuseReflectedRiseKPerWm2: 0.03605 },
   "window-standard": { powerDensityWpM2: 100, directRiseKPerWm2: 0.0294, diffuseReflectedRiseKPerWm2: 0.02743 },
-  skylight: { powerDensityWpM2: 105, directRiseKPerWm2: 0.04185, diffuseReflectedRiseKPerWm2: 0.04142 },
+  skylight: { powerDensityWpM2: 105, directRiseKPerWm2: 0.04385, diffuseReflectedRiseKPerWm2: 0.04142 },
   "conservatory-roof": { powerDensityWpM2: 100, directRiseKPerWm2: 0.04997, diffuseReflectedRiseKPerWm2: 0.0469 },
   "facade-black": { powerDensityWpM2: 150, directRiseKPerWm2: 0.04511, diffuseReflectedRiseKPerWm2: 0.04219 },
-  "facade-grey": { powerDensityWpM2: 120, directRiseKPerWm2: 0.03806, diffuseReflectedRiseKPerWm2: 0.03567 },
+  "facade-grey": { powerDensityWpM2: 120, directRiseKPerWm2: 0.03806, diffuseReflectedRiseKPerWm2: 0.03515 },
   "facade-light": { powerDensityWpM2: 100, directRiseKPerWm2: 0.03338, diffuseReflectedRiseKPerWm2: 0.03163 },
 };
 

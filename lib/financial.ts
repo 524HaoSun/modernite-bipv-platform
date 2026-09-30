@@ -20,6 +20,8 @@ type ScenarioInput = {
   energy: EnergyProfile;
   costs: CostProfile;
   unitPriceDivisor: number;
+  /** Self-consumed share of generation from an hourly simulation, replacing the occupancy heuristic. */
+  simulatedDirectShares?: { solarOnly: number; solarBattery: number };
 };
 
 function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): FinancialScenario {
@@ -27,7 +29,7 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
   const incremental = incrementalInvestment(costs).value ?? costs.schemePriceGbp ?? 0;
   const batteryPrice = costs.batteryPriceGbp ?? 0;
   const batteryRequested = costs.batteryInterest !== "no" && batteryPrice > 0;
-  const directShare = directUseShare(energy);
+  const directShare = input.simulatedDirectShares?.solarOnly ?? directUseShare(energy);
   const requiresTou = id === "battery-only";
   const hasTou = energy.peakPence > 0 && energy.offPeakPence >= 0 && energy.peakHours > 0 && energy.offPeakHours > 0;
   if (requiresTou && !hasTou) {
@@ -43,7 +45,7 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
   const flows = Array.from({ length: 25 }, (_, index) => {
     const year = index + 1;
     const generation = hasSolar ? degradedGeneration(annualGenerationKwh, year) : 0;
-    const effectiveDirectShare = hasBattery ? Math.min(0.9, directShare + 0.18) : directShare;
+    const effectiveDirectShare = hasBattery ? input.simulatedDirectShares?.solarBattery ?? Math.min(0.9, directShare + 0.18) : directShare;
     const directUse = Math.min(generation * effectiveDirectShare, energy.annualDemandKwh ?? 0);
     const exportKwh = Math.max(0, generation - directUse);
     const importRate = (energy.importPence / unitPriceDivisor) * (1 + costs.importGrowthPercent / 100) ** (year - 1);

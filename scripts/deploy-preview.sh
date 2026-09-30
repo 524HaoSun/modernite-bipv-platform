@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Build a standalone bundle (server.mjs + public/) and push it to the preview VM.
+# The VM already runs modernite.service (systemd) behind Caddy; /opt/modernite/.env holds secrets.
+set -euo pipefail
+
+VM="${PREVIEW_VM:-gcp-free-06-us-west}"
+ACCOUNT="${PREVIEW_ACCOUNT:-dashedasheeatys@gmail.com}"
+PROJECT="${PREVIEW_PROJECT:-dash-free-vm-0927}"
+ZONE="${PREVIEW_ZONE:-us-west1-a}"
+OUT="$(mktemp -d)"
+trap 'rm -rf "$OUT"' EXIT
+
+cd "$(dirname "$0")/.."
+pnpm vite build
+npx esbuild server/_core/index.ts --platform=node --bundle --format=esm --target=node22 \
+  --external:vite '--external:*/vite.config' \
+  --banner:js="import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" \
+  --outfile="$OUT/server.mjs"
+cp -r dist/public "$OUT/public"
+tar -C "$OUT" -czf "$OUT/modernite-deploy.tgz" server.mjs public
+
+GC=(--account="$ACCOUNT" --project="$PROJECT" --zone="$ZONE" --quiet)
+gcloud compute scp "$OUT/modernite-deploy.tgz" "$VM:/tmp/" "${GC[@]}"
+gcloud compute ssh "$VM" "${GC[@]}" --command 'set -e
+sudo rm -rf /opt/modernite/public
+sudo tar -xzf /tmp/modernite-deploy.tgz -C /opt/modernite && rm /tmp/modernite-deploy.tgz
+sudo chown -R modernite:modernite /opt/modernite
+sudo systemctl restart modernite
+sleep 2 && systemctl is-active modernite'

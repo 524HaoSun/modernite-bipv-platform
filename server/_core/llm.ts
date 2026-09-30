@@ -362,8 +362,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     messages: messages.map(normalizeMessage),
   };
 
-  if (model) {
-    payload.model = model;
+  if (ENV.llmModel || model) {
+    payload.model = ENV.llmModel || model;
   }
 
   if (tools && tools.length > 0) {

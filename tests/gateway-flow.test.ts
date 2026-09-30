@@ -36,8 +36,8 @@ describe("V28-aligned entry gateway", () => {
 
   it("includes a restrained local-model calculation transition and optional AI study control", () => {
     expect(app).toContain("Preparing your personalised project outlook.");
-    expect(app).toContain("Local empirical climate profile");
-    expect(app).toContain("Regional monthly baseline");
+    expect(app).toContain("Customer V31 hourly model · PVGIS weather");
+    expect(app).toContain("Hourly weather");
     expect(app).toContain("Modernité Design Guide");
     expect(app).toContain("PersistentStudyAssistant");
     expect(styles).toContain(".persistent-study-assistant");
@@ -136,7 +136,7 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain("Configuration required");
     expect(app).toContain("Add at least one solar product in the supplied Products step before calculating the project study.");
     expect(app).toContain("The project-study request ended before it completed.");
-    expect(app).toContain('SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v1"');
+    expect(app).toContain('SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2"');
     expect(app).toContain('(["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route)');
     expect(app).toContain("modernite:study-request");
     expect(app).toContain("modernite:finalize-request");

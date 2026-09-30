@@ -38,9 +38,10 @@ import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCop
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
-import { createEmpiricalEstimate } from "../../lib/estimate-engine";
-import { localClimateMethodNote, localEmpiricalClimateSeries } from "../../lib/local-climate";
-import { buildPlanningInput, mapStudioSnapshotToSurfaces, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
+import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
+import type { Weather } from "../../lib/customer-energy-core";
+import { expandWeather, type CompactWeather } from "../../lib/pvgis-tmy";
+import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
@@ -49,7 +50,7 @@ const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-clean-bg.png");
 const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
-const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v1";
+const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
 
 type GatewayRoute = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
 type StudioLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -75,7 +76,11 @@ type ProjectContext = {
 
 type StudioWindow = Window & {
   ModerniteEnergyBridge?: { snapshot?: () => StudioCalculationSnapshot };
-  ModerniteEnergyApp?: { setSite?: (site: Record<string, unknown>) => void };
+  ModerniteEnergyApp?: {
+    setSite?: (site: Record<string, unknown>) => void;
+    acceptWeather?: (weather: Weather) => void;
+    getOrientation?: () => number;
+  };
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
 
@@ -150,10 +155,10 @@ const DEFAULT_SITE_AREA: SiteAreaSelection = {
 const DEMO_STUDIO_SNAPSHOT: StudioCalculationSnapshot = {
   building: { id: "UK01", width: 10.8, depth: 8.5, floors: 2, storeyHeight: 2.95, usage: "residential" },
   surfaces: [
-    { id: "roof_south", product: "roof_tiles", profile: "windsor_black", area: 42, tilt: 31, az: 180, enabled: true, role: "roof" },
-    { id: "roof_east", product: "roof_tiles", profile: "windsor_black", area: 19, tilt: 31, az: 105, enabled: true, role: "roof" },
-    { id: "facade_south", product: "facade", profile: "facade_grey", area: 12, tilt: 90, az: 180, enabled: true, role: "facade" },
-    { id: "railing_west", product: "railing", profile: "railing", area: 6, tilt: 90, az: 270, enabled: true, role: "railing" },
+    { id: "roof_south", product: "roof_tiles", profile: "windsor_black", area: 42, tilt: 31, az: 180, enabled: true, role: "none", linked: false },
+    { id: "roof_east", product: "roof_tiles", profile: "windsor_black", area: 19, tilt: 31, az: 105, enabled: true, role: "none", linked: false },
+    { id: "facade_south", product: "facade", profile: "facade_grey", area: 12, tilt: 90, az: 180, enabled: true, role: "none", linked: false },
+    { id: "railing_west", product: "railing", profile: "railing", area: 6, tilt: 90, az: 270, enabled: true, role: "none", linked: false },
   ],
 };
 
@@ -582,45 +587,24 @@ function loadSavedStudy(): ProjectCalculation | null {
   }
 }
 
-function createDemoStudy(context?: ProjectContext): ProjectCalculation {
+export type StudyRequestExtras = { timezone?: number; timezoneName?: string; buildingNorthDeg?: number };
+
+function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSnapshot = DEMO_STUDIO_SNAPSHOT, extras: StudyRequestExtras = {}): ProjectCalculation {
   const marketKey = context?.marketKey ?? "EU";
-  const region = regionForMarket(marketKey);
   const location = context?.location ?? DEFAULT_PROJECT_LOCATION;
   const energySettings = { ...DEFAULT_ENERGY_SETTINGS, ...context?.energySettings };
-  const planning = buildPlanningInput({
-    region,
-    label: location.label,
+  const timezone = extras.timezone ?? Math.round(location.coordinates.lng / 15);
+  const study = runCustomerStudy({
+    market: marketKey,
+    address: location.label,
     coordinates: location.coordinates,
-    snapshot: DEMO_STUDIO_SNAPSHOT,
+    timezone,
+    snapshot,
+    buildingNorthDeg: extras.buildingNorthDeg,
     energySettings,
+    weather: syntheticWeatherFor(marketKey, { lat: location.coordinates.lat, lon: location.coordinates.lng, tz: timezone }),
   });
-  const result = createEmpiricalEstimate(planning, (surface) => localEmpiricalClimateSeries({
-    region,
-    azimuthDeg: surface.azimuthDeg,
-    tiltDeg: surface.tiltDeg,
-  }));
-  return {
-    caseId: "MOD-DEMO-0001",
-    createdAt: new Date().toISOString(),
-    result,
-    validation: {
-      status: "not-connected",
-      annualKwh: null,
-      standardDeviationKwh: null,
-      empiricalAnnualKwh: result.range.representative,
-      deltaKwh: null,
-      deltaPercent: null,
-      specificYield: null,
-      endpoint: null,
-      database: result.engine.irradianceDatabase,
-      note: `${localClimateMethodNote(region)} Demo mode uses the same local empirical calculation path. External validation and live API connectors can be added later without blocking this preview.`,
-    },
-    energy: {
-      annualDemandKwh: Math.round(energySettings.annualDemandKwh ?? 5400),
-      source: "bill",
-      note: "Demo case uses an example annual household electricity bill so the complete workflow can be reviewed offline.",
-    },
-  };
+  return { ...study, caseId: "MOD-DEMO-0001", createdAt: new Date().toISOString() };
 }
 
 function GatewayHeader({
@@ -1112,9 +1096,11 @@ function StudioPage({
   language: StudioLanguage;
   onLanguageChange: (language: StudioLanguage) => void;
   onNavigate: (route: GatewayRoute) => void;
-  onRunCalculation: (snapshot: StudioCalculationSnapshot) => void;
+  onRunCalculation: (snapshot: StudioCalculationSnapshot, extras: StudyRequestExtras) => void;
 }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const weatherAbortRef = useRef<AbortController | null>(null);
+  const [weatherState, setWeatherState] = useState<{ status: "idle" | "loading" | "ready" | "error"; label: string }>({ status: "idle", label: "" });
   const [frameReady, setFrameReady] = useState(false);
   const [studyReady, setStudyReady] = useState(false);
   const [configuredSurfaceCount, setConfiguredSurfaceCount] = useState(0);
@@ -1224,7 +1210,7 @@ function StudioPage({
           query.value = addressLabel;
           query.dispatchEvent(new Event("change", { bubbles: true }));
         }
-        studioWindow.ModerniteEnergyApp?.setSite?.({
+        const site = {
           lat: coordinates.lat,
           lon: coordinates.lng,
           tz: timezone?.tz ?? 0,
@@ -1232,9 +1218,27 @@ function StudioPage({
           address: addressLabel,
           level: "address",
           year,
-        });
+        };
+        studioWindow.ModerniteEnergyApp?.setSite?.(site);
         studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
         root.dataset.hostLocation = key;
+        weatherAbortRef.current?.abort();
+        const controller = new AbortController();
+        weatherAbortRef.current = controller;
+        setWeatherState({ status: "loading", label: "PVGIS weather loading…" });
+        const weatherQuery = new URLSearchParams({ lat: String(site.lat), lon: String(site.lon), tz: String(site.tz), zone: site.zone, year: String(year), address: addressLabel });
+        fetch(`${APP_BASE_PATH}/api/weather/pvgis-tmy?${weatherQuery}`, { signal: controller.signal })
+          .then(async (response) => {
+            const body = await response.json() as CompactWeather & { error?: string };
+            if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+            studioWindow.ModerniteEnergyApp?.acceptWeather?.(expandWeather(body));
+            studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
+            setWeatherState({ status: "ready", label: String(body.source ?? "PVGIS TMY") });
+          })
+          .catch((error: unknown) => {
+            if (controller.signal.aborted) return;
+            setWeatherState({ status: "error", label: `PVGIS unavailable — Studio uses its synthetic climate (${error instanceof Error ? error.message : "error"})` });
+          });
       }
     }
 
@@ -1268,6 +1272,14 @@ function StudioPage({
     onNavigate("energy");
   };
 
+  const studyExtras = useCallback((): StudyRequestExtras => {
+    const studioWindow = frameRef.current?.contentWindow as StudioWindow | null;
+    const coordinates = context.location?.coordinates;
+    const zone = coordinates ? studioWindow?.ModerniteLocationCore?.timezone?.(coordinates.lat, coordinates.lng, new Date().getUTCFullYear() - 1) : undefined;
+    const north = studioWindow?.ModerniteEnergyApp?.getOrientation?.();
+    return { timezone: zone?.tz, timezoneName: zone?.zone, buildingNorthDeg: Number.isFinite(north) ? north : undefined };
+  }, [context.location]);
+
   const requestCalculation = useCallback(() => {
     const snapshot = getWorkflowSnapshot();
     const supportedSurfaces = mapStudioSnapshotToSurfaces(snapshot);
@@ -1278,8 +1290,8 @@ function StudioPage({
       return;
     }
     setConfigurationNotice(null);
-    onRunCalculation(snapshot);
-  }, [getWorkflowSnapshot, onNavigate, onRunCalculation, text.addProductBeforeStudy]);
+    onRunCalculation(snapshot, snapshot === DEMO_STUDIO_SNAPSHOT ? { timezone: studyExtras().timezone } : studyExtras());
+  }, [getWorkflowSnapshot, onNavigate, onRunCalculation, studyExtras, text.addProductBeforeStudy]);
 
   useEffect(() => {
     if (!frameReady) return;
@@ -1354,7 +1366,7 @@ function StudioPage({
         </div>
       </section>
       <section className="studio-host-context">
-        <span><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b></span>
+        <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}><SunMedium size={11} aria-hidden="true" /> {weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? "Loading PVGIS weather…" : "PVGIS unavailable · synthetic climate"}</em>}</span>
         <span><Globe2 size={22} /><small>{text.market}</small><b>{market.name}</b></span>
         <span><Home size={22} /><small>{text.studioProgress}</small><b>{text.activeSurfacesConfigured(configuredSurfaceCount || 4)}</b><i /></span>
         <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
@@ -1646,7 +1658,9 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate, language }: { st
   const recommended = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh)[0];
   const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
-  const demandLabel = study.energy.source === "bill" ? "Your energy bill" : study.energy.source === "ai-estimate" ? "AI household estimate" : "Cautious household estimate";
+  const demandLabel = study.energy.source === "bill" ? "Calibrated to your energy bill" : "Customer building energy model";
+  const sim = study.simulation;
+  const solar = study.googleSolar;
   return (
     <section className="results-page gateway-page">
       <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> {text.resultsBack}</button><p className="eyebrow"><Sparkles size={14} /> {text.resultsEyebrow}</p><h1>{text.resultsTitle}</h1><p>{text.resultsIntro}</p></div><div className="result-case"><span>{text.studyReference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
@@ -1661,7 +1675,8 @@ function ResultsPage({ study, preferredBatteryMode, onNavigate, language }: { st
         <MonthlyProfileChart study={study} />
         <ScenarioComparisonPanel scenarios={study.result.scenarios} scenario={scenario} onSelect={setScenarioId} />
         <CashPositionChart scenarios={study.result.scenarios} scenario={scenario} />
-        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>Local empirical climate profile</h2></div><span className={`validation-status ${study.validation.status}`}>Primary method</span></div><div className="validation-grid"><div><span>Representative generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Climate profile</span><strong>Regional monthly baseline</strong></div><div><span>External validation</span><strong>Optional connector</strong></div></div><p className="result-note">{study.validation.note}</p></section>
+        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>{study.weather.kind === "pvgis-tmy" ? "Customer V31 hourly model · PVGIS weather" : "Customer V31 hourly model · synthetic climate"}</h2></div><span className={`validation-status ${study.validation.status}`}>{study.weather.kind === "pvgis-tmy" ? "Site weather" : "Indicative"}</span></div><div className="validation-grid"><div><span>Annual generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Hourly weather</span><strong>{study.weather.source}</strong></div><div><span>Horizontal irradiation</span><strong>GHI {study.weather.annualGhiKwhM2} · DNI {study.weather.annualDniKwhM2} · DHI {study.weather.annualDhiKwhM2} kWh/m²</strong></div><div><span>Solar used on site</span><strong>{Math.round(sim.selfConsumption * 100)}% self-consumption · {Math.round(sim.selfSufficiency * 100)}% self-sufficiency</strong></div><div><span>With {sim.battery.nominalKwh} kWh battery</span><strong>{Math.round(sim.battery.selfConsumedKwh).toLocaleString()} kWh used on site</strong></div><div><span>Inverter (≤1% clipping)</span><strong>{sim.inverterKw} kW · recommended battery {sim.recommendedBatteryKwh} kWh</strong></div></div><p className="result-note">{study.validation.note}</p></section>
+        {solar && <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">External reference</p><h2>Google Solar roof model</h2></div><span className={`validation-status ${solar.status}`}>{solar.status === "ok" ? `${solar.imageryQuality ?? ""} imagery` : "Unavailable"}</span></div>{solar.status === "ok" ? <><div className="validation-grid"><div><span>Roof segments</span><strong>{solar.roofSegments?.length ?? 0}</strong></div><div><span>Usable panel area</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div><div><span>Peak sunshine</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} h/year</strong></div></div><div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>Segment {index + 1}</strong><span>{segment.pitchDeg}° pitch · {segment.azimuthDeg}° azimuth</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} h/year</b></article>)}</div></> : null}<p className="result-note">{solar.note}{solar.distanceM !== undefined ? ` Nearest modelled building is ${solar.distanceM} m from the pin.` : ""}</p></section>}
         <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Configured surfaces</p><h2>Generation by surface</h2></div></div><div className="surface-list">{study.result.surfaces.map((surface: SurfaceResult) => <article className="surface-row" key={surface.surfaceId}><div><strong>{surface.surfaceLabel}</strong><span>{surface.productName}{surface.finishName ? ` · ${surface.finishName}` : ""}</span></div><span>{surface.areaM2.toFixed(1)} m²</span><b>{Math.round(surface.annualKwh).toLocaleString()} kWh/year</b></article>)}</div>{recommended && <p className="result-note"><CircleHelp size={14} /> The largest configured contribution is {recommended.surfaceLabel} ({Math.round(recommended.annualKwh).toLocaleString()} kWh/year).</p>}</section>
         <section className="result-section source-ledger"><div className="result-section-heading"><div><p className="mini-label">Method ledger</p><h2>Inputs held in the study</h2></div></div><dl>{study.result.ledger.map((entry: LedgerEntry) => <div key={entry.id}><dt>{entry.label}</dt><dd>{entry.value}</dd></div>)}</dl></section>
       </main><aside className="results-side-rail">
@@ -1791,7 +1806,7 @@ export default function App() {
     navigate("market");
   }, [navigate]);
 
-  const startCalculation = useCallback(async (studioSnapshot: StudioCalculationSnapshot) => {
+  const startCalculation = useCallback(async (studioSnapshot: StudioCalculationSnapshot, extras: StudyRequestExtras = {}) => {
     if (!context.location) {
       setCalculationError("Choose a project location before preparing a project study.");
       navigate("calculation");
@@ -1804,6 +1819,7 @@ export default function App() {
         market: context.marketKey,
         address: cleanAddressLabel(context.location.label, studioLanguage),
         coordinates: context.location.coordinates,
+        ...extras,
         studioSnapshot,
         energySettings: context.energySettings,
       });
@@ -1816,7 +1832,7 @@ export default function App() {
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
         setCalculationError("Add at least one supported solar product in the supplied Products step before calculating the project study.");
       } else {
-        const demoStudy = createDemoStudy(context);
+        const demoStudy = createDemoStudy(context, studioSnapshot, extras);
         setStudy(demoStudy);
         setCalculationError(null);
         navigate("results");

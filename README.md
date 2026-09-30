@@ -21,7 +21,7 @@ client/public/studio.html
 Expected SHA-256:
 
 ```text
-566789561e1972fced08618b47a964ffbc3f830251f9d8cacac95a104e8527a9
+e0017ad9761f374c16b6b230771f0dae2c072158cfa0100067c158575c225441
 ```
 
 The `.gitattributes` file marks this runtime as `-text` so Git line-ending normalization does not change its bytes.

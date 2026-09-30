@@ -10,6 +10,9 @@ export type StudioSurfaceSnapshot = {
   az: number;
   enabled?: boolean;
   role?: string;
+  linked?: boolean;
+  u?: number;
+  g?: number;
 };
 
 export type StudioCalculationSnapshot = {
@@ -20,6 +23,8 @@ export type StudioCalculationSnapshot = {
     floors?: number;
     storeyHeight?: number;
     usage?: "office" | "residential";
+    wwr?: number;
+    glazedArea?: number;
   };
   surfaces: StudioSurfaceSnapshot[];
 };
@@ -44,13 +49,13 @@ export type HomeEnergySettings = {
   batteryPriceGbp?: number | null;
 };
 
-type ProductMapping = {
+export type ProductMapping = {
   productId: string;
   kind: SurfaceKind;
   finishId: string | null;
 };
 
-function productForSnapshot(surface: StudioSurfaceSnapshot): ProductMapping | null {
+export function productForSnapshot(surface: StudioSurfaceSnapshot): ProductMapping | null {
   const profile = surface.profile.toLowerCase();
   if (surface.product === "roof_tiles") {
     const roofId = ["windsor", "cotswold", "yorkshire", "highland"].find((name) => profile.startsWith(name));

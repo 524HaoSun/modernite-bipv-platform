@@ -22,7 +22,7 @@ describe("customer V31 Studio runtime", () => {
     const expectedHash = fs.readFileSync(runtimeInventory, "utf8").split(/\s+/)[0];
     const actualHash = crypto.createHash("sha256").update(runtime).digest("hex");
     expect(actualHash).toBe(expectedHash);
-    expect(runtimeText).toContain("facade_grey:['Solar Facade Grey',120,.03806,.03567]");
+    expect(runtimeText).toContain("facade_grey:['Solar Facade Grey',120,.03806,.03515]");
     expect(runtimeText).toContain("V31");
     expect(runtimeText).toContain("UK01");
     expect(runtimeText).toContain("CA01");
