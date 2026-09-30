@@ -40,6 +40,6 @@ describe("customer V31 Studio runtime", () => {
     expect(runtimeText).toContain("THREE");
     expect(runtimeText).toContain("Inverter & battery sizing");
     expect(runtimeText).toContain("Gas boiler");
-    expect(runtimeText).toContain('<meta name="modernite-render-patch" content="v1">');
+    expect(runtimeText).toContain('<meta name="modernite-render-patch" content="v2">');
   });
 });

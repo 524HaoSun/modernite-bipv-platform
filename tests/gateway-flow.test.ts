@@ -143,8 +143,10 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain("Save configuration");
     expect(app).toContain("Download Studio PDF");
     expect(app).toContain("style[data-host-workflow]");
-    expect(app).toContain("Environment controls");
-    expect(app).toContain('studioTabs[4].hidden = true');
+    expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select { display: none !important; }"');
+    for (const customerFeature of [".mi-toolbar", "#modernite-arrange-panel", ".en-system-card", ".energy-launch-row", ".customer-buttons", "studioTabs[4].hidden"]) {
+      expect(app).not.toContain(customerFeature);
+    }
     expect(styles).toContain(".home-energy-panel");
     expect(styles).toContain(".energy-page");
     expect(styles).toContain(".finalise-card");

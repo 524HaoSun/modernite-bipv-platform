@@ -47,6 +47,7 @@ import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalcul
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html");
+const STUDIO_ADVISOR_PATH = publicPath("api/studio-advisor");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
 const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-clean-bg.png");
 const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
@@ -238,8 +239,6 @@ const OUTER_UI_COPY = {
     studioProgress: "Studio progress",
     activeSurfacesConfigured: (count: number) => `${count} active solar surfaces configured`,
     fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
-    environmentTab: "Environment",
-    environmentControls: "Environment controls",
     configurationComplete: "Configuration complete",
     nextEnergyTitle: "Next, personalise household energy.",
     nextEnergyBody: "Use the supplied Building, Products and Finishes controls to configure the project. Lighting remains available as an environment control inside the Studio; file export now belongs to the final Results stage.",
@@ -341,8 +340,6 @@ const OUTER_UI_COPY = {
     studioProgress: "工作室进度",
     activeSurfacesConfigured: (count: number) => `已配置 ${count} 个有效光伏面`,
     fallbackAddress: "英国伦敦 SW1A 1HF，30 St James's Street",
-    environmentTab: "环境",
-    environmentControls: "环境控制",
     configurationComplete: "配置已完成",
     nextEnergyTitle: "下一步，完善家庭能耗。",
     nextEnergyBody: "使用已提供的建筑、产品和饰面控件配置项目。照明作为环境控制保留在 Studio 内；文件导出放在最终结果阶段。",
@@ -444,8 +441,6 @@ const OUTER_UI_COPY = {
     studioProgress: "工作室進度",
     activeSurfacesConfigured: (count: number) => `已配置 ${count} 個有效光伏面`,
     fallbackAddress: "英國倫敦 SW1A 1HF，30 St James's Street",
-    environmentTab: "環境",
-    environmentControls: "環境控制",
     configurationComplete: "配置已完成",
     nextEnergyTitle: "下一步，完善家庭能耗。",
     nextEnergyBody: "使用已提供的建築、產品和飾面控制項配置專案。照明作為環境控制保留在 Studio 內；檔案匯出放在最終結果階段。",
@@ -1201,39 +1196,19 @@ function StudioPage({
       workflowStyle.dataset.hostWorkflow = "results-finalised";
       studioDocument.head.append(workflowStyle);
     }
-    workflowStyle.textContent = `
-      .studio-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-      .studio-tabs .studio-tab:nth-child(5),
-      .language-switch,
-      #language-select,
-      #open-gallery,
-      #install-help,
-      #advisor-top,
-      #generate-report,
-      #save-config,
-      .advisor-launcher,
-      .mi-toolbar,
-      .mi-reveal,
-      #modernite-arrange-panel,
-      .energy-launch-row,
-      .en-system-card,
-      .en-system-drawer,
-      .en-system-reveal {
-        display: none !important;
+    workflowStyle.textContent = ".language-switch, #language-select { display: none !important; }";
+
+    const advisorEndpoint = studioDocument.querySelector<HTMLInputElement>("#advisor-endpoint");
+    if (advisorEndpoint && root.dataset.hostAdvisor !== "online") {
+      const advisorMode = studioDocument.querySelector<HTMLSelectElement>("#advisor-mode");
+      const advisorConsent = studioDocument.querySelector<HTMLInputElement>("#advisor-consent");
+      advisorEndpoint.value = new URL(STUDIO_ADVISOR_PATH, window.location.origin).href;
+      if (advisorConsent) advisorConsent.checked = true;
+      if (advisorMode && advisorMode.value !== "online") {
+        advisorMode.value = "online";
+        advisorMode.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      .header-right { display: none !important; }
-      .customer-buttons { display: none !important; }
-      .title-card { max-width: 410px !important; }
-    `;
-    const studioTabs = Array.from(studioDocument.querySelectorAll<HTMLButtonElement>(".studio-tabs .studio-tab"));
-    if (studioTabs[4]) {
-      studioTabs[4].hidden = true;
-      studioTabs[4].setAttribute("aria-hidden", "true");
-    }
-    if (studioTabs[3]) {
-      const name = studioTabs[3].querySelector<HTMLElement>(".tab-name");
-      if (name) name.textContent = text.environmentTab;
-      studioTabs[3].setAttribute("aria-label", text.environmentControls);
+      root.dataset.hostAdvisor = "online";
     }
     root.dataset.hostWorkflow = "results-finalised";
 
@@ -1319,7 +1294,7 @@ function StudioPage({
         }
       }
     }
-  }, [context.buildingMatch, context.location, context.siteArea, language, studioRegion, text.environmentControls, text.environmentTab, weatherSource]);
+  }, [context.buildingMatch, context.location, context.siteArea, language, studioRegion, weatherSource]);
 
   useEffect(() => {
     if (frameReady) applyStudioContext();

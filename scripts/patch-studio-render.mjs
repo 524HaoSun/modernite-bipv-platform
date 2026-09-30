@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Applies the host's rendering-quality patch to a customer Solar Studio build.
 // Usage: node scripts/patch-studio-render.mjs <customer-studio.html> [output=client/public/studio.html]
-// Only renderer / camera / post-processing statements are touched; the energy, system,
-// location and shading scripts stay byte-identical (tests/customer-core-parity.test.ts).
+// Only renderer / camera / post-processing statements and the advisor endpoint check are touched;
+// the energy, system, location and shading scripts stay byte-identical (tests/customer-core-parity.test.ts).
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const MARKER = '<meta name="modernite-render-patch" content="v1">';
+const MARKER = '<meta name="modernite-render-patch" content="v2">';
 
 const FXAA_VERTEX = "varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}";
 const FXAA_FRAGMENT = [
@@ -62,6 +62,13 @@ const PATCHES = [
     find: "var V1=performance.now(),Lf=0;function eA(i){requestAnimationFrame(eA),!(document.hidden||i-Lf<28)&&(Lf=i,Ce.update(),Bf.frame(ln,(i-V1)/1e3),br.render())}",
     replace:
       "var V1=performance.now(),Lf=0;function mrNear(){let n=Math.min(3,Math.max(.05,ln.position.distanceTo(Ce.target)*.015));if(Math.abs(n-ln.near)>ln.near*.02){ln.near=n;ln.updateProjectionMatrix()}}function eA(i){requestAnimationFrame(eA),!(document.hidden||i-Lf<28)&&(Lf=i,Ce.update(),Bf.frame(ln,(i-V1)/1e3),mrNear(),br.render())}",
+  },
+  {
+    // The advisor's online mode only accepts absolute https endpoints. The host serves the advisor
+    // on its own origin (also over plain http on the preview IP), so same-origin URLs are allowed too.
+    id: "advisor-same-origin",
+    find: 'if(R=new URL(Wt("advisor-endpoint").value),R.protocol!=="https:"||R.username',
+    replace: 'if(R=new URL(Wt("advisor-endpoint").value,location.href),R.protocol!=="https:"&&R.origin!==location.origin||R.username',
   },
 ];
 
