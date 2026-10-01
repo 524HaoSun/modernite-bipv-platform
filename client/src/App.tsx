@@ -4,6 +4,8 @@ import {
   ArrowRight,
   Link2,
   Loader2,
+  Maximize2,
+  Minimize2,
   BarChart3,
   BatteryCharging,
   Check,
@@ -1635,6 +1637,38 @@ function StudioPage({
   const [tourOpen, setTourOpen] = useState(false);
   const guideRef = useRef<HTMLOListElement | null>(null);
   const guide = STUDIO_GUIDE_COPY[language];
+  const [focusMode, setFocusMode] = useState(false);
+  const toggleFocus = useCallback(() => {
+    const root = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    if (!focusMode) {
+      setFocusMode(true);
+      if (root.requestFullscreen) void root.requestFullscreen().catch(() => undefined);
+      else root.webkitRequestFullscreen?.();
+    } else {
+      setFocusMode(false);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+      else if (doc.webkitFullscreenElement) doc.webkitExitFullscreen?.();
+    }
+  }, [focusMode]);
+  useEffect(() => {
+    const sync = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element };
+      if (!document.fullscreenElement && !doc.webkitFullscreenElement) setFocusMode(false);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
+  }, []);
+  useEffect(() => {
+    if (!active && focusMode) {
+      setFocusMode(false);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    }
+  }, [active, focusMode]);
   const studioRegion = STUDIO_REGION_BY_MARKET[market.key];
   const workflow = WORKFLOW_LABELS[language];
   const bridgeCopy = STUDIO_BRIDGE_COPY[language];
@@ -1951,7 +1985,7 @@ function StudioPage({
   const tourTargets = [() => guideRef.current, guideStep(0), guideStep(1), () => frameRef.current, guideStep(3)];
 
   return (
-    <main className={`customer-studio-shell ${active ? "is-active" : ""}`} aria-hidden={!active}>
+    <main className={`customer-studio-shell is-workspace ${active ? "is-active" : ""} ${focusMode ? "is-focus" : ""}`} aria-hidden={!active}>
       <header className="studio-bridge-bar">
         <button type="button" className="studio-bridge-brand" onClick={() => onNavigate("location")} aria-label={bridgeCopy.returnToSite}>
           <span className="brand-mark"><Leaf size={16} strokeWidth={2.2} /></span>
@@ -1994,9 +2028,16 @@ function StudioPage({
             </button>
           </li>)}
         </ol>
-        <button type="button" className="studio-tour-button" onClick={() => setTourOpen(true)}><CircleHelp size={15} /> {guide.tutorial}</button>
+        <div className="studio-guide-tools">
+          <button type="button" className="studio-tour-button" onClick={() => setTourOpen(true)}><CircleHelp size={15} /> {guide.tutorial}</button>
+          <button type="button" className="studio-tour-button studio-fullscreen-button" onClick={toggleFocus}><Maximize2 size={15} /> {guide.fullscreen}</button>
+        </div>
       </section>
       <div className="customer-studio-stage">
+        {focusMode && <div className="studio-focus-bar">
+          <button type="button" onClick={toggleFocus}><Minimize2 size={14} /> {guide.exitFullscreen}</button>
+          <button type="button" className="is-primary" onClick={() => { toggleFocus(); continueToEnergy(); }}>{guide.steps[3]} <ArrowRight size={14} /></button>
+        </div>}
         {!frameReady && <div className="studio-opening-notice" aria-live="polite"><LoaderCircle size={15} /><span><b>{bridgeCopy.openingStudio}</b><small>{bridgeCopy.runtimeNotice}</small></span></div>}
         <iframe
           ref={frameRef}

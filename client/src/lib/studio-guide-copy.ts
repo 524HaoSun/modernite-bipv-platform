@@ -8,6 +8,8 @@ export type StudioGuideCopy = {
   energy: string;
   optional: string;
   tutorial: string;
+  fullscreen: string;
+  exitFullscreen: string;
   detectedBanner: string;
   tour: {
     next: string;
@@ -28,6 +30,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "Household use, generation and payback",
     optional: "Optional",
     tutorial: "Guide",
+    fullscreen: "Full screen",
+    exitFullscreen: "Exit full screen",
     detectedBanner: "Building type, size, roof and orientation were filled in from the map. Change anything below if it doesn't match.",
     tour: {
       next: "Next", back: "Back", done: "Start designing", skip: "Skip guide", counter: (step, total) => `${step} / ${total}`,
@@ -48,6 +52,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "填写用电，计算发电与回本",
     optional: "可选",
     tutorial: "使用教程",
+    fullscreen: "全屏",
+    exitFullscreen: "退出全屏",
     detectedBanner: "房型、尺寸、屋顶和朝向已根据地图自动填好；如有不符，直接在下方修改即可。",
     tour: {
       next: "下一步", back: "上一步", done: "开始设计", skip: "跳过教程", counter: (step, total) => `${step} / ${total}`,
@@ -68,6 +74,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "填寫用電，計算發電與回本",
     optional: "可選",
     tutorial: "使用教學",
+    fullscreen: "全螢幕",
+    exitFullscreen: "退出全螢幕",
     detectedBanner: "房型、尺寸、屋頂和朝向已根據地圖自動填好；如有不符，直接在下方修改即可。",
     tour: {
       next: "下一步", back: "上一步", done: "開始設計", skip: "跳過教學", counter: (step, total) => `${step} / ${total}`,
@@ -88,6 +96,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "Consommation, production et retour sur investissement",
     optional: "Facultatif",
     tutorial: "Guide",
+    fullscreen: "Plein écran",
+    exitFullscreen: "Quitter le plein écran",
     detectedBanner: "Type, dimensions, toiture et orientation ont été remplis d’après la carte. Modifiez ci-dessous si quelque chose ne correspond pas.",
     tour: {
       next: "Suivant", back: "Retour", done: "Commencer", skip: "Passer le guide", counter: (step, total) => `${step} / ${total}`,
@@ -108,6 +118,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "電力使用量、発電量、回収期間",
     optional: "任意",
     tutorial: "使い方",
+    fullscreen: "全画面",
+    exitFullscreen: "全画面を終了",
     detectedBanner: "建物タイプ・寸法・屋根・向きは地図から自動入力されています。違う場合は下で修正してください。",
     tour: {
       next: "次へ", back: "戻る", done: "設計を始める", skip: "ガイドを閉じる", counter: (step, total) => `${step} / ${total}`,
@@ -128,6 +140,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "Consumo, producción y amortización",
     optional: "Opcional",
     tutorial: "Guía",
+    fullscreen: "Pantalla completa",
+    exitFullscreen: "Salir de pantalla completa",
     detectedBanner: "El tipo, las medidas, la cubierta y la orientación se han rellenado con el mapa. Cambia abajo lo que no encaje.",
     tour: {
       next: "Siguiente", back: "Atrás", done: "Empezar a diseñar", skip: "Saltar guía", counter: (step, total) => `${step} / ${total}`,
@@ -148,6 +162,8 @@ export const STUDIO_GUIDE_COPY: Record<Language, StudioGuideCopy> = {
     energy: "Consumi, produzione e rientro",
     optional: "Facoltativo",
     tutorial: "Guida",
+    fullscreen: "Schermo intero",
+    exitFullscreen: "Esci da schermo intero",
     detectedBanner: "Tipo, misure, copertura e orientamento sono stati compilati dalla mappa. Modifica qui sotto ciò che non corrisponde.",
     tour: {
       next: "Avanti", back: "Indietro", done: "Inizia a progettare", skip: "Salta la guida", counter: (step, total) => `${step} / ${total}`,

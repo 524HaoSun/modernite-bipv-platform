@@ -5507,3 +5507,25 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .address-gate__suggestions b { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .address-gate__suggestions small { overflow: hidden; color: var(--m-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .address-gate__powered { padding: 4px 10px 2px; color: #8a978e; font-size: 10px; text-align: right; }
+
+/* Studio workspace: one viewport, no page scroll; focus mode = browser full screen with only the Studio */
+.customer-studio-shell.is-workspace.is-active { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden !important; }
+.customer-studio-shell.is-workspace .studio-page-intro,
+.customer-studio-shell.is-workspace .studio-aftercare { display: none !important; }
+.customer-studio-shell.is-workspace .studio-host-context.studio-guide { flex: 0 0 auto; margin: 10px 14px 0 !important; }
+.customer-studio-shell.is-workspace .customer-studio-stage { flex: 1 1 auto !important; height: auto !important; min-height: 0 !important; margin: 10px 14px 14px !important; }
+.customer-studio-shell.is-workspace .customer-studio-frame { width: 100%; height: 100%; }
+.studio-guide-tools { display: flex; gap: 6px; align-items: center; }
+.customer-studio-shell.is-focus .studio-bridge-bar,
+.customer-studio-shell.is-focus .studio-host-context { display: none !important; }
+.customer-studio-shell.is-focus .customer-studio-stage { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.customer-studio-shell.is-focus .customer-studio-frame { border-radius: 0 !important; }
+.studio-focus-bar { position: absolute; z-index: 6; top: 9px; left: 50%; display: flex; gap: 6px; padding: 4px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px; background: rgba(18, 34, 27, .72); box-shadow: 0 8px 24px rgba(0, 0, 0, .25); transform: translateX(-50%); backdrop-filter: blur(10px); }
+.studio-focus-bar button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 13px; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .88); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.studio-focus-bar button:hover { background: rgba(255, 255, 255, .12); }
+.studio-focus-bar button.is-primary { background: var(--v28-green, #1f5a3d); color: #fff; }
+@media (max-width: 760px) {
+  .customer-studio-shell.is-workspace.is-active { overflow-y: auto !important; }
+  .customer-studio-shell.is-workspace .customer-studio-stage { flex: 0 0 auto !important; height: 78dvh !important; }
+  .customer-studio-shell.is-focus .customer-studio-stage { height: 100dvh !important; }
+}

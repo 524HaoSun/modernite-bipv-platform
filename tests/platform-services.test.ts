@@ -78,7 +78,11 @@ describe("platform wiring", () => {
     const results = read("client/src/components/ResultsReport.tsx");
     expect(results).toContain("ShareActions");
     expect(results).toContain("/report.pdf");
-    expect(read("client/src/App.tsx")).toContain("SharedProjectPage");
+    const app = read("client/src/App.tsx");
+    expect(app).toContain("SharedProjectPage");
+    expect(app).toContain("customer-studio-shell is-workspace");
+    expect(app).toContain("requestFullscreen");
+    expect(read("client/src/index.css")).toContain(".customer-studio-shell.is-focus .studio-bridge-bar");
   });
 
   it("has share copy in all seven languages", () => {
