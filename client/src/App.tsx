@@ -1974,7 +1974,7 @@ function StudioPage({
   useEffect(() => {
     if (!frameReady) return;
     const studioDocument = frameRef.current?.contentDocument;
-    const actions = studioDocument?.querySelector(".sidebar > .customer-buttons");
+    const actions = studioDocument?.getElementById("generate-report")?.parentElement;
     const tabs = Array.from(studioDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab") ?? []);
     if (!studioDocument || !actions || tabs.length === 0) return;
     if (!studioDocument.querySelector("style[data-host-next-step]")) {
