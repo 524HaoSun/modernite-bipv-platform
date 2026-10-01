@@ -45,4 +45,18 @@ describe("OpenStreetMap building footprint", () => {
     const far = rectangle(10, 10, 0).map((p) => ({ lat: p.lat + 0.01, lon: p.lon }));
     expect(footprintFromOverpass([{ type: "way", id: 4, tags: { building: "yes" }, geometry: far }], site).status).toBe("not-found");
   });
+
+  it("marks Google outlines as such and keeps OSM roads for the front", () => {
+    const value = footprintFromOverpass([
+      { type: "way", id: -7, tags: { building: "yes", source: "google" }, geometry: rectangle(14, 9, 0) },
+      { type: "way", id: 2, tags: { highway: "residential", name: "Test Road" }, geometry: [toLatLon(-60, -25), toLatLon(60, -25)] },
+    ], site);
+    expect(value.status).toBe("ok");
+    expect(value.source).toBe("google");
+    expect(value.osmId).toBeUndefined();
+    expect(value.buildingTag).toBeUndefined();
+    expect(value.widthM).toBeCloseTo(14, 0);
+    expect(value.frontAzimuthDeg).toBe(180);
+    expect(value.note).toContain("Google Maps building outline");
+  });
 });

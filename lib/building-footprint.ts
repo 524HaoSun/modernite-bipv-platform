@@ -14,6 +14,8 @@ export type OverpassElement = {
 
 export type BuildingFootprint = {
   status: "ok" | "not-found";
+  /** Where the outline came from; Google outlines carry no levels or height tags. */
+  source?: "osm" | "google";
   osmId?: number;
   path?: LatLng[];
   footprintAreaM2?: number;
@@ -214,9 +216,12 @@ export function footprintFromOverpass(elements: OverpassElement[], site: LatLng,
   const heightM = parseMetres(tags.height);
   const floors = Number.isFinite(levels) && levels >= 1 ? Math.round(levels) : heightM ? Math.max(1, Math.round(heightM / 3)) : undefined;
   const round1 = (n: number) => Math.round(n * 10) / 10;
+  const fromGoogle = tags.source === "google";
+  const outlineNote = fromGoogle ? "Google Maps building outline" : `OpenStreetMap way ${chosen.element.id}`;
   return {
     status: "ok",
-    osmId: chosen.element.id,
+    source: fromGoogle ? "google" : "osm",
+    osmId: fromGoogle ? undefined : chosen.element.id,
     path: chosen.ring,
     footprintAreaM2: round1(chosen.area),
     widthM: round1(front.length),
@@ -228,9 +233,9 @@ export function footprintFromOverpass(elements: OverpassElement[], site: LatLng,
     floorsSource: Number.isFinite(levels) && levels >= 1 ? "osm-levels" : heightM ? "osm-height" : undefined,
     heightM,
     distanceM: round1(chosen.distance),
-    buildingTag: tags.building,
+    buildingTag: fromGoogle ? undefined : tags.building,
     attachedSides,
     center: centroid,
-    note: `OpenStreetMap way ${chosen.element.id}; width and depth from the minimum bounding rectangle${frontSource === "road" ? `, front facing ${roadName ?? "the nearest road"}` : ", front taken as the south-facing long side"}.`,
+    note: `${outlineNote}; width and depth from the minimum bounding rectangle${frontSource === "road" ? `, front facing ${roadName ?? "the nearest road"}` : ", front taken as the south-facing long side"}.`,
   };
 }

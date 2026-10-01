@@ -8,7 +8,7 @@ import type { BuildingFootprint, LatLng } from "./building-footprint";
 import type { GoogleSolarReference, GoogleSolarRoofSegment } from "./google-solar";
 import { studioTypeById, studioTypesForRegion, roofFormsFor, type StudioBuildingType, type StudioRegion, type StudioRoofForm } from "./studio-catalog";
 
-export type ProfileSource = "osm" | "google-solar" | "google-elevation" | "estimated" | "catalog";
+export type ProfileSource = "osm" | "google-maps" | "google-solar" | "google-elevation" | "estimated" | "catalog";
 export type ProfileField<T> = { value: T; source: ProfileSource };
 
 export type BuildingProfile = {
@@ -146,8 +146,9 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   const segments = segmentsForBuilding(solarOk, footprint, site);
   const roof = classifyRoof(segments);
 
-  let width: ProfileField<number> | null = footprint?.widthM ? { value: footprint.widthM, source: "osm" } : null;
-  let depth: ProfileField<number> | null = footprint?.depthM ? { value: footprint.depthM, source: "osm" } : null;
+  const outlineSource: ProfileSource = footprint?.source === "google" ? "google-maps" : "osm";
+  let width: ProfileField<number> | null = footprint?.widthM ? { value: footprint.widthM, source: outlineSource } : null;
+  let depth: ProfileField<number> | null = footprint?.depthM ? { value: footprint.depthM, source: outlineSource } : null;
   let front: ProfileField<number> | null = footprint?.frontAzimuthDeg !== undefined ? { value: footprint.frontAzimuthDeg, source: footprint.frontSource === "road" ? "osm" : "estimated" } : null;
   if ((!width || !depth) && solarOk?.boundingBox && (solarOk.distanceM ?? Infinity) <= 15) {
     const project = projector(site);
