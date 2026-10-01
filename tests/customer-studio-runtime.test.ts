@@ -41,6 +41,7 @@ describe("customer V31 Studio runtime", () => {
     expect(runtimeText).toContain("Inverter & battery sizing");
     expect(runtimeText).toContain("Gas boiler");
     expect(runtimeText).toContain('<meta name="modernite-render-patch" content="v3">');
+    expect(runtimeText).toContain("S&&w>c&&(p=Pf(S.x,p-w/2+c/2,p+w/2-c/2))");
   });
 
   it("defers the embedded energy, shadow and inverter/battery model and loads weather on demand", () => {

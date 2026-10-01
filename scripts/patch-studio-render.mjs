@@ -148,6 +148,14 @@ const PATCHES = [
     find: "document.body.append(r);let a=[],s=!1,o=null,c=0;",
     replace: "document.body.append(r);window.ModerniteAdvisorCore={context:()=>dl(hi.snapshot()),answer:(q,intent)=>Wf(q,hi.snapshot(),intent),label:key=>kt(key,$e())};let a=[],s=!1,o=null,c=0;",
   },
+  {
+    // Front-garden railing: the customer only looks for a door within the deck span around the unit
+    // centre, so a door near the side of the unit left the entrance gap under a window. Look across the
+    // whole unit front (ground floor first, then nearest) and slide the deck so its gap meets the door.
+    id: "railing-door-align",
+    find: 'let c=i.width,l=i.depth,u=t?.config.baseHeight||.28,p=t?bp(t):0,d=t?t.depth/2+l/2+.06:0;Ft(n,"Terrace_Deck",[c+.3,.16,l+.25],[p,u-.09,d],e.paving);let h=t?al(t,"front"):[],S=h.filter(b=>b.kind==="door"&&Math.abs(b.x-p)<c/2).sort((b,m)=>b.y-m.y)[0],x=1.2,',
+    replace: 'let c=i.width,l=i.depth,u=t?.config.baseHeight||.28,p=t?bp(t):0,d=t?t.depth/2+l/2+.06:0;let h=t?al(t,"front"):[],w=t?t.config.width:c,S=h.filter(b=>b.kind==="door"&&Math.abs(b.x-p)<w/2).sort((b,m)=>Math.round(b.y*2)-Math.round(m.y*2)||Math.abs(b.x-p)-Math.abs(m.x-p))[0];S&&w>c&&(p=Pf(S.x,p-w/2+c/2,p+w/2-c/2));Ft(n,"Terrace_Deck",[c+.3,.16,l+.25],[p,u-.09,d],e.paving);let x=1.2,',
+  },
 ];
 
 const [input, output = "client/public/studio.html"] = process.argv.slice(2);
