@@ -149,7 +149,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   const outlineSource: ProfileSource = footprint?.source === "google" ? "google-maps" : "osm";
   let width: ProfileField<number> | null = footprint?.widthM ? { value: footprint.widthM, source: outlineSource } : null;
   let depth: ProfileField<number> | null = footprint?.depthM ? { value: footprint.depthM, source: outlineSource } : null;
-  let front: ProfileField<number> | null = footprint?.frontAzimuthDeg !== undefined ? { value: footprint.frontAzimuthDeg, source: footprint.frontSource === "road" ? "osm" : "estimated" } : null;
+  let front: ProfileField<number> | null = footprint?.frontAzimuthDeg !== undefined ? { value: footprint.frontAzimuthDeg, source: footprint.frontSource === "road" ? outlineSource : "estimated" } : null;
   if ((!width || !depth) && solarOk?.boundingBox && (solarOk.distanceM ?? Infinity) <= 15) {
     const project = projector(site);
     const sw = project(solarOk.boundingBox.sw), ne = project(solarOk.boundingBox.ne);
