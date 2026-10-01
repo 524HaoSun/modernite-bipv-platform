@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchStreamLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -37,37 +37,48 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+const authHeaders = () => {
+  // Preview auto-login fallback: when the browser blocks iframe cookies
+  // (Safari ITP / private browsing / WebView), the runtime mirrors the
+  // session into sessionStorage so we can forward it as a Bearer token.
+  // The regular OAuth cookie flow keeps working and takes priority server-side.
+  try {
+    const raw = sessionStorage.getItem("manus-cookie");
+    if (raw) {
+      const prefix = `${COOKIE_NAME}=`;
+      const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
+      const token = pair?.trim().slice(prefix.length);
+      if (token) {
+        return { Authorization: `Bearer ${token}` };
+      }
+    }
+  } catch {
+    // sessionStorage unavailable
+  }
+  return {};
+};
+
+const linkOptions = {
+  url: "/api/trpc",
+  transformer: superjson,
+  headers: authHeaders,
+  fetch(input: RequestInfo | URL, init?: RequestInit) {
+    return globalThis.fetch(input, {
+      ...(init ?? {}),
+      credentials: "include",
+    });
+  },
+};
+
+/** Calls that wait on external services (building lookup, studies, the advisor) must not hold back fast batched queries. */
+const SLOW_PATHS = new Set(["site.buildingProfile", "site.buildingFootprint"]);
+
 const trpcClient = trpc.createClient({
   links: [
-    httpBatchStreamLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      headers() {
-        // Preview auto-login fallback: when the browser blocks iframe cookies
-        // (Safari ITP / private browsing / WebView), the runtime mirrors the
-        // session into sessionStorage so we can forward it as a Bearer token.
-        // The regular OAuth cookie flow keeps working and takes priority server-side.
-        try {
-          const raw = sessionStorage.getItem("manus-cookie");
-          if (raw) {
-            const prefix = `${COOKIE_NAME}=`;
-            const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
-            const token = pair?.trim().slice(prefix.length);
-            if (token) {
-              return { Authorization: `Bearer ${token}` };
-            }
-          }
-        } catch {
-          // sessionStorage unavailable
-        }
-        return {};
-      },
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
+    splitLink({
+      condition: (op) => op.type === "mutation" || SLOW_PATHS.has(op.path),
+      true: httpLink(linkOptions),
+      false: httpBatchLink(linkOptions),
     }),
   ],
 });
