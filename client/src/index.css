@@ -5248,6 +5248,12 @@ html:lang(ja) .eyebrow {
 
 .configured-building-card__title button { display: inline-flex; align-items: center; gap: 6px; padding: 0; white-space: nowrap; }
 .gateway-shell .page-intro { position: relative; z-index: 4; }
+.gateway-shell .gateway-header .journey-rail__segment > i { width: clamp(8px, 1.2vw, 26px) !important; }
+.gateway-shell .gateway-header .journey-rail button { gap: 6px !important; padding-inline: 4px !important; }
+.gateway-shell .gateway-header .gateway-tools { margin-left: 20px !important; }
+.calculation-card h1 { text-wrap: balance; }
+.calculation-card p { text-wrap: pretty; }
+:lang(ja) .page-intro h1, :lang(ja) .calculation-card h1, :lang(ja) .page-intro__lede { word-break: auto-phrase; }
 
 .calculation-page::before {
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%);

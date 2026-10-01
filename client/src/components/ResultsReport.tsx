@@ -9,7 +9,7 @@ import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
 import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
 import type { ProjectCalculation } from "../../../server/estimate-service";
-import type { FinancialScenario, SurfaceResult } from "../../../types/solar";
+import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../../types/solar";
 
 type Route = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
 type MarketKey = "GB" | "EU" | "CA" | "JP";
@@ -34,6 +34,40 @@ type Fmt = {
   month: (index: number) => string;
   compass: (deg: number) => string;
 };
+
+function weatherSourceLabel(kind: string, source: string, name: string | null | undefined, t: ResultsCopy) {
+  if (kind !== "customer-synthetic") return source;
+  const city = (name ?? source.match(/\(([^)·]+)/)?.[1] ?? "").split("·")[0].trim();
+  return t.ledgerText.synthetic(t.ledgerText.cities[city] ?? city);
+}
+
+function ledgerValue(entry: LedgerEntry, f: Fmt) {
+  const { t } = f;
+  const p = entry.params;
+  if (entry.id === "generation") return t.ledgerText.generation;
+  if (!p) return entry.value;
+  const num = (key: string, digits = 0) => (typeof p[key] === "number" ? f.n(p[key] as number, digits) : "—");
+  const lt = t.ledgerText;
+  switch (entry.id) {
+    case "location": {
+      const tz = Number(p.tz);
+      return `${p.address} (${p.lat}, ${p.lng}, UTC${tz >= 0 ? "+" : ""}${tz})`;
+    }
+    case "irradiance": return lt.weather(weatherSourceLabel(String(p.kind), String(p.source), p.name as string | null, t), num("ghi"), num("dni"), num("dhi"), num("temp", 1));
+    case "capacity": return lt.capacity(num("kwp", 2), Number(p.surfaces));
+    case "orientation": return lt.orientation(Number(p.deg));
+    case "building": return lt.building(num("width", 1), num("depth", 1), Number(p.floors), lt.heat[String(p.heat)] ?? String(p.heat));
+    case "demand": return `${num("kwh")} kWh`;
+    case "inverter": return lt.inverter(num("kw", 1), num("ratio", 2), num("clipping", 2));
+    case "battery": return lt.battery(num("kwh", 1), num("kw", 2), num("recommended", 1));
+    case "google-solar": return [
+      lt.google(Number(p.segments), num("area")),
+      p.topArea != null ? lt.googleTop(num("topArea"), num("topPitch"), num("topAz")) : "",
+      p.quality || p.date ? lt.imagery(String(p.quality ?? ""), String(p.date ?? "")) : "",
+    ].filter(Boolean).join(" · ");
+    default: return entry.value;
+  }
+}
 
 function useFormatters(language: string, currency: string): Fmt {
   return useMemo(() => {
@@ -351,7 +385,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
           <div className="result-section-heading"><div><p className="mini-label">{t.basisLabel}</p><h2>{t.basisTitle[weatherKind]}</h2></div><span className={`validation-status ${study.validation.status}`}>{weatherKind === "customer-synthetic" ? t.indicative : t.siteWeather}</span></div>
           <div className="validation-grid">
             <div><span>{t.annualGeneration}</span><strong>{f.n(study.validation.empiricalAnnualKwh)} {t.perYear}</strong></div>
-            <div><span>{t.hourlyWeather}</span><strong>{study.weather.source}</strong></div>
+            <div><span>{t.hourlyWeather}</span><strong>{weatherSourceLabel(study.weather.kind, study.weather.source, study.weather.name, t)}</strong></div>
             <div><span>{t.irradiation}</span><strong>GHI {f.n(study.weather.annualGhiKwhM2)} · DNI {f.n(study.weather.annualDniKwhM2)} · DHI {f.n(study.weather.annualDhiKwhM2)} kWh/m²</strong></div>
             <div><span>{t.solarOnSite}</span><strong>{t.selfUse(Math.round(sim.selfConsumption * 100), Math.round(sim.selfSufficiency * 100))}</strong></div>
             <div><span>{t.withBattery(sim.battery.nominalKwh)}</span><strong>{t.usedOnSite(f.n(sim.battery.selfConsumedKwh))}</strong></div>
@@ -373,7 +407,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         </section>}
         <section className="result-section source-ledger">
           <div className="result-section-heading"><div><p className="mini-label">{t.ledgerLabel}</p><h2>{t.ledgerTitle}</h2></div></div>
-          <dl>{study.result.ledger.map((entry) => <div key={entry.id}><dt>{t.ledger[entry.id] ?? entry.label}<small>{t.provenance[entry.provenance] ?? entry.provenance}</small></dt><dd>{entry.value}</dd></div>)}</dl>
+          <dl>{study.result.ledger.map((entry) => <div key={entry.id}><dt>{t.ledger[entry.id] ?? entry.label}<small>{t.provenance[entry.provenance] ?? entry.provenance}</small></dt><dd>{ledgerValue(entry, f)}</dd></div>)}</dl>
         </section>
       </main><aside className="results-side-rail">
         <section className="study-summary-card">

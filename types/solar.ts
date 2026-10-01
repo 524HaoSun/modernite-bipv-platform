@@ -209,6 +209,8 @@ export type LedgerEntry = {
   stepNumber: number;
   fieldKey: string;
   note?: string;
+  /** Raw values behind `value`, so the client can render the entry in the reader's language. */
+  params?: Record<string, string | number | null>;
 };
 
 export type EstimateResult = {

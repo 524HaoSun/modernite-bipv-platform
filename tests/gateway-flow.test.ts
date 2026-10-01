@@ -57,7 +57,7 @@ describe("V28-aligned entry gateway", () => {
   it("uses an OpenStreetMap frontend layer for address search and pin placement", () => {
     expect(map).toContain("tile.openstreetmap.org");
     expect(map).toContain("nominatim.openstreetmap.org/search");
-    expect(map).toContain("OpenStreetMap is ready");
+    expect(map).toContain("Map ready. Search an address");
     expect(map).toContain("osm-map-canvas");
     expect(map).toContain("osm-tile-layer");
     expect(map).toContain("osm-vector-layer");

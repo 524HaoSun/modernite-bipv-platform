@@ -4,6 +4,7 @@ import { feature } from "topojson-client";
 import worldTopology from "world-atlas/countries-110m.json";
 import { ArrowLeft, ArrowRight, Compass, Globe2, Minus, Plus, RotateCcw, Search } from "lucide-react";
 import type { Market, MarketKey } from "@/components/ProjectLocationMap";
+import { europeName, regionName } from "@/lib/region-names";
 
 export type EuropeanMarket = {
   id: number;
@@ -33,6 +34,9 @@ export type MarketAtlasCopy = {
   selectedTag: string;
   unavailable: string;
   studyNote: string;
+  marketsAria: string;
+  globeAria: string;
+  selectAria: (name: string) => string;
 };
 
 type WorldFeature = { id?: string | number; properties?: { name?: string } };
@@ -138,13 +142,14 @@ function flagImageCode(code: string): string {
   return code.toLowerCase();
 }
 
-function FlagIcon({ code, label }: { code: string; label: string }) {
-  return <span className="country-flag" aria-label={`${label} flag`}><img src={`https://flagcdn.com/w40/${flagImageCode(code)}.png`} alt="" loading="lazy" /></span>;
+function FlagIcon({ code }: { code: string }) {
+  return <span className="country-flag" aria-hidden="true"><img src={`https://flagcdn.com/w40/${flagImageCode(code)}.png`} alt="" loading="lazy" /></span>;
 }
 
 const DEFAULT_EUROPEAN_MARKET = EUROPEAN_MARKETS.find((country) => country.shortName === "FR") ?? EUROPEAN_MARKETS[0]!;
 
-function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSelect, copy }: {
+function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSelect, copy, language }: {
+  language: string;
   market: Market;
   europeanCountry: EuropeanMarket | null;
   onMarketSelect: (key: MarketKey) => void;
@@ -255,11 +260,11 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
   return (
     <div className="globe-stage">
       <div className="globe-atmosphere" aria-hidden="true" />
-      <div className="globe-market-rail" aria-label="Available markets">
-        {MARKET_NODES.map((node) => <button type="button" key={node.key} className={`globe-market-rail__item globe-market-rail__item--${node.key} ${market.key === node.key ? "is-selected" : ""}`} onClick={() => chooseMarket(node.key)}><FlagIcon code={node.code} label={node.name} /><span>{node.name}</span><i /></button>)}
+      <div className="globe-market-rail" aria-label={copy.marketsAria}>
+        {MARKET_NODES.map((node) => <button type="button" key={node.key} className={`globe-market-rail__item globe-market-rail__item--${node.key} ${market.key === node.key ? "is-selected" : ""}`} onClick={() => chooseMarket(node.key)}><FlagIcon code={node.code} /><span>{regionName(node.code, language, node.name)}</span><i /></button>)}
       </div>
       {hover && <div className={`globe-hover-bubble globe-hover-bubble--${hover.key}`} style={{ left: `${hover.x}px`, top: `${hover.y}px` }}><i /><span><b>{hover.name}</b><small>{hover.code} · {copy.available}</small></span></div>}
-      <svg className={`market-globe ${dragging ? "is-dragging" : ""}`} viewBox="0 0 700 700" role="img" aria-label="Drag to rotate the interactive market globe" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={stopDragging} onWheel={onWheel}>
+      <svg className={`market-globe ${dragging ? "is-dragging" : ""}`} viewBox="0 0 700 700" role="img" aria-label={copy.globeAria} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={stopDragging} onWheel={onWheel}>
         <defs>
           <radialGradient id="globe-ocean" cx="33%" cy="25%" r="75%"><stop offset="0" stopColor="#fbfdf8" /><stop offset=".53" stopColor="#e8f1e6" /><stop offset="1" stopColor="#c8d8c9" /></radialGradient>
           <filter id="globe-shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#28513f" floodOpacity=".19" /></filter>
@@ -284,9 +289,11 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
                 if (european) chooseCountry(european);
               }
             };
-            const name = isEuropean ? EUROPEAN_MARKETS.find((item) => item.id === id)?.name ?? country.properties?.name ?? "Europe" : marketKey ? MARKET_NODES.find((item) => item.key === marketKey)?.name ?? country.properties?.name ?? "Market" : country.properties?.name ?? "Market";
+            const european = isEuropean ? EUROPEAN_MARKETS.find((item) => item.id === id) : undefined;
+            const node = marketKey ? MARKET_NODES.find((item) => item.key === marketKey) : undefined;
+            const name = european ? regionName(european.shortName, language, european.name) : node ? regionName(node.code, language, node.name) : country.properties?.name ?? "";
             const code = isEuropean ? EUROPEAN_MARKETS.find((item) => item.id === id)?.shortName ?? "EU" : marketKey ? MARKET_NODES.find((item) => item.key === marketKey)?.code ?? "" : "";
-            return <path key={`${id}-${country.properties?.name ?? "country"}`} d={country.path} data-market-key={marketKey} data-country-id={isEuropean ? id : undefined} className={`globe-country ${selectable ? "is-covered" : ""} ${marketClass} ${active ? "is-active" : ""}`} onClick={selectable ? select : undefined} onPointerEnter={selectable && marketKey ? (event) => setHoverFromEvent(event, name, code, marketKey) : undefined} onPointerMove={selectable && marketKey ? (event) => setHoverFromEvent(event, name, code, marketKey) : undefined} onPointerLeave={() => setHover(null)} role={selectable ? "button" : undefined} tabIndex={selectable ? 0 : -1} aria-label={selectable ? `Select ${country.properties?.name ?? "market"}` : undefined} onKeyDown={(event) => { if (selectable && (event.key === "Enter" || event.key === " ")) select(); }} />;
+            return <path key={`${id}-${country.properties?.name ?? "country"}`} d={country.path} data-market-key={marketKey} data-country-id={isEuropean ? id : undefined} className={`globe-country ${selectable ? "is-covered" : ""} ${marketClass} ${active ? "is-active" : ""}`} onClick={selectable ? select : undefined} onPointerEnter={selectable && marketKey ? (event) => setHoverFromEvent(event, name, code, marketKey) : undefined} onPointerMove={selectable && marketKey ? (event) => setHoverFromEvent(event, name, code, marketKey) : undefined} onPointerLeave={() => setHover(null)} role={selectable ? "button" : undefined} tabIndex={selectable ? 0 : -1} aria-label={selectable ? copy.selectAria(name) : undefined} onKeyDown={(event) => { if (selectable && (event.key === "Enter" || event.key === " ")) select(); }} />;
           })}
           <ellipse cx="350" cy="272" rx="205" ry="90" className="globe-light-sweep" />
         </g>
@@ -316,7 +323,8 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
   );
 }
 
-function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSelect, copy }: {
+function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSelect, copy, language }: {
+  language: string;
   market: Market;
   europeanCountry: EuropeanMarket | null;
   onMarketSelect: (key: MarketKey) => void;
@@ -325,7 +333,7 @@ function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSele
 }) {
   const [query, setQuery] = useState("");
   const isEurope = market.key === "EU";
-  const filteredEurope = useMemo(() => EUROPEAN_MARKETS.filter((country) => !query.trim() || `${country.name} ${country.shortName}`.toLowerCase().includes(query.trim().toLowerCase())), [query]);
+  const filteredEurope = useMemo(() => EUROPEAN_MARKETS.filter((country) => !query.trim() || `${country.name} ${regionName(country.shortName, language, country.name)} ${country.shortName}`.toLowerCase().includes(query.trim().toLowerCase())), [query, language]);
 
   return (
     <aside className="globe-library">
@@ -333,17 +341,18 @@ function MarketLibrary({ market, europeanCountry, onMarketSelect, onEuropeanSele
       {isEurope ? <>
         <label className="globe-library-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.filterCountries} aria-label={copy.filterCountries} /></label>
         <div className="globe-library-list globe-library-list--countries" role="list">
-          {filteredEurope.map((country) => <button type="button" key={country.id} role="listitem" className={europeanCountry?.id === country.id ? "is-selected" : ""} onClick={() => onEuropeanSelect(country)}><FlagIcon code={country.shortName} label={country.name} /><span>{country.name}</span><i /></button>)}
+          {filteredEurope.map((country) => <button type="button" key={country.id} role="listitem" className={europeanCountry?.id === country.id ? "is-selected" : ""} onClick={() => onEuropeanSelect(country)}><FlagIcon code={country.shortName} /><span>{regionName(country.shortName, language, country.name)}</span><i /></button>)}
         </div>
       </> : <div className="globe-library-list" role="list">
-        {MARKET_NODES.map((node) => <button type="button" key={node.key} role="listitem" className={market.key === node.key ? "is-selected" : ""} onClick={() => onMarketSelect(node.key)}><FlagIcon code={node.code} label={node.name} /><span>{node.name}</span><i /></button>)}
+        {MARKET_NODES.map((node) => <button type="button" key={node.key} role="listitem" className={market.key === node.key ? "is-selected" : ""} onClick={() => onMarketSelect(node.key)}><FlagIcon code={node.code} /><span>{regionName(node.code, language, node.name)}</span><i /></button>)}
       </div>}
       <div className="globe-library-foot"><Compass size={15} /><span>{isEurope && !europeanCountry ? copy.chooseCountry : copy.chooseMarket}</span></div>
     </aside>
   );
 }
 
-export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropeanCountryChange, onContinue, copy }: {
+export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropeanCountryChange, onContinue, copy, language }: {
+  language: string;
   market: Market;
   europeanCountry: EuropeanMarket | null;
   onMarketChange: (market: Market) => void;
@@ -369,14 +378,14 @@ export function MarketAtlas({ market, europeanCountry, onMarketChange, onEuropea
     <section className={`market-globe-workbench ${market.key === "EU" ? "is-europe" : ""}`}>
       <div className="globe-workbench-main">
         <div className="globe-workbench-topline"><span className="atlas-kicker"><Globe2 size={14} /> {copy.coverage}</span><span>{copy.dragHint}</span></div>
-        <RotatableGlobe market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} />
+        <RotatableGlobe market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} language={language} />
       </div>
-      {market.key === "EU" && <MarketLibrary market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} />}
+      {market.key === "EU" && <MarketLibrary market={market} europeanCountry={europeanCountry} onMarketSelect={selectMarket} onEuropeanSelect={selectEuropeanCountry} copy={copy} language={language} />}
       <footer className="globe-workbench-footer globe-workbench-footer--compact">
         <div className="market-next-action">
           <span className="market-next-action__market">
             <small>{market.key === "EU" ? copy.selectedCountry : copy.selected}</small>
-            <b><FlagIcon code={market.shortName} label={market.name} />{market.name}{market.key === "EU" ? ", Europe" : ""}</b>
+            <b><FlagIcon code={market.shortName} />{regionName(market.shortName, language, market.name)}{market.key === "EU" ? ` · ${europeName(language)}` : ""}</b>
           </span>
           <button type="button" className="button-primary" onClick={onContinue} disabled={market.key === "EU" && !europeanCountry}>
             <span><small>{copy.location}</small>{copy.continue}</span><ArrowRight size={17} />

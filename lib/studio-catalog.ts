@@ -50,6 +50,52 @@ export const STUDIO_BUILDING_TYPES: StudioBuildingType[] = [
   { id: "JP01_3F", labelEn: "Urban three-storey house / 3階建て", labelZh: "城市窄地三层一户建", region: "JP", kind: "detached", width: 5.46, depth: 8.64, floors: 3, roofForm: "mono", pitch: 10, units: 1, storeyHeight: 2.75 },
 ];
 
+type TypeLabels = { en: string; zh: string | null; zhHant: string; ja: string; fr: string; es: string; it: string };
+const L = (en: string, zh: string | null, zhHant: string, ja: string, fr: string, es: string, it: string): TypeLabels => ({ en, zh, zhHant, ja, fr, es, it });
+
+/** Names as the Studio itself displays them (its house-type dictionary, including its JP01 override), so both sides match. */
+const STUDIO_TYPE_LABELS: Record<string, TypeLabels> = {
+  UK01: L("Detached house", null, "獨立住宅", "一戸建て住宅", "Maison individuelle", "Casa independiente", "Casa indipendente"),
+  UK02: L("Semi-detached house", null, "半獨立住宅", "二戸一住宅", "Maison jumelée", "Casa pareada", "Casa bifamiliare"),
+  UK03: L("Mid-terrace house", null, "聯排住宅中間戶", "連棟住宅の中間住戸", "Maison mitoyenne intermédiaire", "Casa adosada intermedia", "Casa a schiera centrale"),
+  UK04: L("End-terrace house", null, "聯排住宅端戶", "連棟住宅の端部住戸", "Maison en bout de rangée", "Casa adosada de esquina", "Casa a schiera di testa"),
+  UK05: L("Bungalow", null, "單層住宅", "平屋住宅", "Maison de plain-pied", "Casa de una planta", "Casa a un piano"),
+  UK06: L("Low-rise apartment building", null, "低層公寓樓", "低層集合住宅", "Petit immeuble collectif", "Edificio residencial bajo", "Edificio residenziale basso"),
+  UK07: L("Mid-/high-rise apartment building", null, "中高層公寓樓", "中高層集合住宅", "Immeuble collectif de moyenne ou grande hauteur", "Edificio residencial medio/alto", "Edificio residenziale medio/alto"),
+  EU01: L("Detached house", null, "獨立住宅", "一戸建て住宅", "Maison individuelle", "Casa independiente", "Casa indipendente"),
+  EU02: L("Semi-detached house", null, "半獨立／雙拼住宅", "二戸一住宅", "Maison jumelée", "Casa pareada", "Casa bifamiliare"),
+  EU03: L("Mid-terrace house", null, "聯排住宅中間戶", "連棟住宅の中間住戸", "Maison mitoyenne intermédiaire", "Casa adosada intermedia", "Casa a schiera centrale"),
+  EU04: L("End-terrace house", null, "聯排住宅端戶", "連棟住宅の端部住戸", "Maison en bout de rangée", "Casa adosada de esquina", "Casa a schiera di testa"),
+  EU05: L("Small multi-family building", null, "低層／小型多戶住宅樓", "小規模集合住宅", "Petit immeuble de plusieurs logements", "Edificio multifamiliar pequeño", "Piccolo edificio plurifamiliare"),
+  EU06: L("Large apartment building", null, "中高層／大型公寓樓", "大規模集合住宅", "Grand immeuble collectif", "Edificio residencial grande", "Grande edificio residenziale"),
+  CA01: L("Multi-storey detached house", null, "多層獨立住宅", "多層の一戸建て住宅", "Maison individuelle à plusieurs niveaux", "Casa independiente de varias plantas", "Casa indipendente a più piani"),
+  CA02: L("Single-storey detached house", null, "單層獨立住宅", "平屋の一戸建て住宅", "Maison individuelle de plain-pied", "Casa independiente de una planta", "Casa indipendente a un piano"),
+  CA03: L("Semi-detached house", null, "半獨立住宅", "二戸一住宅", "Maison jumelée", "Casa pareada", "Casa bifamiliare"),
+  CA04: L("Mid-terrace house", null, "聯排住宅中間戶", "連棟住宅の中間住戸", "Maison mitoyenne intermédiaire", "Casa adosada intermedia", "Casa a schiera centrale"),
+  CA05: L("End-terrace house", null, "聯排住宅端戶", "連棟住宅の端部住戸", "Maison en bout de rangée", "Casa adosada de esquina", "Casa a schiera di testa"),
+  CA06: L("Stacked duplex", null, "上下疊置雙戶住宅", "上下二世帯住宅", "Deux logements superposés", "Dúplex superpuesto", "Duplex sovrapposto"),
+  CA07: L("Low-rise apartment building", null, "低層公寓樓", "低層集合住宅", "Petit immeuble collectif", "Edificio residencial bajo", "Edificio residenziale basso"),
+  CA08: L("Apartment building of 5 or more storeys", null, "5層及以上公寓樓", "5階建て以上の集合住宅", "Immeuble de cinq niveaux ou plus", "Edificio residencial de 5 plantas o más", "Edificio residenziale di almeno 5 piani"),
+  JP01: L("Two-storey detached house", "两层一户建", "兩層一戶建", "2階建て一戸建て", "Maison individuelle à deux niveaux", "Casa independiente de dos plantas", "Casa indipendente a due piani"),
+  JP02: L("Single-storey detached house", null, "單層獨棟住宅", "平屋の一戸建て", "Maison individuelle de plain-pied", "Casa independiente de una planta", "Casa indipendente a un piano"),
+  JP03: L("Low-rise apartment building", null, "低層公寓樓", "低層集合住宅", "Petit immeuble collectif", "Edificio residencial bajo", "Edificio residenziale basso"),
+  JP04: L("Mid-rise apartment building", null, "中層集合住宅", "中層集合住宅", "Immeuble collectif de hauteur moyenne", "Edificio residencial de altura media", "Edificio residenziale di media altezza"),
+  JP05: L("High-rise apartment building", null, "高層公寓樓", "高層集合住宅", "Immeuble collectif de grande hauteur", "Torre residencial", "Torre residenziale"),
+  JP01_3F: L("Urban three-storey house", null, "城市窄地三層一戶建", "都市型狭小3階建て住宅", "Maison urbaine étroite à trois niveaux", "Casa urbana de tres plantas", "Casa urbana a tre piani"),
+};
+
+export function studioTypeLabel(id: string, language: string) {
+  const type = studioTypeById(id);
+  if (!type) return id;
+  const labels = STUDIO_TYPE_LABELS[id];
+  switch (language) {
+    case "zh": return labels?.zh ?? type.labelZh;
+    case "zh-Hant": return labels?.zhHant ?? type.labelZh;
+    case "ja": case "fr": case "es": case "it": return labels?.[language] ?? type.labelEn;
+    default: return labels?.en ?? type.labelEn;
+  }
+}
+
 export const studioTypesForRegion = (region: StudioRegion) => STUDIO_BUILDING_TYPES.filter((type) => type.region === region);
 export const studioTypeById = (id: string) => STUDIO_BUILDING_TYPES.find((type) => type.id === id);
 

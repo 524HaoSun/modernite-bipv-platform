@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Building2, Check, Footprints, Loader2, RotateCcw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import type { BuildingProfile, ProfileSource } from "../../../lib/building-profile";
-import { MARKET_TO_STUDIO_REGION, roofFormsFor, studioTypeById, studioTypesForRegion, type StudioRoofForm } from "../../../lib/studio-catalog";
+import { MARKET_TO_STUDIO_REGION, roofFormsFor, studioTypeById, studioTypeLabel, studioTypesForRegion, type StudioRoofForm } from "../../../lib/studio-catalog";
 
 type LatLng = { lat: number; lng: number };
 type Language = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -66,11 +66,7 @@ const TEXT: Record<Language, {
   },
 };
 
-export const buildingTypeLabel = (id: string, language: string) => {
-  const type = studioTypeById(id);
-  if (!type) return id;
-  return language === "zh" || language === "zh-Hant" ? type.labelZh : type.labelEn;
-};
+export const buildingTypeLabel = studioTypeLabel;
 
 function draftFromProfile(profile: BuildingProfile): Draft {
   return {

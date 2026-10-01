@@ -158,6 +158,21 @@ const en = {
   advisorDemo: "The Design Guide answers questions about studies prepared for your own site. Prepare a study from Design Studio first.",
   compass: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
   regions: { UK: "United Kingdom", EU: "Europe", CA: "Canada", JP: "Japan" },
+  ledgerText: {
+    weather: (source: string, ghi: string, dni: string, dhi: string, temp: string) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · mean ${temp} °C`,
+    synthetic: (city: string) => `Customer V31 synthetic climate (${city})`,
+    cities: { Manchester: "Manchester", Paris: "Paris", Toronto: "Toronto", Tokyo: "Tokyo" } as Record<string, string>,
+    generation: "Customer V31 hourly model: solar position → isotropic plane-of-array (beam / sky diffuse / ground reflected, albedo 0.2) → empirical cell temperature and efficiency → 90% AC factor",
+    capacity: (kwp: string, n: number) => `${kwp} kWp across ${n} surfaces`,
+    orientation: (deg: number) => `Studio model rotated ${deg}° (front façade azimuth)`,
+    building: (w: string, d: string, floors: number, heat: string) => `${w} × ${d} m, ${floors} storeys · one-node hourly RC model · ${heat}`,
+    heat: { gas: "Gas boiler (90% efficiency)", pump: "Heat pump (COP 3)", direct: "Direct electric heating" } as Record<string, string>,
+    inverter: (kw: string, ratio: string, clip: string) => `${kw} kW AC · DC/AC ${ratio} · clipping ${clip}%`,
+    battery: (kwh: string, kw: string, rec: string) => `${kwh} kWh / ${kw} kW AC-coupled (90% usable, 90% round trip) · recommended ${rec} kWh`,
+    google: (n: number, area: string) => `${n} roof segments · usable array ${area} m²`,
+    googleTop: (area: string, pitch: string, az: string) => `largest ${area} m² at ${pitch}° pitch / ${az}° azimuth`,
+    imagery: (quality: string, date: string) => `imagery ${quality} ${date}`.trim(),
+  },
 };
 
 export type ResultsCopy = typeof en;
@@ -320,6 +335,21 @@ const zh: ResultsCopy = {
   advisorDemo: "设计顾问回答针对您自己场地的研究。请先在设计工作室中准备研究。",
   compass: ["北", "东北", "东", "东南", "南", "西南", "西", "西北"],
   regions: { UK: "英国", EU: "欧洲", CA: "加拿大", JP: "日本" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · 平均气温 ${temp} °C`,
+    synthetic: (city) => `甲方 V31 合成气候（${city}）`,
+    cities: { Manchester: "曼彻斯特", Paris: "巴黎", Toronto: "多伦多", Tokyo: "东京" },
+    generation: "甲方 V31 逐时模型：太阳位置 → 各向同性倾斜面辐照（直射 / 天空散射 / 地面反射，反照率 0.2）→ 经验电池温度与效率 → 90% 交流系数",
+    capacity: (kwp, n) => `${n} 个面共 ${kwp} kWp`,
+    orientation: (deg) => `Studio 模型旋转 ${deg}°（正立面方位角）`,
+    building: (w, d, floors, heat) => `${w} × ${d} m，${floors} 层 · 单节点逐时 RC 模型 · ${heat}`,
+    heat: { gas: "燃气锅炉（效率 90%）", pump: "热泵（COP 3）", direct: "直接电采暖" },
+    inverter: (kw, ratio, clip) => `${kw} kW 交流 · 直交比 ${ratio} · 削峰 ${clip}%`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW 交流耦合（可用 90%，往返效率 90%）· 建议 ${rec} kWh`,
+    google: (n, area) => `${n} 个屋面 · 可用阵列 ${area} m²`,
+    googleTop: (area, pitch, az) => `最大面 ${area} m²，坡度 ${pitch}° / 方位 ${az}°`,
+    imagery: (quality, date) => `影像 ${quality} ${date}`.trim(),
+  },
 };
 
 const zhHant: ResultsCopy = {
@@ -466,6 +496,21 @@ const zhHant: ResultsCopy = {
   advisorDemo: "設計顧問回答針對您自己場地的研究。請先在設計工作室中準備研究。",
   compass: ["北", "東北", "東", "東南", "南", "西南", "西", "西北"],
   regions: { UK: "英國", EU: "歐洲", CA: "加拿大", JP: "日本" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · 平均氣溫 ${temp} °C`,
+    synthetic: (city) => `甲方 V31 合成氣候（${city}）`,
+    cities: { Manchester: "曼徹斯特", Paris: "巴黎", Toronto: "多倫多", Tokyo: "東京" },
+    generation: "甲方 V31 逐時模型：太陽位置 → 各向同性傾斜面輻照（直射 / 天空散射 / 地面反射，反照率 0.2）→ 經驗電池溫度與效率 → 90% 交流係數",
+    capacity: (kwp, n) => `${n} 個面共 ${kwp} kWp`,
+    orientation: (deg) => `Studio 模型旋轉 ${deg}°（正立面方位角）`,
+    building: (w, d, floors, heat) => `${w} × ${d} m，${floors} 層 · 單節點逐時 RC 模型 · ${heat}`,
+    heat: { gas: "燃氣鍋爐（效率 90%）", pump: "熱泵（COP 3）", direct: "直接電暖" },
+    inverter: (kw, ratio, clip) => `${kw} kW 交流 · 直交比 ${ratio} · 削峰 ${clip}%`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW 交流耦合（可用 90%，往返效率 90%）· 建議 ${rec} kWh`,
+    google: (n, area) => `${n} 個屋面 · 可用陣列 ${area} m²`,
+    googleTop: (area, pitch, az) => `最大面 ${area} m²，坡度 ${pitch}° / 方位 ${az}°`,
+    imagery: (quality, date) => `影像 ${quality} ${date}`.trim(),
+  },
 };
 
 const fr: ResultsCopy = {
@@ -627,6 +672,21 @@ const fr: ResultsCopy = {
   advisorDemo: "Le guide répond sur les études préparées pour votre site. Préparez d'abord une étude depuis le Design Studio.",
   compass: ["N", "NE", "E", "SE", "S", "SO", "O", "NO"],
   regions: { UK: "Royaume-Uni", EU: "Europe", CA: "Canada", JP: "Japon" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · moyenne ${temp} °C`,
+    synthetic: (city) => `Climat synthétique V31 du client (${city})`,
+    cities: { Manchester: "Manchester", Paris: "Paris", Toronto: "Toronto", Tokyo: "Tokyo" },
+    generation: "Modèle horaire V31 du client : position solaire → irradiance isotrope sur plan incliné (direct / diffus ciel / réfléchi sol, albédo 0,2) → température de cellule et rendement empiriques → facteur CA de 90 %",
+    capacity: (kwp, n) => `${kwp} kWc sur ${n} surfaces`,
+    orientation: (deg) => `Modèle du Studio pivoté de ${deg}° (azimut de la façade principale)`,
+    building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} niveaux · modèle RC horaire à un nœud · ${heat}`,
+    heat: { gas: "Chaudière gaz (rendement 90 %)", pump: "Pompe à chaleur (COP 3)", direct: "Chauffage électrique direct" },
+    inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · écrêtage ${clip} %`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW couplage CA (90 % utilisable, 90 % aller-retour) · recommandé ${rec} kWh`,
+    google: (n, area) => `${n} pans de toiture · surface exploitable ${area} m²`,
+    googleTop: (area, pitch, az) => `le plus grand : ${area} m², pente ${pitch}° / azimut ${az}°`,
+    imagery: (quality, date) => `imagerie ${quality} ${date}`.trim(),
+  },
 };
 
 const ja: ResultsCopy = {
@@ -788,6 +848,21 @@ const ja: ResultsCopy = {
   advisorDemo: "デザインガイドはご自身の敷地の検討について回答します。先にデザインスタジオで検討を作成してください。",
   compass: ["北", "北東", "東", "南東", "南", "南西", "西", "北西"],
   regions: { UK: "英国", EU: "欧州", CA: "カナダ", JP: "日本" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · 平均気温 ${temp} °C`,
+    synthetic: (city) => `顧客 V31 合成気候（${city}）`,
+    cities: { Manchester: "マンチェスター", Paris: "パリ", Toronto: "トロント", Tokyo: "東京" },
+    generation: "顧客 V31 時刻別モデル：太陽位置 → 等方性傾斜面日射（直達 / 天空散乱 / 地面反射、アルベド 0.2）→ 経験的セル温度と効率 → AC 係数 90%",
+    capacity: (kwp, n) => `${n} 面で合計 ${kwp} kWp`,
+    orientation: (deg) => `スタジオモデルを ${deg}° 回転（正面の方位角）`,
+    building: (w, d, floors, heat) => `${w} × ${d} m、${floors} 階 · 1 ノード時刻別 RC モデル · ${heat}`,
+    heat: { gas: "ガスボイラー（効率 90%）", pump: "ヒートポンプ（COP 3）", direct: "電気直接暖房" },
+    inverter: (kw, ratio, clip) => `${kw} kW AC · DC/AC ${ratio} · クリッピング ${clip}%`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW AC 結合（利用可能 90%、往復効率 90%）· 推奨 ${rec} kWh`,
+    google: (n, area) => `屋根面 ${n} 面 · 設置可能面積 ${area} m²`,
+    googleTop: (area, pitch, az) => `最大面 ${area} m²、勾配 ${pitch}° / 方位 ${az}°`,
+    imagery: (quality, date) => `画像 ${quality} ${date}`.trim(),
+  },
 };
 
 const es: ResultsCopy = {
@@ -949,6 +1024,21 @@ const es: ResultsCopy = {
   advisorDemo: "La guía responde sobre estudios preparados para su emplazamiento. Prepare primero un estudio en Design Studio.",
   compass: ["N", "NE", "E", "SE", "S", "SO", "O", "NO"],
   regions: { UK: "Reino Unido", EU: "Europa", CA: "Canadá", JP: "Japón" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · media ${temp} °C`,
+    synthetic: (city) => `Clima sintético V31 del cliente (${city})`,
+    cities: { Manchester: "Mánchester", Paris: "París", Toronto: "Toronto", Tokyo: "Tokio" },
+    generation: "Modelo horario V31 del cliente: posición solar → irradiancia isótropa en el plano (directa / difusa del cielo / reflejada del suelo, albedo 0,2) → temperatura de célula y eficiencia empíricas → factor CA del 90 %",
+    capacity: (kwp, n) => `${kwp} kWp en ${n} superficies`,
+    orientation: (deg) => `Modelo del Studio girado ${deg}° (acimut de la fachada principal)`,
+    building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} plantas · modelo RC horario de un nodo · ${heat}`,
+    heat: { gas: "Caldera de gas (rendimiento 90 %)", pump: "Bomba de calor (COP 3)", direct: "Calefacción eléctrica directa" },
+    inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · recorte ${clip} %`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW acoplada en CA (90 % útil, 90 % ida y vuelta) · recomendado ${rec} kWh`,
+    google: (n, area) => `${n} faldones · superficie útil ${area} m²`,
+    googleTop: (area, pitch, az) => `el mayor: ${area} m², pendiente ${pitch}° / acimut ${az}°`,
+    imagery: (quality, date) => `imágenes ${quality} ${date}`.trim(),
+  },
 };
 
 const it: ResultsCopy = {
@@ -1110,6 +1200,21 @@ const it: ResultsCopy = {
   advisorDemo: "La guida risponde sugli studi preparati per il tuo sito. Prepara prima uno studio dal Design Studio.",
   compass: ["N", "NE", "E", "SE", "S", "SO", "O", "NO"],
   regions: { UK: "Regno Unito", EU: "Europa", CA: "Canada", JP: "Giappone" },
+  ledgerText: {
+    weather: (source, ghi, dni, dhi, temp) => `${source} · GHI ${ghi} / DNI ${dni} / DHI ${dhi} kWh/m² · media ${temp} °C`,
+    synthetic: (city) => `Clima sintetico V31 del cliente (${city})`,
+    cities: { Manchester: "Manchester", Paris: "Parigi", Toronto: "Toronto", Tokyo: "Tokyo" },
+    generation: "Modello orario V31 del cliente: posizione solare → irraggiamento isotropo sul piano (diretto / diffuso dal cielo / riflesso dal suolo, albedo 0,2) → temperatura di cella ed efficienza empiriche → fattore CA del 90%",
+    capacity: (kwp, n) => `${kwp} kWp su ${n} superfici`,
+    orientation: (deg) => `Modello dello Studio ruotato di ${deg}° (azimut della facciata principale)`,
+    building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} piani · modello RC orario a un nodo · ${heat}`,
+    heat: { gas: "Caldaia a gas (rendimento 90%)", pump: "Pompa di calore (COP 3)", direct: "Riscaldamento elettrico diretto" },
+    inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · clipping ${clip}%`,
+    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW accoppiata in CA (90% utilizzabile, 90% andata e ritorno) · consigliata ${rec} kWh`,
+    google: (n, area) => `${n} falde · area utile ${area} m²`,
+    googleTop: (area, pitch, az) => `la più grande: ${area} m², pendenza ${pitch}° / azimut ${az}°`,
+    imagery: (quality, date) => `immagini ${quality} ${date}`.trim(),
+  },
 };
 
 export const RESULTS_COPY: Record<ResultsLanguage, ResultsCopy> = { en, zh, "zh-Hant": zhHant, fr, ja, es, it };
