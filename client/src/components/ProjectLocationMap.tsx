@@ -31,7 +31,8 @@ type Segment = { left: number; top: number; width: number; angle: number };
 type MapMode = "aerial" | "road";
 type DragState =
   | { type: "pan"; pointerId: number; startX: number; startY: number; startCenter: Point; moved: boolean }
-  | { type: "vertex"; pointerId: number; index: number };
+  | { type: "vertex"; pointerId: number; index: number }
+  | { type: "pinch"; startDistance: number; startZoom: number; anchor: LatLng };
 
 type MapText = {
   ready: string;
@@ -640,6 +641,9 @@ export function ProjectLocationMap({
   const text = MAP_TEXT[language] ?? MAP_TEXT.en;
   const shellRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const pointersRef = useRef(new Map<number, Point>());
+  const multiTouchRef = useRef(false);
+  const lastTapRef = useRef<{ time: number; x: number; y: number; zoomedAt: number }>({ time: 0, x: 0, y: 0, zoomedAt: 0 });
   const emittedAreaKeyRef = useRef("");
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState<LatLng>(initialLocation?.coordinates ?? market.coordinates);
@@ -988,8 +992,39 @@ export function ProjectLocationMap({
         if (Math.abs(settled - viewRef.current.zoom) > 1e-3) zoomTo(settled, anchor, 160);
       }, 180);
     };
+    // Safari reports trackpad pinch as non-standard gesture events instead of ctrl+wheel.
+    type SafariGesture = Event & { scale: number; clientX: number; clientY: number };
+    let gestureStartZoom = viewRef.current.zoom;
+    const gestureAnchor = (event: SafariGesture) => {
+      const rect = element.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    };
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureStartZoom = viewRef.current.zoom;
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      const gesture = event as SafariGesture;
+      if (pointersRef.current.size >= 2 || !Number.isFinite(gesture.scale) || gesture.scale <= 0) return;
+      zoomTo(gestureStartZoom + Math.log2(gesture.scale), gestureAnchor(gesture), 0);
+    };
+    const onGestureEnd = (event: Event) => {
+      event.preventDefault();
+      if (pointersRef.current.size >= 2) return;
+      const settled = Math.round(viewRef.current.zoom);
+      if (Math.abs(settled - viewRef.current.zoom) > 1e-3) zoomTo(settled, gestureAnchor(event as SafariGesture), 160);
+    };
     element.addEventListener("wheel", onWheel, { passive: false });
-    return () => element.removeEventListener("wheel", onWheel);
+    element.addEventListener("gesturestart", onGestureStart, { passive: false });
+    element.addEventListener("gesturechange", onGestureChange, { passive: false });
+    element.addEventListener("gestureend", onGestureEnd, { passive: false });
+    return () => {
+      element.removeEventListener("wheel", onWheel);
+      element.removeEventListener("gesturestart", onGestureStart);
+      element.removeEventListener("gesturechange", onGestureChange);
+      element.removeEventListener("gestureend", onGestureEnd);
+    };
   }, [zoomTo]);
 
   const focusDetailView = useCallback(() => {
@@ -1012,6 +1047,7 @@ export function ProjectLocationMap({
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (drawingActive) {
+      if (!event.isPrimary) return;
       event.preventDefault();
       event.stopPropagation();
       const point = screenToLatLng(event.clientX, event.clientY);
@@ -1037,7 +1073,29 @@ export function ProjectLocationMap({
     }
     stopAnimation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    const pointers = pointersRef.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2) {
+      const [a, b] = Array.from(pointers.values());
+      multiTouchRef.current = true;
+      dragRef.current = { type: "pinch", startDistance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), startZoom: viewRef.current.zoom, anchor: screenToLatLng((a.x + b.x) / 2, (a.y + b.y) / 2) };
+      return;
+    }
+    multiTouchRef.current = false;
     dragRef.current = { type: "pan", pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startCenter: centerPoint, moved: false };
+  };
+
+  const applyPinch = (drag: Extract<DragState, { type: "pinch" }>) => {
+    const [a, b] = Array.from(pointersRef.current.values());
+    const rect = shellRef.current?.getBoundingClientRect();
+    if (!a || !b || !rect) return;
+    const nextZoom = clamp(drag.startZoom + Math.log2(Math.hypot(a.x - b.x, a.y - b.y) / drag.startDistance), MIN_ZOOM, MAX_ZOOM);
+    const anchorPoint = latLngToPoint(drag.anchor, nextZoom);
+    const offset = { x: (a.x + b.x) / 2 - rect.left - rect.width / 2, y: (a.y + b.y) / 2 - rect.top - rect.height / 2 };
+    const nextCenter = pointToLatLng({ x: anchorPoint.x - offset.x, y: anchorPoint.y - offset.y }, nextZoom);
+    viewRef.current = { center: nextCenter, zoom: nextZoom };
+    setCenter(nextCenter);
+    setZoom(nextZoom);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -1048,6 +1106,11 @@ export function ProjectLocationMap({
       const first = draftPath[0];
       setCloseReady(Boolean(first && draftPath.length >= 3 && (screenDistance(projectToScreen(pointerLocation), projectToScreen(first)) <= 56 || distanceMetres(pointerLocation, first) <= 8.5)));
     }
+    if (pointersRef.current.has(event.pointerId)) pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (drag?.type === "pinch") {
+      applyPinch(drag);
+      return;
+    }
     if (!drag || drag.pointerId !== event.pointerId) return;
     if (drag.type === "vertex") {
       const path = area?.path ?? [];
@@ -1056,12 +1119,32 @@ export function ProjectLocationMap({
     }
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+    const tapSlop = event.pointerType === "mouse" ? 3 : 10;
+    if (Math.abs(dx) > tapSlop || Math.abs(dy) > tapSlop) drag.moved = true;
+    if (!drag.moved) return;
     setCenter(pointToLatLng({ x: drag.startCenter.x - dx, y: drag.startCenter.y - dy }, zoom));
+  };
+
+  const releasePointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
+    if (drag?.type === "pinch" || (multiTouchRef.current && drag?.type !== "vertex")) {
+      releasePointer(event);
+      if (pointersRef.current.size === 0) {
+        dragRef.current = null;
+        multiTouchRef.current = false;
+        const rect = shellRef.current?.getBoundingClientRect();
+        const settled = Math.round(viewRef.current.zoom);
+        if (Math.abs(settled - viewRef.current.zoom) > 1e-3) zoomTo(settled, rect ? { x: event.clientX - rect.left, y: event.clientY - rect.top } : undefined, 160);
+      } else {
+        dragRef.current = { type: "pan", pointerId: -1, startX: 0, startY: 0, startCenter: centerPoint, moved: true };
+      }
+      return;
+    }
     if (drag?.pointerId === event.pointerId && drag.type === "vertex" && area) {
       const key = pathKey(area.path);
       if (key !== emittedAreaKeyRef.current) {
@@ -1071,14 +1154,24 @@ export function ProjectLocationMap({
       }
     }
     if (!drawingActive && drag?.type === "pan" && !drag.moved) {
-      selectLocation(screenToLatLng(event.clientX, event.clientY));
+      const tap = lastTapRef.current;
+      const now = performance.now();
+      if (event.pointerType !== "mouse" && now - tap.time < 320 && Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 30) {
+        const rect = shellRef.current?.getBoundingClientRect();
+        tap.time = 0;
+        tap.zoomedAt = now;
+        zoomTo(Math.round(viewRef.current.zoom) + 1, { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) });
+      } else {
+        lastTapRef.current = { ...tap, time: now, x: event.clientX, y: event.clientY };
+        selectLocation(screenToLatLng(event.clientX, event.clientY));
+      }
     }
     dragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    releasePointer(event);
   };
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (drawingActive) return;
+    if (drawingActive || performance.now() - lastTapRef.current.zoomedAt < 600) return;
     const rect = shellRef.current?.getBoundingClientRect();
     zoomTo(Math.round(viewRef.current.zoom) + 1, { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) });
   };
@@ -1117,7 +1210,7 @@ export function ProjectLocationMap({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={() => { dragRef.current = null; }}
+        onPointerCancel={(event) => { releasePointer(event); dragRef.current = null; multiTouchRef.current = pointersRef.current.size > 0; }}
         onDoubleClick={handleDoubleClick}
       >
         <div className="osm-tile-layer" aria-hidden="true">

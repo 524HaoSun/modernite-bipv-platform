@@ -172,6 +172,7 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
   };
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (!event.isPrimary) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     const target = event.target as Element;
     const marketKey = target.closest("[data-market-key]")?.getAttribute("data-market-key") as MarketKey | null;
@@ -180,7 +181,7 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
     setDragging(true);
   };
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (!pointerOrigin.current) return;
+    if (!pointerOrigin.current || !event.isPrimary) return;
     const offsetX = event.clientX - pointerOrigin.current.x;
     const offsetY = event.clientY - pointerOrigin.current.y;
     if (Math.abs(offsetX) > 5 || Math.abs(offsetY) > 5) {
@@ -191,6 +192,7 @@ function RotatableGlobe({ market, europeanCountry, onMarketSelect, onEuropeanSel
   };
   const stopDragging = () => { pointerOrigin.current = null; setDragging(false); };
   const onPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
+    if (!event.isPrimary) return;
     const interaction = pointerOrigin.current;
     pointerOrigin.current = null;
     setDragging(false);
