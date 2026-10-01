@@ -4695,6 +4695,7 @@ body {
 .studio-bridge-journey {
   overflow-x: auto !important;
   overflow-y: hidden !important;
+  padding-block: 6px;
   scrollbar-width: none;
 }
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build a standalone bundle (server.mjs + public/) and push it to the preview VM.
 # The VM already runs modernite.service (systemd) behind Caddy; /opt/modernite/.env holds secrets.
+# Public URLs: https://modernite.wenda.global (Cloudflare Tunnel "modernite-gcp6" -> Caddy :8080) and https://34-3-99-93.sslip.io.
 set -euo pipefail
 
 VM="${PREVIEW_VM:-gcp-free-06-us-west}"

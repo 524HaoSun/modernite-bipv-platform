@@ -1791,10 +1791,9 @@ function StudioPage({
         </button>
         <div className="studio-bridge-journey" aria-label={text.studioProgressLabel}>
           {studioJourney.map((step, index) => <div className="studio-bridge-journey__segment" key={step.id}>
-            <span className={`${step.complete ? "is-complete" : ""} ${step.id === "studio" ? "is-current" : ""}`}>
+            <span className={`${step.complete ? "is-complete" : ""} ${step.id === "studio" ? "is-current" : ""}`} title={step.id === "studio" ? bridgeCopy.facets : undefined}>
               <i>{step.complete ? <Check size={10} /> : `0${index + 1}`}</i>
               <b>{step.label}</b>
-              {step.id === "studio" && <small>{bridgeCopy.facets}</small>}
             </span>
             {index < studioJourney.length - 1 && <em className={step.complete ? "is-complete" : ""} aria-hidden="true" />}
           </div>)}
