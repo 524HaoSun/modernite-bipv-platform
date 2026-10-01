@@ -49,6 +49,18 @@ describe("measured multi-plane roofs", () => {
     expect(fitRoofPlanes([...gable, extension], frame)!.planes).toEqual(fitRoofPlanes(gable, frame)!.planes);
   });
 
+  it("squares Google's azimuth noise to the walls and starts every face at level eaves", () => {
+    const noisy = [{ ...hip[0], azimuthDeg: 186 }, { ...hip[1], azimuthDeg: 355 }, { ...hip[2], azimuthDeg: 96 }, { ...hip[3], azimuthDeg: 266 }];
+    const planes = fitRoofPlanes(noisy, frame)!.planes;
+    for (const p of planes) expect(Math.min(Math.abs(p.a), Math.abs(p.b))).toBe(0);
+    for (const cell of envelopeCells(planes, 10.6, 8.6)) {
+      const p = planes[cell.plane], h = cell.poly.map(([x, z]) => p.a * x + p.b * z + p.k);
+      expect(h[0]).toBeCloseTo(h[1], 6);
+      expect(h[0]).toBeCloseTo(Math.min(...h), 6);
+    }
+    expect(fitRoofPlanes([...gable, segment(225, 3, -3, 2 * t, 40 * sec)], frame)).toBeNull();
+  });
+
   it("rejects single planes and roofs that do not fit the building rectangle", () => {
     expect(fitRoofPlanes([gable[0]], frame)).toBeNull();
     expect(fitRoofPlanes(gable, { ...frame, widthM: 4, depthM: 4 })).toBeNull();

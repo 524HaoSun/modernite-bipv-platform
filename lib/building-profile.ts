@@ -28,6 +28,8 @@ export type BuildingProfile = {
   frontAzimuthDeg: ProfileField<number>;
   heightM?: ProfileField<number>;
   footprintAreaM2?: number;
+  /** Outline is several joined blocks (L, T, U…): the Studio box keeps the footprint area. */
+  composite?: { fill: number; outlineWidthM: number; outlineDepthM: number };
   attachedSides?: number;
   osmId?: number;
   path?: LatLng[];
@@ -170,6 +172,20 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
     if (!front && main) front = { value: Math.round(main.azimuthDeg), source: "estimated" };
   }
 
+  // The Studio models one rectangular block. For L/T/U outlines the bounding rectangle overstates
+  // roof and floor area, so the block keeps the measured footprint area (attached houses keep their
+  // party-wall width and shorten the depth).
+  let composite: BuildingProfile["composite"];
+  if (footprint?.footprintAreaM2 && width && depth && width.source === outlineSource && depth.source === outlineSource) {
+    const fill = footprint.footprintAreaM2 / (width.value * depth.value);
+    if (fill < 0.8) {
+      composite = { fill: Math.round(fill * 100) / 100, outlineWidthM: width.value, outlineDepthM: depth.value };
+      const scale = footprint.attachedSides ? 1 : Math.sqrt(fill);
+      width = { value: round1(width.value * scale), source: outlineSource };
+      depth = { value: round1(footprint.footprintAreaM2 / width.value), source: outlineSource };
+    }
+  }
+
   const regionDefault = studioTypesForRegion(region)[0];
   const storeyGuess = region === "JP" ? 2.8 : 2.95;
   let floors: ProfileField<number> | null = footprint?.floors ? { value: footprint.floors, source: "osm" } : null;
@@ -191,7 +207,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   });
   const type: StudioBuildingType = studioTypeById(typeId) ?? regionDefault;
   const detected = Boolean(footprint || segments.length);
-  const measured = footprint?.path?.length && width && depth && front && roofFormsFor(type, true).includes("custom")
+  const measured = !composite && footprint?.path?.length && width && depth && front && roofFormsFor(type, true).includes("custom")
     ? fitRoofPlanes(segments, { center: rectangleCenter(footprint.path, site), frontAzimuthDeg: front.value, widthM: width.value, depthM: depth.value })
     : null;
   const allowedRoofs = roofFormsFor(type);
@@ -212,6 +228,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
     frontAzimuthDeg: front ?? { value: 180, source: "catalog" },
     heightM,
     footprintAreaM2: footprint?.footprintAreaM2,
+    ...(composite ? { composite } : {}),
     attachedSides: footprint?.attachedSides,
     osmId: footprint?.osmId,
     path: footprint?.path,

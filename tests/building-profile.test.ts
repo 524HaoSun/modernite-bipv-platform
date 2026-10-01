@@ -51,6 +51,16 @@ describe("building profile", () => {
     expect(studioTypeById(profile.buildingTypeId.value)?.region).toBe("EU");
   });
 
+  it("models joined blocks as one block of the same footprint area, without a measured roof", () => {
+    const at = (east: number, north: number) => ({ lat: 51.5 + north / 110_540, lng: -0.12 + east / (111_320 * Math.cos((51.5 * Math.PI) / 180)) });
+    const path = [at(-6, -5), at(6, -5), at(6, 0), at(0, 0), at(0, 5), at(-6, 5), at(-6, -5)];
+    const footprint = { status: "ok" as const, source: "osm" as const, path, footprintAreaM2: 90, widthM: 12, depthM: 10, frontAzimuthDeg: 180, frontSource: "road" as const, attachedSides: 0, note: "" };
+    const profile = buildProfile({ region: "UK", site: at(0, 0), footprint });
+    expect(profile.composite).toEqual({ fill: 0.75, outlineWidthM: 12, outlineDepthM: 10 });
+    expect(profile.widthM.value * profile.depthM.value).toBeCloseTo(90, 0);
+    expect(profile.roofPlanes).toBeUndefined();
+  });
+
   it("scales Studio dimensions by units and keeps them in range", () => {
     const semi = studioTypeById("UK02")!;
     const dims = studioDimensions(semi, { widthM: 6, depthM: 200, floors: 2.4, storeyHeightM: 9, roofForm: "gable", roofPitchDeg: 80 }, 0.25);

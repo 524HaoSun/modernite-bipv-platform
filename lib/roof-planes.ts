@@ -49,6 +49,22 @@ export const planArea = (poly: XZ[]) => poly.reduce((sum, p, i) => {
   return sum + p[0] * q[1] - q[0] * p[1];
 }, 0) / 2;
 
+/**
+ * Starts each face at its lowest horizontal edge: the Studio lays tiles and skylights in rows
+ * along a face's first edge, so that edge must be the eaves (as in the catalogue roof forms).
+ */
+function eavesFirst(poly: XZ[], p: RoofPlane): XZ[] {
+  let best = -1, bestHeight = Infinity, bestLength = 0;
+  poly.forEach((A, i) => {
+    const B = poly[(i + 1) % poly.length], ha = height(p, A[0], A[1]), hb = height(p, B[0], B[1]);
+    const length = Math.hypot(B[0] - A[0], B[1] - A[1]), mid = (ha + hb) / 2;
+    if (Math.abs(ha - hb) < 1e-6 && (mid < bestHeight - 1e-6 || (Math.abs(mid - bestHeight) <= 1e-6 && length > bestLength))) {
+      best = i; bestHeight = mid; bestLength = length;
+    }
+  });
+  return best > 0 ? [...poly.slice(best), ...poly.slice(0, best)] : poly;
+}
+
 /** Plan polygon of each plane's part of the lower envelope over a width × depth rectangle. */
 export function envelopeCells(planes: RoofPlane[], width: number, depth: number): { plane: number; poly: XZ[] }[] {
   const rect: XZ[] = [[width / 2, depth / 2], [-width / 2, depth / 2], [-width / 2, -depth / 2], [width / 2, -depth / 2]];
@@ -58,7 +74,7 @@ export function envelopeCells(planes: RoofPlane[], width: number, depth: number)
       planes.forEach((q, j) => {
         if (j !== i && poly.length) poly = clip(poly, ([x, z]) => height(p, x, z) - height(q, x, z) + (j < i ? 1e-7 : -1e-7));
       });
-      return { plane: i, poly: clean(poly) };
+      return { plane: i, poly: eavesFirst(clean(poly), p) };
     })
     .filter((cell) => cell.poly.length >= 3 && planArea(cell.poly) > 1e-3);
 }
@@ -99,7 +115,14 @@ export function fitRoofPlanes(segments: GoogleSolarRoofSegment[], frame: RoofPla
   // every accepted plane lowest at theirs; a stepped-down or raised roof part fails this.
   const kept: { s: GoogleSolarRoofSegment; c: XZ; plane: RoofPlane }[] = [];
   for (const { s, c } of candidates) {
-    const r = ((s.azimuthDeg - frame.frontAzimuthDeg) * Math.PI) / 180, t = Math.tan((s.pitchDeg * Math.PI) / 180);
+    // Roof slopes run square to the walls; snapping removes Google's few-degree azimuth noise so
+    // eaves stay level along the Studio walls. Slopes far off the wall axes cannot be modelled.
+    const relative = ((s.azimuthDeg - frame.frontAzimuthDeg) % 360 + 360) % 360, axis = Math.round(relative / 90) * 90;
+    if (s.pitchDeg >= 10 && Math.abs(relative - axis) > 12) {
+      if (s.areaM2 >= 0.15 * total) return null;
+      continue;
+    }
+    const r = s.pitchDeg >= 10 ? (axis * Math.PI) / 180 : 0, t = Math.tan((s.pitchDeg * Math.PI) / 180);
     const plane = { a: -t * Math.sin(r), b: -t * Math.cos(r), k: s.planeHeightAslM! + t * (Math.sin(r) * c[0] + Math.cos(r) * c[1]) };
     const duplicate = kept.some((k) => angleGap(k.s.azimuthDeg, s.azimuthDeg) < 15 && Math.abs(k.s.pitchDeg - s.pitchDeg) < 7 && Math.abs(height(k.plane, c[0], c[1]) - height(plane, c[0], c[1])) < 0.5);
     const onEnvelope = kept.every((k) => height(plane, k.c[0], k.c[1]) >= height(k.plane, k.c[0], k.c[1]) - 0.25 && height(k.plane, c[0], c[1]) >= height(plane, c[0], c[1]) - 0.25);
