@@ -5570,3 +5570,7 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 @media (min-width: 1021px) and (min-height: 620px) and (max-height: 820px) {
   .gateway-shell--location .page-intro__lede { display: none; }
 }
+
+.studio-guide-steps button.is-next.is-ready { animation: studio-next-pulse 2.4s ease-in-out infinite; }
+@keyframes studio-next-pulse { 50% { box-shadow: 0 0 0 6px rgba(47, 107, 79, .18), 0 10px 24px rgba(31, 79, 56, .22); } }
+@media (prefers-reduced-motion: reduce) { .studio-guide-steps button.is-next.is-ready { animation: none; } }

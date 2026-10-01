@@ -1948,25 +1948,63 @@ function StudioPage({
     };
   }, [requestCalculation]);
 
+  const tourSiteKey = context.location ? `${context.location.coordinates.lat.toFixed(5)}:${context.location.coordinates.lng.toFixed(5)}` : "sample";
   useEffect(() => {
     if (!active || !frameReady) return;
     try {
-      if (window.localStorage.getItem(STUDIO_TOUR_STORAGE_KEY)) return;
+      if (window.sessionStorage.getItem(STUDIO_TOUR_STORAGE_KEY) === tourSiteKey) return;
     } catch {
-      return;
+      // Storage unavailable: show the guide anyway.
     }
     const timer = window.setTimeout(() => setTourOpen(true), 900);
     return () => window.clearTimeout(timer);
-  }, [active, frameReady]);
+  }, [active, frameReady, tourSiteKey]);
 
   const closeTour = useCallback(() => {
     setTourOpen(false);
     try {
-      window.localStorage.setItem(STUDIO_TOUR_STORAGE_KEY, "1");
+      window.sessionStorage.setItem(STUDIO_TOUR_STORAGE_KEY, tourSiteKey);
     } catch {
       // Private browsing: the guide simply shows again next time.
     }
-  }, []);
+  }, [tourSiteKey]);
+
+  const continueRef = useRef(continueToEnergy);
+  continueRef.current = continueToEnergy;
+  useEffect(() => {
+    if (!frameReady) return;
+    const studioDocument = frameRef.current?.contentDocument;
+    const actions = studioDocument?.querySelector(".sidebar > .customer-buttons");
+    const tabs = Array.from(studioDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab") ?? []);
+    if (!studioDocument || !actions || tabs.length === 0) return;
+    if (!studioDocument.querySelector("style[data-host-next-step]")) {
+      const style = studioDocument.createElement("style");
+      style.dataset.hostNextStep = "true";
+      style.textContent = "#host-next-step{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;border:1px solid #2f6b4f;border-radius:7px;color:#24523c;background:#eef6ee;font-family:inherit;font-size:14px;font-weight:650;line-height:1.2;cursor:pointer}#host-next-step:hover{background:#e1efe2}#host-next-step.is-final{min-height:48px;border-color:#1f5a3f;color:#fff;background:linear-gradient(120deg,#2f6b4f,#1f4f38);box-shadow:0 6px 18px #1f4f3833;animation:host-next-pulse 2.4s ease-in-out infinite}#host-next-step.is-final:hover{background:#1f4f38}@keyframes host-next-pulse{50%{box-shadow:0 0 0 6px #2f6b4f22,0 6px 18px #1f4f3833}}@media (prefers-reduced-motion:reduce){#host-next-step.is-final{animation:none}}";
+      studioDocument.head.append(style);
+    }
+    let button = studioDocument.getElementById("host-next-step") as HTMLButtonElement | null;
+    if (!button) {
+      button = studioDocument.createElement("button");
+      button.type = "button";
+      button.id = "host-next-step";
+      button.dataset.noI18n = "";
+    }
+    if (button.parentElement !== actions || actions.lastElementChild !== button) actions.append(button);
+    const last = studioTab >= tabs.length - 1;
+    const target = last ? null : tabs[studioTab + 1];
+    const label = last ? guide.steps[3] : target?.querySelector(".tab-name")?.textContent?.trim() || "";
+    button.textContent = `${guide.tour.next} · ${label} →`;
+    button.classList.toggle("is-final", last);
+    button.onclick = () => {
+      if (target) {
+        target.click();
+        setStudioTab(studioTab + 1);
+      } else {
+        continueRef.current();
+      }
+    };
+  }, [frameReady, studioTab, guide, language]);
 
   const openStudioTab = (index: number) => {
     frameRef.current?.contentDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab")[index]?.click();
@@ -1979,7 +2017,7 @@ function StudioPage({
     { title: guide.steps[0], status: appliedBuilding ? (isDetectedBuilding(appliedBuilding) ? guide.building.detected(buildingSummary) : buildingSummary) : guide.building.manual, done: Boolean(appliedBuilding), current: studioTab === 0, onClick: () => openStudioTab(0) },
     { title: guide.steps[1], status: realSurfaceCount ? guide.products.done(realSurfaceCount) : guide.products.todo, done: realSurfaceCount > 0, current: studioTab === 1, onClick: () => openStudioTab(1) },
     { title: guide.steps[2], status: guide.finishes, done: false, optional: true, current: studioTab === 2 || studioTab === 3, onClick: () => openStudioTab(2) },
-    { title: guide.steps[3], status: guide.energy, done: false, current: false, onClick: continueToEnergy, next: true },
+    { title: guide.steps[3], status: guide.energy, done: false, current: false, onClick: continueToEnergy, next: true, ready: realSurfaceCount > 0 },
   ];
   const guideStep = (index: number) => () => guideRef.current?.children[index] ?? null;
   const tourTargets = [() => guideRef.current, guideStep(0), guideStep(1), () => frameRef.current, guideStep(3)];
@@ -2020,7 +2058,7 @@ function StudioPage({
         <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">{MISC_COPY[language].weatherSource}</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label={MISC_COPY[language].weatherSource}>{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? MISC_COPY[language].weatherLoading(WEATHER_SOURCE_LABELS[weatherSource].short) : MISC_COPY[language].weatherUnavailable(WEATHER_SOURCE_LABELS[weatherSource].short)}</em>}</span>}</span>
         <ol className="studio-guide-steps" ref={guideRef} aria-label={text.studioProgressLabel}>
           {guideSteps.map((step, index) => <li key={step.title}>
-            <button type="button" className={`${step.done ? "is-done" : ""} ${step.current ? "is-current" : ""} ${step.next ? "is-next" : ""}`} onClick={step.onClick}>
+            <button type="button" className={`${step.done ? "is-done" : ""} ${step.current ? "is-current" : ""} ${step.next ? "is-next" : ""} ${step.ready ? "is-ready" : ""}`} onClick={step.onClick}>
               <em>{step.done ? <Check size={12} /> : index + 1}</em>
               <strong>{step.title}{step.optional && <u>{guide.optional}</u>}</strong>
               <small>{step.status}</small>
