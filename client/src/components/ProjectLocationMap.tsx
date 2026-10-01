@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crosshair, Eye, EyeOff, MapPin, Navigation, Pencil, Ruler, Search, Undo2 } from "lucide-react";
-import { googleGeocode, googleTileSession, googleTileUrl, googleViewportCopyright } from "@/lib/google-maps";
+import { googleGeocode, googleTileSession, googleTileUrl, googleViewportInfo } from "@/lib/google-maps";
 import { trpc } from "@/lib/trpc";
 
 export type MarketKey = "GB" | "EU" | "CA" | "JP";
@@ -351,7 +351,10 @@ const READY_STATUS_TEXTS = Object.values(MAP_TEXT).map((item) => item.ready);
 const TILE_SIZE = 256;
 const EARTH_RADIUS = 6_371_000;
 const MIN_ZOOM = 3;
-const MAX_ZOOM = 20;
+const MAX_ZOOM = 21;
+/** Deepest tile level each fallback source serves; deeper views scale these tiles up. */
+const FALLBACK_MAX_TILE_ZOOM: Record<MapMode, number> = { aerial: 19, road: 19 };
+const PUBLIC_CONFIG_CACHE = "modernite-public-config";
 
 const COUNTRY_NAME_TERMS: Record<string, string> = {
   andorra: "ad", austria: "at", belgium: "be", bosnia: "ba", bulgaria: "bg", belarus: "by", canada: "ca", croatia: "hr", cyprus: "cy", czechia: "cz", denmark: "dk", estonia: "ee", finland: "fi", france: "fr", germany: "de", greece: "gr", hungary: "hu", iceland: "is", ireland: "ie", italy: "it", japan: "jp", latvia: "lv", liechtenstein: "li", lithuania: "lt", luxembourg: "lu", malta: "mt", moldova: "md", monaco: "mc", montenegro: "me", netherlands: "nl", norway: "no", poland: "pl", portugal: "pt", romania: "ro", russia: "ru", serbia: "rs", slovakia: "sk", slovenia: "si", spain: "es", sweden: "se", switzerland: "ch", turkey: "tr", ukraine: "ua", "united kingdom": "gb", england: "gb", scotland: "gb", wales: "gb", "vatican city": "va", "north macedonia": "mk", kosovo: "xk",
@@ -574,10 +577,50 @@ function normaliseTileX(x: number, zoom: number) {
   return ((x % max) + max) % max;
 }
 
+type TileRef = { key: string; url: string; x: number; y: number; z: number };
+
+function tilesForView(mode: MapMode, tileZoom: number, center: LatLng, zoom: number, size: { width: number; height: number }, google: { key: string; session: string } | null): TileRef[] {
+  const scale = 2 ** (zoom - tileZoom);
+  const origin = latLngToPoint(center, tileZoom);
+  const halfWidth = size.width / 2 / scale;
+  const halfHeight = size.height / 2 / scale;
+  const startX = Math.floor((origin.x - halfWidth) / TILE_SIZE) - 1;
+  const endX = Math.floor((origin.x + halfWidth) / TILE_SIZE) + 1;
+  const startY = Math.max(0, Math.floor((origin.y - halfHeight) / TILE_SIZE) - 1);
+  const endY = Math.min(2 ** tileZoom - 1, Math.floor((origin.y + halfHeight) / TILE_SIZE) + 1);
+  const centreX = origin.x / TILE_SIZE - 0.5;
+  const centreY = origin.y / TILE_SIZE - 0.5;
+  const output: TileRef[] = [];
+  for (let x = startX; x <= endX; x += 1) {
+    for (let y = startY; y <= endY; y += 1) {
+      output.push({ key: `${tileZoom}-${x}-${y}`, url: tileUrl(mode, tileZoom, normaliseTileX(x, tileZoom), y, google), x, y, z: tileZoom });
+    }
+  }
+  return output.sort((a, b) => Math.hypot(a.x - centreX, a.y - centreY) - Math.hypot(b.x - centreX, b.y - centreY));
+}
+
+function readCachedPublicConfig() {
+  try {
+    return JSON.parse(window.localStorage.getItem(PUBLIC_CONFIG_CACHE) ?? "null") as { googleMapsApiKey: string | null } | null;
+  } catch {
+    return null;
+  }
+}
+
 function tileUrl(mode: MapMode, zoom: number, x: number, y: number, google?: { key: string; session: string } | null) {
   if (google) return googleTileUrl(google.key, google.session, zoom, x, y);
   if (mode === "aerial") return `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
   return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+}
+
+/** Fetches the map key and opens the satellite tile session ahead of the location step. */
+export function usePrewarmLocationMap(language: GatewayLanguage, market: Market) {
+  const config = trpc.site.publicConfig.useQuery(undefined, { staleTime: Infinity, retry: 1, initialData: readCachedPublicConfig() ?? undefined, initialDataUpdatedAt: 0 });
+  const key = config.data?.googleMapsApiKey;
+  const region = (countryRestriction(market) ?? "gb").toUpperCase();
+  useEffect(() => {
+    if (key) void googleTileSession(key, "satellite", nominatimLanguage(language), region).catch(() => {});
+  }, [key, language, region]);
 }
 
 export function ProjectLocationMap({
@@ -600,7 +643,15 @@ export function ProjectLocationMap({
   const [center, setCenter] = useState<LatLng>(initialLocation?.coordinates ?? market.coordinates);
   const [zoom, setZoom] = useState(clamp(Math.max(market.zoom, 16), MIN_ZOOM, MAX_ZOOM));
   const [mapMode, setMapMode] = useState<MapMode>("aerial");
-  const mapsConfig = trpc.site.publicConfig.useQuery(undefined, { staleTime: Infinity, retry: 1 });
+  const viewRef = useRef({ center, zoom });
+  const sizeRef = useRef({ width: 0, height: 0 });
+  const animationRef = useRef<number | null>(null);
+  const wheelRef = useRef<{ target: number; timer: number | null }>({ target: zoom, timer: null });
+  const emittedLocationKeyRef = useRef("");
+  const previousLayerRef = useRef<TileRef[]>([]);
+  const currentLayerRef = useRef<TileRef[]>([]);
+  const [googleMaxZoom, setGoogleMaxZoom] = useState<number | null>(null);
+  const mapsConfig = trpc.site.publicConfig.useQuery(undefined, { staleTime: Infinity, retry: 1, initialData: readCachedPublicConfig() ?? undefined, initialDataUpdatedAt: 0 });
   const googleKey = mapsConfig.data?.googleMapsApiKey ?? null;
   const googleLanguage = nominatimLanguage(language);
   const googleRegion = (countryRestriction(market) ?? "gb").toUpperCase();
@@ -618,7 +669,10 @@ export function ProjectLocationMap({
   useEffect(() => {
     const element = shellRef.current;
     if (!element) return;
-    const update = () => setSize({ width: element.clientWidth, height: element.clientHeight });
+    const update = () => {
+      sizeRef.current = { width: element.clientWidth, height: element.clientHeight };
+      setSize(sizeRef.current);
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(element);
@@ -626,12 +680,29 @@ export function ProjectLocationMap({
   }, []);
 
   useEffect(() => {
+    const locationKey = initialLocation ? `${initialLocation.coordinates.lat.toFixed(6)},${initialLocation.coordinates.lng.toFixed(6)}` : "";
+    setMarker(initialLocation ? { ...initialLocation, label: cleanAddressLabel(initialLocation.label, language) } : null);
+    if (locationKey && locationKey === emittedLocationKeyRef.current) return;
+    stopAnimation();
     setCenter(initialLocation?.coordinates ?? market.coordinates);
     setZoom(clamp(Math.max(market.zoom, initialLocation ? 18 : 16), MIN_ZOOM, MAX_ZOOM));
-    setMarker(initialLocation ? { ...initialLocation, label: cleanAddressLabel(initialLocation.label, language) } : null);
     setQuery("");
     setStatus(text.ready);
   }, [initialLocation, market]);
+
+  useEffect(() => {
+    viewRef.current = { center, zoom };
+  }, [center, zoom]);
+
+  useEffect(() => {
+    if (mapsConfig.data) {
+      try {
+        window.localStorage.setItem(PUBLIC_CONFIG_CACHE, JSON.stringify(mapsConfig.data));
+      } catch {
+        // storage unavailable
+      }
+    }
+  }, [mapsConfig.data]);
 
   useEffect(() => {
     setMarker((current) => current ? { ...current, label: cleanAddressLabel(current.label, language) } : current);
@@ -693,8 +764,12 @@ export function ProjectLocationMap({
     const east = pointToLatLng({ x: centerPoint.x + size.width / 2, y: centerPoint.y }, zoom).lng;
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      googleViewportCopyright(googleTiles.key, googleTiles.session, zoom, { north, south, east, west })
-        .then((copyright) => !cancelled && setGoogleCopyright(copyright))
+      googleViewportInfo(googleTiles.key, googleTiles.session, Math.round(zoom), { north, south, east, west })
+        .then((info) => {
+          if (cancelled) return;
+          setGoogleCopyright(info.copyright);
+          setGoogleMaxZoom(info.maxZoom);
+        })
         .catch(() => {});
     }, 400);
     return () => {
@@ -703,26 +778,30 @@ export function ProjectLocationMap({
     };
   }, [googleTiles?.key, googleTiles?.session, centerPoint.x, centerPoint.y, size.height, size.width, zoom]);
 
+  const maxTileZoom = googleTiles ? clamp(googleMaxZoom ?? 19, MIN_ZOOM, MAX_ZOOM) : FALLBACK_MAX_TILE_ZOOM[mapMode];
+  const tileZoom = clamp(Math.round(zoom), MIN_ZOOM, maxTileZoom);
+  const currentLayer = useMemo(
+    () => (!size.width || !size.height || tileSourcePending ? [] : tilesForView(mapMode, tileZoom, center, zoom, size, googleTiles)),
+    [center, zoom, tileZoom, mapMode, size, tileSourcePending, googleTiles?.key, googleTiles?.session],
+  );
+  const layerSignature = `${mapMode}:${tileZoom}:${googleTiles?.session ?? ""}`;
+  const layerSignatureRef = useRef(layerSignature);
+  if (layerSignatureRef.current !== layerSignature) {
+    previousLayerRef.current = layerSignatureRef.current.split(":")[0] === mapMode ? currentLayerRef.current : [];
+    layerSignatureRef.current = layerSignature;
+  }
+  currentLayerRef.current = currentLayer;
   const tiles = useMemo(() => {
-    if (!size.width || !size.height || tileSourcePending) return [];
-    const startX = Math.floor((centerPoint.x - size.width / 2) / TILE_SIZE) - 1;
-    const endX = Math.floor((centerPoint.x + size.width / 2) / TILE_SIZE) + 1;
-    const startY = Math.max(0, Math.floor((centerPoint.y - size.height / 2) / TILE_SIZE) - 1);
-    const endY = Math.min(2 ** zoom - 1, Math.floor((centerPoint.y + size.height / 2) / TILE_SIZE) + 1);
-    const output: Array<{ key: string; url: string; left: number; top: number }> = [];
-    for (let x = startX; x <= endX; x += 1) {
-      for (let y = startY; y <= endY; y += 1) {
-        const tileX = normaliseTileX(x, zoom);
-        output.push({
-          key: `${zoom}-${x}-${y}`,
-          url: tileUrl(mapMode, zoom, tileX, y, googleTiles),
-          left: x * TILE_SIZE - centerPoint.x + size.width / 2,
-          top: y * TILE_SIZE - centerPoint.y + size.height / 2,
-        });
-      }
-    }
-    return output;
-  }, [centerPoint, mapMode, size.height, size.width, zoom, tileSourcePending, googleTiles?.key, googleTiles?.session]);
+    const placed = (tile: TileRef, layer: "under" | "current") => {
+      const scale = 2 ** (zoom - tile.z);
+      const tileSize = TILE_SIZE * scale;
+      return { ...tile, layer, size: tileSize, left: tile.x * tileSize - centerPoint.x + size.width / 2, top: tile.y * tileSize - centerPoint.y + size.height / 2 };
+    };
+    const visible = (tile: { left: number; top: number; size: number }) => tile.left < size.width && tile.top < size.height && tile.left + tile.size > 0 && tile.top + tile.size > 0;
+    const currentKeys = new Set(currentLayer.map((tile) => tile.key));
+    const under = previousLayerRef.current.filter((tile) => !currentKeys.has(tile.key)).map((tile) => placed(tile, "under")).filter(visible);
+    return [...under, ...currentLayer.map((tile) => placed(tile, "current"))];
+  }, [currentLayer, centerPoint, size.height, size.width, zoom]);
 
   const polygonPoints = useMemo(() => (area?.path ?? []).map(projectToScreen).map((point) => `${point.x},${point.y}`).join(" "), [area, projectToScreen]);
   const draftPoints = useMemo(() => {
@@ -762,9 +841,11 @@ export function ProjectLocationMap({
     const fallback = `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`;
     const displayLabel = label ? cleanAddressLabel(label, language) : fallback;
     const selection = { coordinates, label: displayLabel };
+    emittedLocationKeyRef.current = `${coordinates.lat.toFixed(6)},${coordinates.lng.toFixed(6)}`;
     setMarker(selection);
+    stopAnimation();
     setCenter(coordinates);
-    setZoom((current) => Math.max(current, 18));
+    setZoom((current) => Math.max(Math.round(current), 18));
     setStatus(displayLabel || text.selected);
     onLocationChange(selection);
   }, [language, onLocationChange, text.selected]);
@@ -839,17 +920,85 @@ export function ProjectLocationMap({
     setCloseReady(false);
   }, [text]);
 
-  const setZoomAroundCenter = useCallback((nextZoom: number) => {
-    setZoom(clamp(Math.round(nextZoom), MIN_ZOOM, MAX_ZOOM));
+  const zoomTo = useCallback((targetZoom: number, anchor?: Point, duration = 240) => {
+    const target = clamp(targetZoom, MIN_ZOOM, MAX_ZOOM);
+    const { center: startCenter, zoom: startZoom } = viewRef.current;
+    const { width, height } = sizeRef.current;
+    const offset = anchor ? { x: anchor.x - width / 2, y: anchor.y - height / 2 } : { x: 0, y: 0 };
+    const startPoint = latLngToPoint(startCenter, startZoom);
+    const anchorLocation = pointToLatLng({ x: startPoint.x + offset.x, y: startPoint.y + offset.y }, startZoom);
+    const apply = (nextZoom: number) => {
+      const anchorPoint = latLngToPoint(anchorLocation, nextZoom);
+      const nextCenter = pointToLatLng({ x: anchorPoint.x - offset.x, y: anchorPoint.y - offset.y }, nextZoom);
+      viewRef.current = { center: nextCenter, zoom: nextZoom };
+      setCenter(nextCenter);
+      setZoom(nextZoom);
+    };
+    if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
+    animationRef.current = null;
+    if (duration <= 0 || Math.abs(target - startZoom) < 1e-3) {
+      apply(target);
+      return;
+    }
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      apply(startZoom + (target - startZoom) * (1 - (1 - progress) ** 3));
+      animationRef.current = progress < 1 ? requestAnimationFrame(step) : null;
+    };
+    animationRef.current = requestAnimationFrame(step);
   }, []);
+
+  function stopAnimation() {
+    if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
+    animationRef.current = null;
+  }
+
+  const zoomStep = useCallback((direction: 1 | -1) => {
+    const base = animationRef.current !== null ? wheelRef.current.target : viewRef.current.zoom;
+    const target = clamp(Math.round(base) + direction, MIN_ZOOM, MAX_ZOOM);
+    wheelRef.current.target = target;
+    zoomTo(target);
+  }, [zoomTo]);
+
+  useEffect(() => {
+    const element = shellRef.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = element.getBoundingClientRect();
+      const anchor = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const pixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * rect.height : event.deltaY;
+      const wheel = wheelRef.current;
+      const animating = animationRef.current !== null;
+      const base = animating || wheel.timer !== null ? wheel.target : viewRef.current.zoom;
+      if (!event.ctrlKey && Math.abs(pixels) >= 50) {
+        wheel.target = clamp(Math.round(base) + (pixels < 0 ? 1 : -1), MIN_ZOOM, MAX_ZOOM);
+        zoomTo(wheel.target, anchor, 220);
+      } else {
+        wheel.target = clamp(base - pixels * (event.ctrlKey ? 0.012 : 0.004), MIN_ZOOM, MAX_ZOOM);
+        zoomTo(wheel.target, anchor, 0);
+      }
+      if (wheel.timer !== null) window.clearTimeout(wheel.timer);
+      wheel.timer = window.setTimeout(() => {
+        wheel.timer = null;
+        const settled = Math.round(viewRef.current.zoom);
+        if (Math.abs(settled - viewRef.current.zoom) > 1e-3) zoomTo(settled, anchor, 160);
+      }, 180);
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [zoomTo]);
 
   const focusDetailView = useCallback(() => {
     if (area?.path.length) {
       const centroid = area.path.reduce((sum, point) => ({ lat: sum.lat + point.lat, lng: sum.lng + point.lng }), { lat: 0, lng: 0 });
+      stopAnimation();
       setCenter({ lat: centroid.lat / area.path.length, lng: centroid.lng / area.path.length });
       setZoom(20);
       return;
     }
+    stopAnimation();
     if (marker) {
       setCenter(marker.coordinates);
       setZoom(20);
@@ -884,6 +1033,7 @@ export function ProjectLocationMap({
       setCloseReady(false);
       return;
     }
+    stopAnimation();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { type: "pan", pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startCenter: centerPoint, moved: false };
   };
@@ -925,10 +1075,13 @@ export function ProjectLocationMap({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setZoom((current) => clamp(current + (event.deltaY < 0 ? 1 : -1), MIN_ZOOM, MAX_ZOOM));
+  const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (drawingActive) return;
+    const rect = shellRef.current?.getBoundingClientRect();
+    zoomTo(Math.round(viewRef.current.zoom) + 1, { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) });
   };
+
+  const stopMapGesture = (event: React.PointerEvent | React.MouseEvent) => event.stopPropagation();
 
   const beginVertexDrag = (event: React.PointerEvent<SVGCircleElement | HTMLButtonElement>, index: number) => {
     event.stopPropagation();
@@ -963,10 +1116,10 @@ export function ProjectLocationMap({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={() => { dragRef.current = null; }}
-        onWheel={handleWheel}
+        onDoubleClick={handleDoubleClick}
       >
         <div className="osm-tile-layer" aria-hidden="true">
-          {tiles.map((tile) => <img key={tile.key} src={tile.url} alt="" draggable={false} style={{ left: tile.left, top: tile.top }} />)}
+          {tiles.map((tile) => <img key={tile.key} className={tile.layer === "under" ? "is-underlay" : undefined} src={tile.url} alt="" draggable={false} decoding="async" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} style={{ left: tile.left, top: tile.top, width: tile.size, height: tile.size }} />)}
         </div>
         <svg className="osm-vector-layer" aria-hidden="true">
           {area && <polygon className="osm-area-polygon" points={polygonPoints} />}
@@ -1033,13 +1186,13 @@ export function ProjectLocationMap({
           </div>
         )}
         {marker && <div className="osm-site-marker" style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}><MapPin size={24} /><span>{cleanAddressLabel(marker.label, language)}</span></div>}
-        <div className="osm-control-stack" aria-label={text.zoomControls}>
-          <button type="button" aria-label={text.zoomIn} onClick={() => setZoomAroundCenter(zoom + 1)}>+</button>
-          <button type="button" aria-label={text.zoomOut} onClick={() => setZoomAroundCenter(zoom - 1)}>−</button>
+        <div className="osm-control-stack" aria-label={text.zoomControls} onPointerDown={stopMapGesture} onPointerUp={stopMapGesture} onDoubleClick={stopMapGesture}>
+          <button type="button" aria-label={text.zoomIn} onClick={() => zoomStep(1)} disabled={zoom >= MAX_ZOOM}>+</button>
+          <button type="button" aria-label={text.zoomOut} onClick={() => zoomStep(-1)} disabled={zoom <= MIN_ZOOM}>−</button>
           <button type="button" className="osm-detail-button" aria-label={text.detailView} title={text.detailView} onClick={focusDetailView}>1:1</button>
-          <button type="button" aria-label={text.centerSelected} onClick={() => setCenter(marker?.coordinates ?? market.coordinates)}><Crosshair size={16} /></button>
+          <button type="button" aria-label={text.centerSelected} onClick={() => { stopAnimation(); setCenter(marker?.coordinates ?? market.coordinates); }}><Crosshair size={16} /></button>
         </div>
-        <div className="osm-attribution">
+        <div className="osm-attribution" onPointerDown={stopMapGesture} onDoubleClick={stopMapGesture}>
           {googleTiles ? <><span className="google-map-logo" aria-label="Google">Google</span> {googleCopyright || "Map data © Google"}</> : mapMode === "aerial" ? "Imagery © Esri, Maxar, Earthstar Geographics" : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>}
         </div>
       </div>

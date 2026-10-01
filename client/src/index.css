@@ -5267,3 +5267,8 @@ html:lang(ja) .eyebrow {
 @media (prefers-reduced-motion: reduce) {
   .calculation-orbit { animation: none; }
 }
+
+.osm-map-canvas { touch-action: none; overscroll-behavior: contain; }
+.osm-tile-layer { overflow: hidden; }
+.osm-tile-layer img { max-width: none; max-height: none; image-rendering: auto; }
+.osm-control-stack button:disabled { opacity: .45; cursor: default; }

@@ -43,7 +43,7 @@ import { resultsCopy } from "@/lib/results-copy";
 import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
-import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
+import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
@@ -1212,6 +1212,7 @@ function MarketPage({ language, market, europeanCountry, copy, onMarketChange, o
   onEuropeanCountryChange: (country: EuropeanMarket | null) => void;
   onNavigate: (route: GatewayRoute) => void;
 }) {
+  usePrewarmLocationMap(language, market);
   return (
     <section className="market-page gateway-page">
       <PageIntro chapter={2} eyebrow={WORKFLOW_LABELS[language].market} icon={<Globe2 size={14} />} title={copy.marketTitle} lede={copy.marketIntro} />
