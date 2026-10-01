@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, Eye, EyeOff, MapPin, Navigation, Pencil, Ruler, Search, Undo2 } from "lucide-react";
+import { Crosshair, Eye, EyeOff, Loader2, MapPin, Navigation, Pencil, Ruler, ScanSearch, Search, Undo2 } from "lucide-react";
 import { googleGeocode, googleTileSession, googleTileUrl, googleViewportInfo } from "@/lib/google-maps";
 import { trpc } from "@/lib/trpc";
 
@@ -22,6 +22,14 @@ export type ProjectLocationSelection = {
 export type SiteAreaSelection = {
   areaM2: number;
   path: google.maps.LatLngLiteral[];
+  /** "detected" = building outline from map data (possibly fine-tuned); "traced" = drawn by the user. */
+  source?: "detected" | "traced";
+};
+
+export type SiteDetection = {
+  state: "idle" | "loading" | "found" | "missing" | "error";
+  onDetect: () => void;
+  onUseDetected?: () => void;
 };
 
 type GatewayLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -70,6 +78,18 @@ type MapText = {
   zoomIn: string;
   zoomOut: string;
   detailView: string;
+  detect: string;
+  detecting: string;
+  detectHint: string;
+  detectMissing: string;
+  detectError: string;
+  detectedHint: string;
+  tracedHint: string;
+  manualTrace: string;
+  redraw: string;
+  useDetected: string;
+  detectedArea: string;
+  retry: string;
 };
 
 const EN_TEXT: MapText = {
@@ -84,7 +104,7 @@ const EN_TEXT: MapText = {
   outlined: (area, count) => `Outlined site area: ${area} across ${count} vertices. Drag a numbered point to refine it.`,
   aerial: "Aerial",
   road: "Road",
-  siteArea: "Solar-ready area",
+  siteArea: "Site outline",
   drawZone: "Pencil-trace a boundary, then close it",
   trace: "Trace area",
   finish: "Close outline",
@@ -108,6 +128,18 @@ const EN_TEXT: MapText = {
   zoomIn: "Zoom in",
   zoomOut: "Zoom out",
   detailView: "Close-up view",
+  detect: "Detect building outline",
+  detecting: "Reading the building outline…",
+  detectHint: "Put the pin on the building, then detect its outline automatically.",
+  detectMissing: "No outline found for this building. Trace it by hand.",
+  detectError: "Building data is unavailable right now. Trace the outline by hand or retry.",
+  detectedHint: "From building detection · drag corners to fine-tune",
+  tracedHint: "Traced by hand · drag corners to fine-tune",
+  manualTrace: "Trace manually",
+  redraw: "Redraw",
+  useDetected: "Use detected outline",
+  detectedArea: "Detected building outline",
+  retry: "Retry",
 };
 
 const ZH_TEXT: MapText = {
@@ -122,7 +154,7 @@ const ZH_TEXT: MapText = {
   outlined: (area, count) => `已勾画场地面积：${area}，共 ${count} 个顶点。可拖动编号顶点进行微调。`,
   aerial: "航拍",
   road: "道路",
-  siteArea: "光伏候选区域",
+  siteArea: "场地范围",
   drawZone: "用铅笔勾画边界并闭合",
   trace: "勾画区域",
   finish: "闭合边界",
@@ -146,6 +178,18 @@ const ZH_TEXT: MapText = {
   zoomIn: "放大",
   zoomOut: "缩小",
   detailView: "拉近查看",
+  detect: "识别建筑轮廓",
+  detecting: "正在识别建筑轮廓…",
+  detectHint: "把图钉放到建筑上，再自动识别建筑轮廓。",
+  detectMissing: "没找到这栋建筑的轮廓，请手动勾画。",
+  detectError: "暂时无法获取建筑数据，可手动勾画或重试。",
+  detectedHint: "来自建筑识别 · 拖动顶点即可微调",
+  tracedHint: "手动勾画 · 拖动顶点即可微调",
+  manualTrace: "手动勾画",
+  redraw: "重新勾画",
+  useDetected: "改用识别轮廓",
+  detectedArea: "识别的建筑轮廓",
+  retry: "重试",
 };
 
 const ZH_HANT_TEXT: MapText = {
@@ -160,7 +204,7 @@ const ZH_HANT_TEXT: MapText = {
   outlined: (area, count) => `已勾畫場地面積：${area}，共 ${count} 個頂點。可拖曳編號頂點進行微調。`,
   aerial: "空拍",
   road: "道路",
-  siteArea: "光電候選區域",
+  siteArea: "場地範圍",
   drawZone: "用鉛筆勾畫邊界並閉合",
   trace: "勾畫區域",
   finish: "閉合邊界",
@@ -184,6 +228,18 @@ const ZH_HANT_TEXT: MapText = {
   zoomIn: "放大",
   zoomOut: "縮小",
   detailView: "拉近查看",
+  detect: "識別建築輪廓",
+  detecting: "正在識別建築輪廓…",
+  detectHint: "把圖釘放到建築上，再自動識別建築輪廓。",
+  detectMissing: "找不到這棟建築的輪廓，請手動勾畫。",
+  detectError: "暫時無法取得建築資料，可手動勾畫或重試。",
+  detectedHint: "來自建築識別 · 拖曳頂點即可微調",
+  tracedHint: "手動勾畫 · 拖曳頂點即可微調",
+  manualTrace: "手動勾畫",
+  redraw: "重新勾畫",
+  useDetected: "改用識別輪廓",
+  detectedArea: "識別的建築輪廓",
+  retry: "重試",
 };
 
 const FR_TEXT: MapText = {
@@ -198,7 +254,7 @@ const FR_TEXT: MapText = {
   outlined: (area, count) => `Surface tracée : ${area}, ${count} sommets. Faites glisser un point numéroté pour l’ajuster.`,
   aerial: "Aérien",
   road: "Plan",
-  siteArea: "Zone solaire",
+  siteArea: "Emprise du site",
   drawZone: "Tracez un contour au crayon, puis fermez-le",
   trace: "Tracer la zone",
   finish: "Fermer le contour",
@@ -222,6 +278,18 @@ const FR_TEXT: MapText = {
   zoomIn: "Zoom avant",
   zoomOut: "Zoom arrière",
   detailView: "Vue rapprochée",
+  detect: "Détecter le contour",
+  detecting: "Lecture du contour du bâtiment…",
+  detectHint: "Placez l’épingle sur le bâtiment, puis détectez son contour automatiquement.",
+  detectMissing: "Aucun contour trouvé pour ce bâtiment. Tracez-le à la main.",
+  detectError: "Données du bâtiment indisponibles. Tracez le contour à la main ou réessayez.",
+  detectedHint: "Issu de la détection · déplacez les sommets pour ajuster",
+  tracedHint: "Tracé à la main · déplacez les sommets pour ajuster",
+  manualTrace: "Tracer à la main",
+  redraw: "Retracer",
+  useDetected: "Utiliser le contour détecté",
+  detectedArea: "Contour du bâtiment détecté",
+  retry: "Réessayer",
 };
 
 const JA_TEXT: MapText = {
@@ -236,7 +304,7 @@ const JA_TEXT: MapText = {
   outlined: (area, count) => `なぞった敷地面積：${area}（頂点 ${count} 点）。番号付きの点をドラッグして調整できます。`,
   aerial: "航空写真",
   road: "地図",
-  siteArea: "太陽光候補エリア",
+  siteArea: "敷地範囲",
   drawZone: "鉛筆で境界をなぞって閉じる",
   trace: "エリアをなぞる",
   finish: "輪郭を閉じる",
@@ -260,6 +328,18 @@ const JA_TEXT: MapText = {
   zoomIn: "拡大",
   zoomOut: "縮小",
   detailView: "近接表示",
+  detect: "建物の輪郭を検出",
+  detecting: "建物の輪郭を読み取り中…",
+  detectHint: "ピンを建物の上に置き、輪郭を自動検出します。",
+  detectMissing: "この建物の輪郭が見つかりません。手動でトレースしてください。",
+  detectError: "建物データを取得できません。手動でトレースするか再試行してください。",
+  detectedHint: "建物検出から · 頂点をドラッグして微調整",
+  tracedHint: "手動トレース · 頂点をドラッグして微調整",
+  manualTrace: "手動でトレース",
+  redraw: "描き直す",
+  useDetected: "検出した輪郭を使う",
+  detectedArea: "検出した建物の輪郭",
+  retry: "再試行",
 };
 
 const ES_TEXT: MapText = {
@@ -274,7 +354,7 @@ const ES_TEXT: MapText = {
   outlined: (area, count) => `Superficie trazada: ${area}, ${count} vértices. Arrastra un punto numerado para ajustarla.`,
   aerial: "Aérea",
   road: "Mapa",
-  siteArea: "Zona solar",
+  siteArea: "Contorno del sitio",
   drawZone: "Traza un contorno con el lápiz y ciérralo",
   trace: "Trazar zona",
   finish: "Cerrar contorno",
@@ -298,6 +378,18 @@ const ES_TEXT: MapText = {
   zoomIn: "Acercar",
   zoomOut: "Alejar",
   detailView: "Vista cercana",
+  detect: "Detectar contorno",
+  detecting: "Leyendo el contorno del edificio…",
+  detectHint: "Coloca el pin sobre el edificio y detecta su contorno automáticamente.",
+  detectMissing: "No se encontró el contorno de este edificio. Trázalo a mano.",
+  detectError: "Los datos del edificio no están disponibles. Traza el contorno a mano o reintenta.",
+  detectedHint: "De la detección · arrastra los vértices para ajustar",
+  tracedHint: "Trazado a mano · arrastra los vértices para ajustar",
+  manualTrace: "Trazar a mano",
+  redraw: "Volver a trazar",
+  useDetected: "Usar contorno detectado",
+  detectedArea: "Contorno detectado del edificio",
+  retry: "Reintentar",
 };
 
 const IT_TEXT: MapText = {
@@ -312,7 +404,7 @@ const IT_TEXT: MapText = {
   outlined: (area, count) => `Area tracciata: ${area}, ${count} vertici. Trascina un punto numerato per rifinirla.`,
   aerial: "Satellite",
   road: "Mappa",
-  siteArea: "Area solare",
+  siteArea: "Perimetro del sito",
   drawZone: "Traccia un contorno a matita e chiudilo",
   trace: "Traccia area",
   finish: "Chiudi contorno",
@@ -336,6 +428,18 @@ const IT_TEXT: MapText = {
   zoomIn: "Ingrandisci",
   zoomOut: "Riduci",
   detailView: "Vista ravvicinata",
+  detect: "Rileva contorno",
+  detecting: "Lettura del contorno dell’edificio…",
+  detectHint: "Posiziona il segnaposto sull’edificio, poi rileva il contorno automaticamente.",
+  detectMissing: "Nessun contorno trovato per questo edificio. Traccialo a mano.",
+  detectError: "Dati dell’edificio non disponibili. Traccia il contorno a mano o riprova.",
+  detectedHint: "Dal rilevamento · trascina i vertici per rifinire",
+  tracedHint: "Tracciato a mano · trascina i vertici per rifinire",
+  manualTrace: "Traccia a mano",
+  redraw: "Ritraccia",
+  useDetected: "Usa il contorno rilevato",
+  detectedArea: "Contorno rilevato dell’edificio",
+  retry: "Riprova",
 };
 
 const MAP_TEXT: Record<GatewayLanguage, MapText> = {
@@ -372,6 +476,7 @@ type ProjectLocationMapProps = {
   onLocationChange: (selection: ProjectLocationSelection) => void;
   onAreaChange: (selection: SiteAreaSelection | null) => void;
   onOpenStreetView?: () => void;
+  siteDetection?: SiteDetection;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -637,6 +742,7 @@ export function ProjectLocationMap({
   onLocationChange,
   onAreaChange,
   onOpenStreetView,
+  siteDetection,
 }: ProjectLocationMapProps) {
   const text = MAP_TEXT[language] ?? MAP_TEXT.en;
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -717,8 +823,20 @@ export function ProjectLocationMap({
 
   useEffect(() => {
     if (isUsablePath(initialArea?.path)) {
+      const key = pathKey(initialArea.path);
+      if (initialArea.source === "detected" && key !== emittedAreaKeyRef.current) {
+        const lats = initialArea.path.map((point) => point.lat);
+        const lngs = initialArea.path.map((point) => point.lng);
+        const centre = { lat: (Math.min(...lats) + Math.max(...lats)) / 2, lng: (Math.min(...lngs) + Math.max(...lngs)) / 2 };
+        const spanM = Math.max((Math.max(...lats) - Math.min(...lats)) * 111_320, (Math.max(...lngs) - Math.min(...lngs)) * 111_320 * Math.cos((centre.lat * Math.PI) / 180), 8);
+        const viewport = Math.max(200, Math.min(sizeRef.current.width, sizeRef.current.height) * 0.4);
+        const fitZoom = Math.log2((viewport * 156_543 * Math.cos((centre.lat * Math.PI) / 180)) / spanM);
+        stopAnimation();
+        setCenter(centre);
+        setZoom(clamp(Math.floor(fitZoom), 17, 20));
+      }
       setArea(initialArea);
-      emittedAreaKeyRef.current = pathKey(initialArea.path);
+      emittedAreaKeyRef.current = key;
     } else {
       setArea(null);
       emittedAreaKeyRef.current = "";
@@ -818,13 +936,24 @@ export function ProjectLocationMap({
   const screenDraftPoints = useMemo(() => draftPath.map(projectToScreen), [draftPath, projectToScreen]);
   const areaSegments = useMemo(() => buildSegments(screenAreaPoints, Boolean(area)), [area, screenAreaPoints]);
   const draftSegments = useMemo(() => buildSegments(screenDraftPoints, false), [screenDraftPoints]);
+  const detecting = siteDetection?.state === "loading";
+  const toolStage = drawingActive ? "drawing"
+    : area ? "area"
+    : !siteDetection || !marker ? "plain"
+    : siteDetection.state === "idle" || siteDetection.state === "loading" ? "detect"
+    : siteDetection.state === "found" ? "restore"
+    : "fallback";
+  const toolHint = toolStage === "area" ? (area?.source === "detected" ? text.detectedHint : text.tracedHint)
+    : toolStage === "detect" ? (detecting ? text.detecting : text.detectHint)
+    : toolStage === "fallback" ? (siteDetection?.state === "error" ? text.detectError : text.detectMissing)
+    : text.drawZone;
 
   const publishArea = useCallback((path: LatLng[]) => {
     if (!isUsablePath(path)) {
       setStatus(text.needVertices);
       return;
     }
-    const selection = { areaM2: calculateArea(path), path };
+    const selection: SiteAreaSelection = { areaM2: calculateArea(path), path, source: "traced" };
     emittedAreaKeyRef.current = pathKey(path);
     setArea(selection);
     onAreaChange(selection);
@@ -1113,8 +1242,9 @@ export function ProjectLocationMap({
     }
     if (!drag || drag.pointerId !== event.pointerId) return;
     if (drag.type === "vertex") {
-      const path = area?.path ?? [];
-      setArea({ areaM2: calculateArea(path.map((point, index) => (index === drag.index ? pointerLocation : point))), path: path.map((point, index) => (index === drag.index ? pointerLocation : point)) });
+      if (!area) return;
+      const path = area.path.map((point, index) => (index === drag.index ? pointerLocation : point));
+      setArea({ ...area, areaM2: calculateArea(path), path });
       return;
     }
     const dx = event.clientX - drag.startX;
@@ -1309,21 +1439,36 @@ export function ProjectLocationMap({
       {showReference && <div className="site-map-reference" aria-live="polite"><span><MapPin size={14} /></span><div><small>{text.openData}</small><b>{referenceLabel}</b><p>{text.ready}</p></div></div>}
 
       <div className="site-map-tools">
-        <div className={`site-map-tool-card ${drawingActive ? "is-drawing" : ""}`}>
-          <div className="site-map-tool-heading"><span><Ruler size={15} /></span><div><b>{text.siteArea}</b><small>{text.drawZone}</small></div></div>
+        <div className={`site-map-tool-card ${drawingActive ? "is-drawing" : ""} ${toolStage === "fallback" ? "is-fallback" : ""}`}>
+          <div className="site-map-tool-heading"><span>{detecting ? <Loader2 size={15} className="spin" /> : toolStage === "detect" ? <ScanSearch size={15} /> : <Ruler size={15} />}</span><div><b>{text.siteArea}</b><small>{toolHint}</small></div></div>
           <div className={`site-map-tool-actions ${drawingActive ? "is-drawing" : ""}`}>
-            <button type="button" className={drawingActive ? "is-active" : ""} onClick={(event) => runToolClickAction(event, drawingActive ? finishDrawing : startDrawing)}><Pencil size={14} /> {drawingActive ? text.finish : text.trace}</button>
-            {drawingActive && <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>}
-            <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, clearArea)} disabled={!area && !drawingActive}>{text.clear}</button>
+            {drawingActive ? <>
+              <button type="button" className="is-active" onClick={(event) => runToolClickAction(event, finishDrawing)}><Pencil size={14} /> {text.finish}</button>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, clearArea)}>{text.clear}</button>
+            </> : toolStage === "detect" && siteDetection ? <>
+              <button type="button" className="is-primary" disabled={detecting} onClick={(event) => runToolClickAction(event, siteDetection.onDetect)}>{detecting ? <Loader2 size={14} className="spin" /> : <ScanSearch size={14} />} {text.detect}</button>
+              <button type="button" className="is-quiet" disabled={detecting} onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={13} /> {text.manualTrace}</button>
+            </> : toolStage === "fallback" ? <>
+              <button type="button" className="is-primary" onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={14} /> {text.manualTrace}</button>
+              {siteDetection?.state === "error" && <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, siteDetection.onDetect)}>{text.retry}</button>}
+            </> : toolStage === "restore" && siteDetection?.onUseDetected ? <>
+              <button type="button" className="is-primary" onClick={(event) => runToolClickAction(event, siteDetection.onUseDetected!)}><ScanSearch size={14} /> {text.useDetected}</button>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={13} /> {text.manualTrace}</button>
+            </> : <>
+              <button type="button" onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={14} /> {area ? text.redraw : text.trace}</button>
+              {area && siteDetection?.state === "found" && area.source !== "detected" && siteDetection.onUseDetected && <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, siteDetection.onUseDetected!)}>{text.useDetected}</button>}
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, clearArea)} disabled={!area}>{text.clear}</button>
+            </>}
           </div>
           {drawingActive && <div className={`site-trace-progress ${closeReady ? "is-close-ready" : ""}`} aria-live="polite"><span>{draftPath.length}</span><b>{text.points}</b><i>{closeReady ? text.closeCue : text.drawCue}</i></div>}
-          <p className="site-map-trace-help">{text.traceHelp}</p>
+          {(drawingActive || toolStage === "fallback") && <p className="site-map-trace-help">{text.traceHelp}</p>}
         </div>
         <button type="button" className="site-street-view" disabled={!onOpenStreetView || !marker} title={text.googleLater} onClick={onOpenStreetView}>{onOpenStreetView && marker ? <Eye size={15} /> : <EyeOff size={15} />}<span><b>{text.streetView}</b><small>{text.googleLater}</small></span></button>
       </div>
 
       {drawingActive && <div className={`site-draw-cue ${closeReady ? "is-close-ready" : ""}`}><Pencil size={15} /><span>{closeReady ? text.closeCue : text.drawCue}</span></div>}
-      {area && <div className="site-area-readout" aria-live="polite"><span><Ruler size={16} /></span><div><small>{text.outlinedArea}</small><strong>{areaLabel(area.areaM2, language)}</strong></div><em>{area.path.length} {text.points}</em><p>{text.editHint}</p></div>}
+      {area && <div className="site-area-readout" aria-live="polite"><span><Ruler size={16} /></span><div><small>{area.source === "detected" ? text.detectedArea : text.outlinedArea}</small><strong>{areaLabel(area.areaM2, language)}</strong></div><em>{area.path.length} {text.points}</em><p>{text.editHint}</p></div>}
       <div className="site-map-status"><span><MapPin size={14} aria-hidden="true" /> {status}</span><span><Crosshair size={14} aria-hidden="true" /> {text.openData}</span></div>
     </section>
   );

@@ -43,7 +43,7 @@ import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
 import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
-import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
+import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection } from "@/components/ProjectLocationMap";
 import type { MarketAtlasCopy } from "@/components/MarketAtlas";
 import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
 
@@ -165,16 +165,15 @@ const DEFAULT_PROJECT_LOCATION: ProjectLocationSelection = {
   label: "30 St James's Street, London SW1A 1HF, United Kingdom",
   coordinates: { lat: 51.5079, lng: -0.1378 },
 };
-const DEFAULT_SITE_AREA: SiteAreaSelection = {
-  areaM2: 91.8,
-  path: [
-    { lat: 51.50804, lng: -0.13804 },
-    { lat: 51.50801, lng: -0.13764 },
-    { lat: 51.50775, lng: -0.13758 },
-    { lat: 51.50769, lng: -0.13798 },
-    { lat: 51.50787, lng: -0.13814 },
-  ],
-};
+/** Drops a stored outline that does not belong to the stored pin (older builds kept a sample outline). */
+function siteAreaNear(area: SiteAreaSelection | null | undefined, location: ProjectLocationSelection | null | undefined): SiteAreaSelection | null {
+  if (!area?.path?.length || !location) return null;
+  const lat = area.path.reduce((sum, point) => sum + point.lat, 0) / area.path.length;
+  const lng = area.path.reduce((sum, point) => sum + point.lng, 0) / area.path.length;
+  const dy = (lat - location.coordinates.lat) * 111_320;
+  const dx = (lng - location.coordinates.lng) * 111_320 * Math.cos((lat * Math.PI) / 180);
+  return Math.hypot(dx, dy) <= 300 ? area : null;
+}
 const DEMO_STUDIO_SNAPSHOT: StudioCalculationSnapshot = {
   building: { id: "UK01", width: 10.8, depth: 8.5, floors: 2, storeyHeight: 2.95, usage: "residential" },
   surfaces: [
@@ -221,13 +220,13 @@ const GATEWAY_COPY: Record<StudioLanguage, GatewayCopy> = {
 };
 
 const LOCATION_PAGE_TEXT: Record<StudioLanguage, { title: string; intro: string; selectedMarket: string; siteBrief: string; market: string; area: string; boundary: string; notTraced: string; awaiting: string; confirmed: string; pinpoint: string; trace: string; continue: string; retain: string; continueStudio: string }> = {
-  en: { title: "Map the solar-ready zone.", intro: "Start in the selected market, pinpoint the site, then trace the roof, façade, or open plot that can receive solar.", selectedMarket: "Selected market", siteBrief: "Site brief", market: "Market", area: "Area outlined", boundary: "Boundary", notTraced: "Not traced", awaiting: "Awaiting trace", confirmed: "Market confirmed", pinpoint: "Pin the exact site", trace: "Trace a solar-ready area", continue: "Continue to Design Studio", retain: "Address, coordinates, and your traced site area remain available when you return to update the brief.", continueStudio: "Continue to Design Studio" },
-  zh: { title: "勾画适合光伏的区域。", intro: "从已选市场开始，定位场地后勾画可安装光伏的屋顶、立面或空地。", selectedMarket: "已选市场", siteBrief: "场地摘要", market: "市场", area: "已勾画面积", boundary: "边界", notTraced: "尚未勾画", awaiting: "等待勾画", confirmed: "已确认市场", pinpoint: "标记精确场地", trace: "勾画适合光伏的区域", continue: "进入设计工作室", retain: "地址、坐标和已勾画的场地面积会在返回更新摘要时保留。", continueStudio: "进入设计工作室" },
-  "zh-Hant": { title: "勾畫適合光伏的區域。", intro: "從已選市場開始，定位場地後勾畫可安裝光伏的屋頂、立面或空地。", selectedMarket: "已選市場", siteBrief: "場地摘要", market: "市場", area: "已勾畫面積", boundary: "邊界", notTraced: "尚未勾畫", awaiting: "等待勾畫", confirmed: "已確認市場", pinpoint: "標記精確場地", trace: "勾畫適合光伏的區域", continue: "進入設計工作室", retain: "地址、座標和已勾畫的場地面積會在返回更新摘要時保留。", continueStudio: "進入設計工作室" },
-  fr: { title: "Cartographiez la zone prête pour le solaire.", intro: "Commencez dans le marché sélectionné, repérez le site, puis tracez le toit, la façade ou la parcelle qui peut recevoir du solaire.", selectedMarket: "Marché sélectionné", siteBrief: "Brief du site", market: "Marché", area: "Zone tracée", boundary: "Limite", notTraced: "Non tracée", awaiting: "En attente du tracé", confirmed: "Marché confirmé", pinpoint: "Repérer le site exact", trace: "Tracer une zone prête pour le solaire", continue: "Continuer vers le Studio de conception", retain: "L’adresse, les coordonnées et la zone du site tracée restent disponibles lorsque vous revenez mettre à jour le brief.", continueStudio: "Continuer vers le Studio de conception" },
-  ja: { title: "太陽光設置候補エリアを地図化。", intro: "選択した市場から始め、敷地を特定し、太陽光を設置できる屋根・立面・空地を描画します。", selectedMarket: "選択した市場", siteBrief: "敷地概要", market: "市場", area: "描画した面積", boundary: "境界", notTraced: "未描画", awaiting: "描画待ち", confirmed: "市場を確認済み", pinpoint: "正確な敷地を指定", trace: "太陽光設置候補地を描画", continue: "デザインスタジオへ進む", retain: "住所、座標、描画した敷地面積は、概要を更新するために戻った際も保持されます。", continueStudio: "デザインスタジオへ進む" },
-  es: { title: "Trace la zona apta para solar.", intro: "Empiece en el mercado seleccionado, ubique el sitio y trace el tejado, la fachada o la parcela que puede recibir solar.", selectedMarket: "Mercado seleccionado", siteBrief: "Resumen del sitio", market: "Mercado", area: "Área trazada", boundary: "Límite", notTraced: "Sin trazar", awaiting: "Pendiente de trazar", confirmed: "Mercado confirmado", pinpoint: "Ubicar el sitio exacto", trace: "Trazar una zona apta para solar", continue: "Continuar al Estudio de diseño", retain: "La dirección, las coordenadas y el área trazada seguirán disponibles al volver para actualizar el resumen.", continueStudio: "Continuar al Estudio de diseño" },
-  it: { title: "Mappa la zona adatta al solare.", intro: "Inizia nel mercato selezionato, individua il sito, poi traccia il tetto, la facciata o il lotto che può ricevere solare.", selectedMarket: "Mercato selezionato", siteBrief: "Sintesi del sito", market: "Mercato", area: "Area tracciata", boundary: "Perimetro", notTraced: "Non tracciata", awaiting: "In attesa del tracciato", confirmed: "Mercato confermato", pinpoint: "Individua il sito esatto", trace: "Traccia una zona adatta al solare", continue: "Continua allo Studio di progettazione", retain: "Indirizzo, coordinate e area tracciata restano disponibili quando torni per aggiornare la sintesi.", continueStudio: "Continua allo Studio di progettazione" },
+  en: { title: "Find the building, outline the site.", intro: "Put the pin on the building: its outline and dimensions are detected from map data. Trace the outline by hand only where nothing is found.", selectedMarket: "Selected market", siteBrief: "Site brief", market: "Market", area: "Site area", boundary: "Boundary", notTraced: "Not set", awaiting: "Waiting", confirmed: "Market confirmed", pinpoint: "Pin the exact site", trace: "Detect or trace the site outline", continue: "Continue to Design Studio", retain: "Address, coordinates, and your traced site area remain available when you return to update the brief.", continueStudio: "Continue to Design Studio" },
+  zh: { title: "定位建筑，确定场地范围。", intro: "把图钉放到建筑上，系统会从地图数据自动识别建筑轮廓和尺寸；识别不到时再手动勾画。", selectedMarket: "已选市场", siteBrief: "场地摘要", market: "市场", area: "场地面积", boundary: "边界", notTraced: "尚未确定", awaiting: "等待识别", confirmed: "已确认市场", pinpoint: "标记精确场地", trace: "识别或勾画场地范围", continue: "进入设计工作室", retain: "地址、坐标和已勾画的场地面积会在返回更新摘要时保留。", continueStudio: "进入设计工作室" },
+  "zh-Hant": { title: "定位建築，確定場地範圍。", intro: "把圖釘放到建築上，系統會從地圖資料自動識別建築輪廓和尺寸；識別不到時再手動勾畫。", selectedMarket: "已選市場", siteBrief: "場地摘要", market: "市場", area: "場地面積", boundary: "邊界", notTraced: "尚未確定", awaiting: "等待識別", confirmed: "已確認市場", pinpoint: "標記精確場地", trace: "識別或勾畫場地範圍", continue: "進入設計工作室", retain: "地址、座標和已勾畫的場地面積會在返回更新摘要時保留。", continueStudio: "進入設計工作室" },
+  fr: { title: "Repérez le bâtiment, délimitez le site.", intro: "Placez l’épingle sur le bâtiment : son contour et ses dimensions sont détectés à partir des données cartographiques. Ne tracez à la main que si rien n’est trouvé.", selectedMarket: "Marché sélectionné", siteBrief: "Brief du site", market: "Marché", area: "Surface du site", boundary: "Limite", notTraced: "Non défini", awaiting: "En attente", confirmed: "Marché confirmé", pinpoint: "Repérer le site exact", trace: "Détecter ou tracer l’emprise du site", continue: "Continuer vers le Studio de conception", retain: "L’adresse, les coordonnées et la zone du site tracée restent disponibles lorsque vous revenez mettre à jour le brief.", continueStudio: "Continuer vers le Studio de conception" },
+  ja: { title: "建物を特定し、敷地範囲を決める。", intro: "ピンを建物の上に置くと、地図データから建物の輪郭と寸法を自動検出します。見つからない場合だけ手動でトレースしてください。", selectedMarket: "選択した市場", siteBrief: "敷地概要", market: "市場", area: "敷地面積", boundary: "境界", notTraced: "未設定", awaiting: "検出待ち", confirmed: "市場を確認済み", pinpoint: "正確な敷地を指定", trace: "敷地範囲を検出またはトレース", continue: "デザインスタジオへ進む", retain: "住所、座標、描画した敷地面積は、概要を更新するために戻った際も保持されます。", continueStudio: "デザインスタジオへ進む" },
+  es: { title: "Localiza el edificio y delimita el sitio.", intro: "Coloca el pin sobre el edificio: su contorno y medidas se detectan con datos cartográficos. Traza a mano solo si no se encuentra nada.", selectedMarket: "Mercado seleccionado", siteBrief: "Resumen del sitio", market: "Mercado", area: "Superficie del sitio", boundary: "Límite", notTraced: "Sin definir", awaiting: "En espera", confirmed: "Mercado confirmado", pinpoint: "Ubicar el sitio exacto", trace: "Detectar o trazar el contorno del sitio", continue: "Continuar al Estudio de diseño", retain: "La dirección, las coordenadas y el área trazada seguirán disponibles al volver para actualizar el resumen.", continueStudio: "Continuar al Estudio de diseño" },
+  it: { title: "Individua l’edificio, delimita il sito.", intro: "Posiziona il segnaposto sull’edificio: contorno e misure vengono rilevati dai dati cartografici. Traccia a mano solo se non viene trovato nulla.", selectedMarket: "Mercato selezionato", siteBrief: "Sintesi del sito", market: "Mercato", area: "Superficie del sito", boundary: "Perimetro", notTraced: "Non definito", awaiting: "In attesa", confirmed: "Mercato confermato", pinpoint: "Individua il sito esatto", trace: "Rileva o traccia il perimetro del sito", continue: "Continua allo Studio di progettazione", retain: "Indirizzo, coordinate e area tracciata restano disponibili quando torni per aggiornare la sintesi.", continueStudio: "Continua allo Studio di progettazione" },
 };
 
 const OUTER_UI_COPY = {
@@ -958,7 +957,7 @@ function loadContext(): ProjectContext {
         marketKey,
         europeanCountry: marketKey === "EU" ? parsed.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : parsed.europeanCountry ?? null,
         location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
-        siteArea: parsed.siteArea ?? DEFAULT_SITE_AREA,
+        siteArea: siteAreaNear(parsed.siteArea, parsed.location ?? DEFAULT_PROJECT_LOCATION),
         building: parsed.building ?? null,
         energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings },
         updatedAt: parsed.updatedAt ?? Date.now(),
@@ -967,7 +966,7 @@ function loadContext(): ProjectContext {
   } catch {
     // Start with a clean, versioned local project context.
   }
-  return { version: 3, marketKey: "EU", europeanCountry: DEFAULT_EUROPEAN_COUNTRY, location: DEFAULT_PROJECT_LOCATION, siteArea: DEFAULT_SITE_AREA, energySettings: DEFAULT_ENERGY_SETTINGS, updatedAt: Date.now() };
+  return { version: 3, marketKey: "EU", europeanCountry: DEFAULT_EUROPEAN_COUNTRY, location: DEFAULT_PROJECT_LOCATION, siteArea: null, energySettings: DEFAULT_ENERGY_SETTINGS, updatedAt: Date.now() };
 }
 
 function loadStudioLanguage(): StudioLanguage {
@@ -1244,6 +1243,29 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   onNavigate: (route: GatewayRoute) => void;
 }) {
   const [viewerMode, setViewerMode] = useState<"street" | "earth" | null>(null);
+  const coordinates = context.location?.coordinates ?? null;
+  const locationKey = coordinates ? `${coordinates.lat.toFixed(5)}:${coordinates.lng.toFixed(5)}:${context.marketKey}` : "";
+  const profileInput = { lat: coordinates?.lat ?? 0, lng: coordinates?.lng ?? 0, market: context.marketKey };
+  const utils = trpc.useUtils();
+  const [detectKey, setDetectKey] = useState("");
+  const detectRequested = Boolean(coordinates) && (detectKey === locationKey || Boolean(utils.site.buildingProfile.getData(profileInput)));
+  const profileQuery = trpc.site.buildingProfile.useQuery(profileInput, { enabled: detectRequested, staleTime: Infinity, retry: 1 });
+  const profile = detectRequested ? profileQuery.data : undefined;
+  const detectedOutline = useMemo<SiteAreaSelection | null>(
+    () => (profile?.path && profile.path.length >= 3 && profile.footprintAreaM2 ? { path: profile.path, areaM2: profile.footprintAreaM2, source: "detected" } : null),
+    [profile],
+  );
+  useEffect(() => {
+    if (detectedOutline && !context.siteArea) onAreaChange(detectedOutline);
+  }, [detectedOutline]);
+  const siteDetection: SiteDetection = {
+    state: !detectRequested ? "idle" : profileQuery.isError ? "error" : !profile ? "loading" : detectedOutline ? "found" : "missing",
+    onDetect: () => {
+      setDetectKey(locationKey);
+      if (profileQuery.isError) void profileQuery.refetch();
+    },
+    onUseDetected: detectedOutline ? () => onAreaChange(detectedOutline) : undefined,
+  };
   const outlinedArea = context.siteArea ? new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(context.siteArea.areaM2) : null;
   const locationText = LOCATION_PAGE_TEXT[language];
   const locationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
@@ -1262,6 +1284,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           onLocationChange={onLocationChange}
           onAreaChange={onAreaChange}
           onOpenStreetView={() => setViewerMode("street")}
+          siteDetection={siteDetection}
         />
         <aside className="location-panel location-panel--site">
           <div className="location-panel-heading"><span>03</span><div><p className="mini-label">{copy.projectContext}</p><h2>{locationText.siteBrief}</h2></div></div>
@@ -1286,8 +1309,8 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
             coordinates={context.location.coordinates}
             marketKey={context.marketKey}
             applied={context.building}
+            requested={detectRequested}
             onApply={onBuildingChange}
-            onUseOutline={(path, areaM2) => onAreaChange({ areaM2, path })}
             onOpenViewer={setViewerMode}
           />}
           <p className="location-help">{locationText.retain}</p>
@@ -1918,7 +1941,7 @@ export default function App() {
   const updateMarket = useCallback((next: Market) => {
     setContext((current) => ({
       version: 3,
-      siteArea: current.siteArea ?? DEFAULT_SITE_AREA,
+      siteArea: current.siteArea ?? null,
       marketKey: next.key,
       europeanCountry: next.key === "EU" ? current.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : null,
       location: current.location ?? DEFAULT_PROJECT_LOCATION,
@@ -1928,7 +1951,11 @@ export default function App() {
   }, []);
 
   const updateLocation = useCallback((location: ProjectLocationSelection) => {
-    setContext((current) => ({ ...current, location, building: null, updatedAt: Date.now() }));
+    setContext((current) => {
+      const key = (point?: { lat: number; lng: number }) => (point ? `${point.lat.toFixed(6)},${point.lng.toFixed(6)}` : "");
+      const moved = key(current.location?.coordinates) !== key(location.coordinates);
+      return { ...current, location, building: moved ? null : current.building, siteArea: moved ? null : current.siteArea, updatedAt: Date.now() };
+    });
   }, []);
 
   const updateBuilding = useCallback((building: AppliedBuilding | null) => {
@@ -1949,7 +1976,7 @@ export default function App() {
       marketKey: europeanCountry ? "EU" : current.marketKey,
       europeanCountry,
       location: current.location ?? DEFAULT_PROJECT_LOCATION,
-      siteArea: current.siteArea ?? DEFAULT_SITE_AREA,
+      siteArea: current.siteArea ?? null,
       updatedAt: Date.now(),
     }));
   }, []);
@@ -1961,7 +1988,7 @@ export default function App() {
       marketKey: "EU",
       europeanCountry: DEFAULT_EUROPEAN_COUNTRY,
       location: DEFAULT_PROJECT_LOCATION,
-      siteArea: DEFAULT_SITE_AREA,
+      siteArea: null,
       energySettings: DEFAULT_ENERGY_SETTINGS,
       updatedAt: Date.now(),
     };

@@ -5285,6 +5285,16 @@ html:lang(ja) .eyebrow {
 .osm-tile-layer img { max-width: none; max-height: none; image-rendering: auto; }
 .osm-control-stack button:disabled { opacity: .45; cursor: default; }
 
+/* Site outline: detect first, trace as fallback */
+.location-map-shell--studio .site-map-tool-actions,
+.location-map-shell--studio .site-map-tool-actions.is-drawing { display: flex; flex-wrap: wrap; }
+.location-map-shell--studio .site-map-tool-actions button:first-child { flex: 1 1 auto; }
+.location-map-shell--studio .site-map-tool-actions button.is-primary { border-color: var(--m-accent); color: #fff; background: var(--m-accent); }
+.location-map-shell--studio .site-map-tool-actions button.is-primary:hover:not(:disabled) { background: var(--m-accent-deep); }
+.location-map-shell--studio .site-map-tool-actions button:disabled { opacity: .6; cursor: default; }
+.site-map-tool-card.is-fallback { border-color: rgba(196, 140, 60, .55); }
+.site-map-tool-card.is-fallback .site-map-tool-heading small { color: #8a5a1f; }
+
 /* Building detection on demand */
 .building-detect { display: grid; gap: 9px; }
 .building-detect .building-match-note { margin: 0; }

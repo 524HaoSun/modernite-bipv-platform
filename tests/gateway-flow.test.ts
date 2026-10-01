@@ -116,7 +116,7 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain('coordinates: { lat: 51.5072, lng: -0.1276 }, zoom: 12');
     expect(app).toContain('coordinates: { lat: 45.4215, lng: -75.6972 }, zoom: 12');
     expect(app).toContain('coordinates: { lat: 35.6762, lng: 139.6503 }, zoom: 12');
-    expect(app).toContain("Map the solar-ready zone.");
+    expect(app).toContain("Find the building, outline the site.");
     expect(styles).toContain(".location-scene-heading");
     expect(styles).toContain(".site-map-tools");
     expect(styles).toContain(".site-area-readout");

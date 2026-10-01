@@ -55,7 +55,19 @@ describe("customer V31 Studio runtime", () => {
 
   it("reads building data only after the customer confirms the pin", () => {
     const card = fs.readFileSync(path.join(projectRoot, "client/src/components/BuildingProfileCard.tsx"), "utf8");
+    const app = fs.readFileSync(path.join(projectRoot, "client/src/App.tsx"), "utf8");
     expect(card).toContain("{ enabled: requested, staleTime: Infinity, retry: 1 }");
-    expect(card).toContain("onClick={() => setRequested(true)}");
+    expect(app).toContain("{ enabled: detectRequested, staleTime: Infinity, retry: 1 }");
+    expect(app).toContain("setDetectKey(locationKey)");
+  });
+
+  it("uses the detected building outline as the site area and falls back to manual tracing", () => {
+    const app = fs.readFileSync(path.join(projectRoot, "client/src/App.tsx"), "utf8");
+    const map = fs.readFileSync(path.join(projectRoot, "client/src/components/ProjectLocationMap.tsx"), "utf8");
+    expect(app).toContain("if (detectedOutline && !context.siteArea) onAreaChange(detectedOutline);");
+    expect(app).toContain("siteArea: moved ? null : current.siteArea");
+    expect(app).not.toContain("DEFAULT_SITE_AREA");
+    expect(map).toContain('siteDetection.state === "found" ? "restore"');
+    expect(map).toContain('source: "traced"');
   });
 });
