@@ -4,8 +4,10 @@
  */
 
 export type StudioRegion = "UK" | "EU" | "CA" | "JP";
-/** "custom" = measured multi-plane roof (lib/roof-planes.ts), detached non-Japanese types only. */
+/** "custom" = roof planes (lib/roof-planes.ts): measured multi-plane roofs and gables turned front to back. */
 export type StudioRoofForm = "hip" | "gable" | "flat" | "mono" | "custom";
+/** Gable ridge direction: "width" runs parallel to the front, "depth" from front to back. */
+export type StudioRidge = "width" | "depth";
 export type StudioBuildingType = {
   id: string;
   labelEn: string;
@@ -19,6 +21,8 @@ export type StudioBuildingType = {
   pitch: number;
   units: number;
   storeyHeight: number;
+  /** Default gable ridge direction when not parallel to the front (the Studio's `ridgeAxis: "z"`). */
+  ridge?: StudioRidge;
 };
 
 export const STUDIO_BUILDING_TYPES: StudioBuildingType[] = [
@@ -43,7 +47,7 @@ export const STUDIO_BUILDING_TYPES: StudioBuildingType[] = [
   { id: "CA06", labelEn: "Stacked duplex", labelZh: "上下叠置双户住宅", region: "CA", kind: "duplex", width: 9.8, depth: 9, floors: 2, roofForm: "flat", pitch: 18, units: 1, storeyHeight: 2.95 },
   { id: "CA07", labelEn: "Apartment building below 5 storeys", labelZh: "低层公寓楼", region: "CA", kind: "lowrise", width: 21, depth: 12, floors: 3, roofForm: "flat", pitch: 18, units: 1, storeyHeight: 2.95 },
   { id: "CA08", labelEn: "Apartment building of 5 or more storeys", labelZh: "5层及以上公寓楼", region: "CA", kind: "tower", width: 19, depth: 14, floors: 10, roofForm: "flat", pitch: 18, units: 1, storeyHeight: 3.05 },
-  { id: "JP01", labelEn: "Detached house / 一戸建て", labelZh: "两／三层独栋住宅", region: "JP", kind: "detached", width: 7.28, depth: 8.19, floors: 2, roofForm: "gable", pitch: 24, units: 1, storeyHeight: 2.8 },
+  { id: "JP01", labelEn: "Detached house / 一戸建て", labelZh: "两／三层独栋住宅", region: "JP", kind: "detached", width: 7.28, depth: 8.19, floors: 2, roofForm: "gable", pitch: 24, units: 1, storeyHeight: 2.8, ridge: "depth" },
   { id: "JP02", labelEn: "Single-storey house / 平屋", labelZh: "单层独栋住宅", region: "JP", kind: "bungalow", width: 10.92, depth: 8.19, floors: 1, roofForm: "gable", pitch: 22, units: 1, storeyHeight: 2.75 },
   { id: "JP03", labelEn: "Low-rise apartment / アパート", labelZh: "低层公寓楼", region: "JP", kind: "corridor", width: 18, depth: 8.2, floors: 2, roofForm: "mono", pitch: 10, units: 1, storeyHeight: 2.95 },
   { id: "JP04", labelEn: "Mid-rise apartment / 集合住宅", labelZh: "中层集合住宅", region: "JP", kind: "slab", width: 25, depth: 10.5, floors: 5, roofForm: "flat", pitch: 18, units: 1, storeyHeight: 3.05 },
@@ -102,9 +106,17 @@ export const studioTypeById = (id: string) => STUDIO_BUILDING_TYPES.find((type) 
 
 export const MARKET_TO_STUDIO_REGION: Record<string, StudioRegion> = { GB: "UK", EU: "EU", CA: "CA", JP: "JP" };
 
-/** Roof forms the Studio geometry can draw for a building type (mono-pitch only exists in the Japanese set). */
+/**
+ * Japanese detached houses and bungalows use the Studio's timber-house builder: gable (either ridge
+ * direction), hip and mono-pitch, but no flat roof and no measured roof planes.
+ */
+export const isTimberHouse = (type: StudioBuildingType) => type.region === "JP" && ["detached", "bungalow"].includes(type.kind);
+
+/** Roof forms the Studio geometry can draw for a building type. */
 export const roofFormsFor = (type: StudioBuildingType, measured = false): StudioRoofForm[] => [
-  // Japanese detached houses and bungalows use the Studio's timber-house builder, which has no plane roofs.
-  ...(measured && type.units === 1 && !(type.region === "JP" && ["detached", "bungalow"].includes(type.kind)) ? ["custom" as const] : []),
-  ...(type.region === "JP" ? ["gable", "hip", "flat", "mono"] as const : ["hip", "gable", "flat"] as const),
+  ...(measured && type.units === 1 && !isTimberHouse(type) ? ["custom" as const] : []),
+  ...(isTimberHouse(type) ? ["gable", "hip", "mono"] as const : type.region === "JP" ? ["gable", "hip", "mono", "flat"] as const : ["hip", "gable", "mono", "flat"] as const),
 ];
+
+/** Whether the gable ridge can run front to back (attached rows keep it parallel to the party walls' front). */
+export const ridgeChoiceFor = (type: StudioBuildingType) => isTimberHouse(type) || type.units === 1;

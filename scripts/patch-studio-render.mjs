@@ -105,12 +105,12 @@ const PATCHES = [
   {
     id: "parametric-roof-config",
     find: "wwr:d.wwr,parametric:true};}",
-    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'?{roofPlanes:d.roofPlanes}:{}),...(d.chimney===false?{chimney:false}:{})};}",
+    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'?{roofPlanes:d.roofPlanes}:{}),...(d.chimney===false?{chimney:false}:{}),...(['x','z'].includes(d.ridgeAxis)?{ridgeAxis:d.ridgeAxis}:{})};}",
   },
   {
     id: "parametric-roof-cache",
     find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
-    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&!(Gt.region==='JP'&&['detached','bungalow'].includes(Gt.kind))?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{}),...(d.chimney===false?{chimney:false}:{})};",
+    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&!(Gt.region==='JP'&&['detached','bungalow'].includes(Gt.kind))?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{}),...(d.chimney===false?{chimney:false}:{}),...(['x','z'].includes(d.ridgeAxis)?{ridgeAxis:d.ridgeAxis}:{})};",
   },
   {
     // UK pitched houses always get a chimney stack; setDimensions({chimney:false}) removes it for homes without one.
@@ -142,7 +142,14 @@ const PATCHES = [
   {
     id: "roof-planes-chimney",
     find: "B=c+Math.min(a,r)/2*W+.75",
-    replace: 'B=(O==="custom"?c+ModerniteRoofPlanes.top(i.roofPlanes,r,a):c+Math.min(a,r)/2*W)+.75',
+    replace: 'B=(O==="custom"?c+ModerniteRoofPlanes.top(i.roofPlanes,r,a):O==="mono"?c+a*.66*W:c+Math.min(a,r)/2*W)+.75',
+  },
+  {
+    // The Japanese timber-house builder only draws gable and mono-pitch roofs (hip fell back to gable).
+    // Hip is the lower envelope of four planes over the roof rectangle, eaves level with the gable's.
+    id: "timber-house-hip",
+    find: 'let N;if(i.roofForm==="mono"){N=fr({width:n+2*c,depth:W+2*c,eave:o-c*M,pitch:i.pitch,form:"mono",z:F})',
+    replace: 'let N;if(i.roofForm==="hip"){N=ModerniteRoofPlanes.faces([{a:-M,b:0,k:M*n/2},{a:M,b:0,k:M*n/2},{a:0,b:-M,k:M*W/2},{a:0,b:M,k:M*W/2}],n+2*c,W+2*c).map((P,K)=>Ap("slope_"+K,P.map(([x,h,y])=>[x,o+h,y+F])))}else if(i.roofForm==="mono"){N=fr({width:n+2*c,depth:W+2*c,eave:o-c*M,pitch:i.pitch,form:"mono",z:F})',
   },
   {
     // Embedded in the Modernité platform (studio.html?embed=modernite): the host owns the AI advisor and

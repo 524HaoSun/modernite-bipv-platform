@@ -6,8 +6,8 @@
  */
 import { minimumRectangle, type BuildingFootprint, type LatLng } from "./building-footprint";
 import type { GoogleSolarReference, GoogleSolarRoofSegment } from "./google-solar";
-import { fitRoofPlanes, ridgeRunsFrontToBack, sideGablePlanes, type RoofPlane } from "./roof-planes";
-import { studioTypeById, studioTypesForRegion, roofFormsFor, type StudioBuildingType, type StudioRegion, type StudioRoofForm } from "./studio-catalog";
+import { fitRoofPlanes, ridgeDirection, sideGablePlanes, type RoofPlane } from "./roof-planes";
+import { isTimberHouse, ridgeChoiceFor, studioTypeById, studioTypesForRegion, roofFormsFor, type StudioBuildingType, type StudioRegion, type StudioRidge, type StudioRoofForm } from "./studio-catalog";
 
 export type ProfileSource = "osm" | "google-maps" | "google-solar" | "google-elevation" | "estimated" | "catalog";
 export type ProfileField<T> = { value: T; source: ProfileSource };
@@ -25,6 +25,8 @@ export type BuildingProfile = {
   roofPitchDeg: ProfileField<number>;
   /** Measured roof planes for roofForm "custom" (Studio building frame, see lib/roof-planes.ts). */
   roofPlanes?: RoofPlane[];
+  /** Gable ridge direction (Google Solar plane azimuths, else the building type's default). */
+  ridge: ProfileField<StudioRidge>;
   frontAzimuthDeg: ProfileField<number>;
   heightM?: ProfileField<number>;
   footprintAreaM2?: number;
@@ -207,13 +209,11 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   });
   const type: StudioBuildingType = studioTypeById(typeId) ?? regionDefault;
   const detected = Boolean(footprint || segments.length);
-  const planesAllowed = Boolean(width && depth && front && roofFormsFor(type, true).includes("custom"));
-  const measured = (planesAllowed && !composite && footprint?.path?.length
-    ? fitRoofPlanes(segments, { center: rectangleCenter(footprint!.path!, site), frontAzimuthDeg: front!.value, widthM: width!.value, depthM: depth!.value })
-    : null)
-    ?? (planesAllowed && roof?.form === "gable" && ridgeRunsFrontToBack(segments, front!.value)
-      ? { planes: sideGablePlanes(roof.pitchDeg, width!.value), pitchDeg: roof.pitchDeg }
-      : null);
+  const measured = !composite && footprint?.path?.length && width && depth && front && roofFormsFor(type, true).includes("custom")
+    ? fitRoofPlanes(segments, { center: rectangleCenter(footprint.path, site), frontAzimuthDeg: front.value, widthM: width.value, depthM: depth.value })
+    : null;
+  const measuredRidge = front && ridgeChoiceFor(type) ? ridgeDirection(segments, front.value) : null;
+  const ridge: ProfileField<StudioRidge> = measuredRidge ? { value: measuredRidge, source: "google-solar" } : { value: type.ridge ?? "width", source: "catalog" };
   const allowedRoofs = roofFormsFor(type);
   const roofForm: ProfileField<StudioRoofForm> = measured ? { value: "custom", source: "google-solar" } : roof && allowedRoofs.includes(roof.form) ? { value: roof.form, source: "google-solar" } : { value: type.roofForm, source: "catalog" };
   const roofPitchDeg: ProfileField<number> = measured ? { value: measured.pitchDeg, source: "google-solar" } : roof && roof.form !== "flat" && roofForm.source === "google-solar" ? { value: roof.pitchDeg, source: "google-solar" } : { value: type.pitch, source: "catalog" };
@@ -229,6 +229,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
     roofForm,
     roofPitchDeg,
     ...(measured ? { roofPlanes: measured.planes } : {}),
+    ridge,
     frontAzimuthDeg: front ?? { value: 180, source: "catalog" },
     heightM,
     footprintAreaM2: footprint?.footprintAreaM2,
@@ -256,18 +257,25 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
 /**
  * Studio `setDimensions` payload for a building type. Studio widths cover every unit of an
  * attached row (semi = 2, terrace = 3), and must stay inside ModerniteBuildingCore.validate().
+ * A gable turned front to back is drawn natively by the Japanese timber-house builder
+ * (`ridgeAxis`) and as two roof planes by the general builder.
  */
-export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number; roofPlanes?: RoofPlane[]; chimney?: boolean }, wwr = 0.2) {
+export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number; roofPlanes?: RoofPlane[]; ridge?: StudioRidge; chimney?: boolean }, wwr = 0.2) {
   const units = type.units || 1;
+  const width = round1(clamp(values.widthM * units, 4 * units, 150));
+  const pitch = Math.round(clamp(values.roofPitchDeg, 5, 55));
+  const ridge = values.ridge ?? type.ridge ?? "width";
+  const sideGable = values.roofForm === "gable" && ridge === "depth" && !isTimberHouse(type) && ridgeChoiceFor(type);
   return {
-    width: round1(clamp(values.widthM * units, 4 * units, 150)),
+    width,
     depth: round1(clamp(values.depthM, 4, 100)),
     floors: Math.round(clamp(values.floors, 1, 60)),
     storeyHeight: Math.round(clamp(values.storeyHeightM, 2.5, 5) * 100) / 100,
     wwr: clamp(wwr, 0, 0.7),
-    roofForm: values.roofForm,
-    pitch: Math.round(clamp(values.roofPitchDeg, 5, 55)),
-    ...(values.roofForm === "custom" && values.roofPlanes?.length ? { roofPlanes: values.roofPlanes } : {}),
+    roofForm: sideGable ? "custom" as const : values.roofForm,
+    pitch,
+    ...(sideGable ? { roofPlanes: sideGablePlanes(pitch, width) } : values.roofForm === "custom" && values.roofPlanes?.length ? { roofPlanes: values.roofPlanes } : {}),
+    ...(isTimberHouse(type) && values.roofForm === "gable" ? { ridgeAxis: ridge === "depth" ? "z" as const : "x" as const } : {}),
     ...(values.chimney === false ? { chimney: false } : {}),
   };
 }

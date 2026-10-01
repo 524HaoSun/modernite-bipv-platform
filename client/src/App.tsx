@@ -1789,7 +1789,7 @@ function StudioPage({
     const bridge = studioWindow.ModerniteEnergyBridge;
     const buildingType = building ? studioTypeById(building.typeId) : undefined;
     if (building && buildingType && buildingType.region === studioRegion && bridge?.dimensions && bridge.setDimensions) {
-      const buildingKey = JSON.stringify([building.typeId, building.widthM, building.depthM, building.floors, building.storeyHeightM, building.roofForm, building.roofPitchDeg, building.roofForm === "custom" ? building.roofPlanes : null, building.frontAzimuthDeg, building.chimney !== false]);
+      const buildingKey = JSON.stringify([building.typeId, building.widthM, building.depthM, building.floors, building.storeyHeightM, building.roofForm, building.roofPitchDeg, building.roofForm === "custom" ? building.roofPlanes : null, building.frontAzimuthDeg, building.ridge ?? null, building.chimney !== false]);
       if (root.dataset.hostBuilding !== buildingKey) {
         const houseSelect = studioDocument.querySelector<HTMLSelectElement>("#house-select");
         if (houseSelect && houseSelect.value !== building.typeId && Array.from(houseSelect.options).some((option) => option.value === building.typeId)) {
@@ -1802,7 +1802,7 @@ function StudioPage({
             bridge.setDimensions(dimensions);
           } catch (error) {
             console.warn("[studio] roof override rejected, keeping the building type's roof", error);
-            const { roofForm: _roofForm, pitch: _pitch, roofPlanes: _roofPlanes, ...plain } = dimensions as typeof dimensions & { roofPlanes?: unknown };
+            const { roofForm: _roofForm, pitch: _pitch, roofPlanes: _roofPlanes, ridgeAxis: _ridgeAxis, ...plain } = dimensions as typeof dimensions & { roofPlanes?: unknown; ridgeAxis?: unknown };
             bridge.setDimensions(plain);
           }
           studioWindow.ModerniteEnergyApp?.setOrientation?.(building.frontAzimuthDeg % 360);

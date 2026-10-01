@@ -11,6 +11,7 @@
  */
 import type { LatLng } from "./building-footprint";
 import type { GoogleSolarRoofSegment } from "./google-solar";
+import type { StudioRidge } from "./studio-catalog";
 
 /** Roof plane: height above the wall top = a·x + b·z + k (metres). */
 export type RoofPlane = { a: number; b: number; k: number };
@@ -90,10 +91,10 @@ const angleGap = (a: number, b: number) => {
 };
 
 /**
- * True when the pitched roof planes mostly face the side walls, i.e. the ridge runs from front to
- * back. The Studio's standard gable always runs its ridge parallel to the front.
+ * Gable ridge direction from the pitched roof planes: "depth" (front to back) when they mostly face
+ * the side walls, "width" when they mostly face front and rear, null when neither dominates.
  */
-export function ridgeRunsFrontToBack(segments: GoogleSolarRoofSegment[], frontAzimuthDeg: number): boolean {
+export function ridgeDirection(segments: GoogleSolarRoofSegment[], frontAzimuthDeg: number): StudioRidge | null {
   let side = 0, frontBack = 0;
   for (const s of segments) {
     if (s.pitchDeg < 10) continue;
@@ -101,7 +102,7 @@ export function ridgeRunsFrontToBack(segments: GoogleSolarRoofSegment[], frontAz
     side += s.areaM2 * Math.abs(Math.sin(r));
     frontBack += s.areaM2 * Math.abs(Math.cos(r));
   }
-  return side > 1.5 * frontBack;
+  return side > 1.5 * frontBack ? "depth" : frontBack > 1.5 * side ? "width" : null;
 }
 
 /** Gable with its ridge along the building depth, eaves at height 0 on the side walls. */

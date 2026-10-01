@@ -69,8 +69,21 @@ describe("building profile", () => {
     const solar = { status: "ok" as const, distanceM: 2, roofSegments: [seg(270, 130), seg(90, 120)] } as never;
     const profile = buildProfile({ region: "JP", site: at(0, 0), footprint, solar });
     expect(profile.buildingTypeId.value).toBe("JP03");
-    expect(profile.roofForm.value).toBe("custom");
-    expect(profile.roofPlanes?.map((p) => [p.a, p.b])).toEqual([[-0.3249, 0], [0.3249, 0]]);
+    expect(profile.roofForm.value).toBe("gable");
+    expect(profile.ridge).toEqual({ value: "depth", source: "google-solar" });
+    const dims = studioDimensions(studioTypeById("JP03")!, { widthM: 9.5, depthM: 26, floors: 2, storeyHeightM: 2.95, roofForm: "gable", roofPitchDeg: 18, ridge: "depth" });
+    expect(dims.roofForm).toBe("custom");
+    expect(dims.roofPlanes).toEqual([{ a: -0.3249, b: 0, k: 1.5433 }, { a: 0.3249, b: 0, k: 1.5433 }]);
+  });
+
+  it("passes the ridge direction natively to the Japanese timber-house builder and keeps rows parallel", () => {
+    const jp01 = studioTypeById("JP01")!;
+    const base = { widthM: 7.3, depthM: 8.2, floors: 2, storeyHeightM: 2.8, roofForm: "gable" as const, roofPitchDeg: 24 };
+    expect(studioDimensions(jp01, base)).toMatchObject({ roofForm: "gable", ridgeAxis: "z" });
+    expect(studioDimensions(jp01, { ...base, ridge: "width" })).toMatchObject({ roofForm: "gable", ridgeAxis: "x" });
+    expect(studioDimensions(jp01, { ...base, roofForm: "hip" })).not.toHaveProperty("ridgeAxis");
+    expect(studioDimensions(studioTypeById("UK03")!, { ...base, ridge: "depth" })).toMatchObject({ roofForm: "gable" });
+    expect(studioDimensions(studioTypeById("UK03")!, { ...base, ridge: "depth" })).not.toHaveProperty("roofPlanes");
   });
 
   it("scales Studio dimensions by units and keeps them in range", () => {
