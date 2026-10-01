@@ -1280,7 +1280,10 @@ export function ProjectLocationMap({
             ))}
           </div>
         )}
-        {marker && <div className="osm-site-marker" style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}><MapPin size={24} /><span>{cleanAddressLabel(marker.label, language)}</span></div>}
+        {marker && <div className="osm-site-marker" key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
+          <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true"><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
+          <span>{cleanAddressLabel(marker.label, language)}</span>
+        </div>}
         <div className="osm-control-stack" aria-label={text.zoomControls} onPointerDown={stopMapGesture} onPointerUp={stopMapGesture} onDoubleClick={stopMapGesture}>
           <button type="button" aria-label={text.zoomIn} onClick={() => zoomStep(1)} disabled={zoom >= MAX_ZOOM}>+</button>
           <button type="button" aria-label={text.zoomOut} onClick={() => zoomStep(-1)} disabled={zoom <= MIN_ZOOM}>−</button>

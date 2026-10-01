@@ -20,11 +20,45 @@ export function loadGoogleMaps(apiKey: string) {
 export type GoogleTileType = "satellite" | "roadmap";
 export type GoogleTileSession = { session: string; expiry: number };
 
+type MapStyle = { featureType?: string; elementType?: string; stylers: Array<Record<string, string | number>> };
+
+const QUIET_LABELS: MapStyle[] = [
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.attraction", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+];
+
+/** Modernité brand basemap for the Map Tiles API (same schema as Maps JS styles). */
+const BRAND_ROADMAP: MapStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#f1f5f0" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#4d665a" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#f8fbf7" }, { weight: 3 }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#b9cbbb" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#0e2d34" }] },
+  { featureType: "landscape.man_made", elementType: "geometry.fill", stylers: [{ color: "#e6ede4" }] },
+  { featureType: "landscape.man_made", elementType: "geometry.stroke", stylers: [{ color: "#cbd9c9" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#e9f1e6" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#e3ece0" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#cfe3cf" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#3f6f50" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#d9e4d7" }] },
+  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#5d7568" }] },
+  { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#dcebdd" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#a9c6ae" }] },
+  { featureType: "transit.line", elementType: "geometry", stylers: [{ color: "#c5d6c6" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c4ddd6" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#4f7f73" }] },
+  ...QUIET_LABELS,
+];
+
+const STYLE_VERSION = "brand1";
 const sessions = new Map<string, Promise<GoogleTileSession>>();
 
 /** Map Tiles API session (valid ~2 weeks); cached per key/type/language/region in memory and localStorage. */
 export function googleTileSession(apiKey: string, mapType: GoogleTileType, language: string, region: string) {
-  const cacheKey = `modernite-gtile:${apiKey.slice(-6)}:${mapType}:${language}:${region}`;
+  const highDpi = typeof window !== "undefined" && window.devicePixelRatio >= 1.5;
+  const cacheKey = `modernite-gtile:${apiKey.slice(-6)}:${mapType}:${language}:${region}:${STYLE_VERSION}:${highDpi ? 2 : 1}`;
   const now = Date.now() / 1000;
   try {
     const stored = JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as GoogleTileSession | null;
@@ -37,7 +71,13 @@ export function googleTileSession(apiKey: string, mapType: GoogleTileType, langu
   const request = fetch(`https://tile.googleapis.com/v1/createSession?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mapType, language, region, ...(mapType === "satellite" ? { layerTypes: ["layerRoadmap"], overlay: false } : {}) }),
+    body: JSON.stringify({
+      mapType,
+      language,
+      region,
+      ...(highDpi ? { scale: "scaleFactor2x", highDpi: true } : {}),
+      ...(mapType === "satellite" ? { layerTypes: ["layerRoadmap"], overlay: false, styles: QUIET_LABELS } : { styles: BRAND_ROADMAP }),
+    }),
   })
     .then(async (response) => {
       if (!response.ok) throw new Error(`Map Tiles session failed (${response.status})`);
