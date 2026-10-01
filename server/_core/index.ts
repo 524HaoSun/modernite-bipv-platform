@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerWeatherRoutes } from "../weather-service";
 import { registerStudioAdvisorRoute } from "../studio-advisor";
+import { registerProjectReportRoute } from "../project-share-service";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerWeatherRoutes(app);
   registerStudioAdvisorRoute(app);
+  registerProjectReportRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",

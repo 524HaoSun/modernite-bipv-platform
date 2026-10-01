@@ -143,3 +143,42 @@ export async function googleNearbyAddresses(apiKey: string, coordinates: { lat: 
     .filter((item) => item.types.some((type) => type === "premise" || type === "street_address" || type === "subpremise"))
     .map((item) => ({ coordinates: { lat: item.geometry.location.lat(), lng: item.geometry.location.lng() }, label: item.formatted_address, precise: true }));
 }
+
+export type PlaceSuggestion = { placeId: string; main: string; secondary: string; text: string; precise: boolean };
+
+const PLACES_API = "https://places.googleapis.com/v1";
+
+/** Places API (New) autocomplete; one session token covers the keystrokes and the final details call. */
+export async function placesAutocomplete(apiKey: string, input: string, options: { regionCode?: string | null; language: string; sessionToken: string; bias?: { lat: number; lng: number }; signal?: AbortSignal }): Promise<PlaceSuggestion[]> {
+  const response = await fetch(`${PLACES_API}/places:autocomplete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey },
+    body: JSON.stringify({
+      input,
+      sessionToken: options.sessionToken,
+      languageCode: options.language,
+      ...(options.regionCode ? { includedRegionCodes: [options.regionCode] } : {}),
+      ...(options.bias ? { locationBias: { circle: { center: { latitude: options.bias.lat, longitude: options.bias.lng }, radius: 50_000 } } } : {}),
+    }),
+    signal: options.signal,
+  });
+  if (!response.ok) throw new Error(`Places autocomplete failed (${response.status})`);
+  const payload = (await response.json()) as { suggestions?: { placePrediction?: { placeId: string; text?: { text?: string }; structuredFormat?: { mainText?: { text?: string }; secondaryText?: { text?: string } }; types?: string[] } }[] };
+  return (payload.suggestions ?? []).flatMap(({ placePrediction: p }) => (p?.placeId ? [{
+    placeId: p.placeId,
+    text: p.text?.text ?? "",
+    main: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+    secondary: p.structuredFormat?.secondaryText?.text ?? "",
+    precise: (p.types ?? []).some((type) => PRECISE_TYPES.includes(type)),
+  }] : []));
+}
+
+export async function placeDetails(apiKey: string, placeId: string, sessionToken: string, language: string): Promise<GeocodeMatch | null> {
+  const url = new URL(`${PLACES_API}/places/${encodeURIComponent(placeId)}`);
+  url.searchParams.set("sessionToken", sessionToken);
+  url.searchParams.set("languageCode", language);
+  const response = await fetch(url, { headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "location,formattedAddress,types" } });
+  if (!response.ok) return null;
+  const place = (await response.json()) as { location?: { latitude: number; longitude: number }; formattedAddress?: string; types?: string[] };
+  return place.location ? { coordinates: { lat: place.location.latitude, lng: place.location.longitude }, label: place.formattedAddress ?? "", precise: (place.types ?? []).some((type) => PRECISE_TYPES.includes(type)) } : null;
+}

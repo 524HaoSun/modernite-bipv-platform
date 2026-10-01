@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, LineChart, MessageCircle,
-  Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
+  Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
 } from "lucide-react";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
+import { shareCopy } from "@/lib/share-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
 import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
@@ -286,13 +287,78 @@ function ResultAdvisor({ isDemo, t }: { isDemo: boolean; t: ResultsCopy }) {
   </section>;
 }
 
-export function ResultsPage({ study, preferredBatteryMode, onNavigate, language, marketKey }: {
+export type ResultsShare = {
+  /** Set when viewing a shared project: the id is reused for the PDF and actions are read-only. */
+  sharedId?: string;
+  onCreate?: () => Promise<string>;
+};
+
+const APP_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function ShareActions({ share, language }: { share: ResultsShare; language: string }) {
+  const c = shareCopy(language);
+  const [id, setId] = useState(share.sharedId);
+  const [busy, setBusy] = useState<"link" | "pdf" | null>(null);
+  const [message, setMessage] = useState<{ text: string; url?: string; error?: boolean } | null>(null);
+  const ensureId = async () => {
+    if (id) return id;
+    const created = await share.onCreate!();
+    setId(created);
+    return created;
+  };
+  const copyLink = async () => {
+    setBusy("link");
+    try {
+      const url = `${window.location.origin}${APP_BASE}/p/${await ensureId()}`;
+      await navigator.clipboard?.writeText(url).catch(() => undefined);
+      setMessage({ text: c.copied, url });
+    } catch {
+      setMessage({ text: c.linkFailed, error: true });
+    } finally {
+      setBusy(null);
+    }
+  };
+  const downloadPdf = async () => {
+    setBusy("pdf");
+    setMessage(null);
+    try {
+      const projectId = await ensureId();
+      const response = await fetch(`${APP_BASE}/api/projects/${projectId}/report.pdf?lang=${encodeURIComponent(language)}`);
+      if (!response.ok) throw new Error(String(response.status));
+      const href = URL.createObjectURL(await response.blob());
+      const link = Object.assign(document.createElement("a"), { href, download: `modernite-study-${projectId}.pdf` });
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    } catch {
+      setMessage({ text: c.pdfFailed, error: true });
+    } finally {
+      setBusy(null);
+    }
+  };
+  return <>
+    <button type="button" className="button-primary wide" disabled={busy !== null} onClick={() => void downloadPdf()}>{busy === "pdf" ? <Loader2 size={15} className="spin" /> : <Download size={15} />} {busy === "pdf" ? c.pdfBusy : c.pdf}</button>
+    <button type="button" className="button-secondary wide" disabled={busy !== null} onClick={() => void copyLink()}>{busy === "link" ? <Loader2 size={15} className="spin" /> : <Link2 size={15} />} {busy === "link" ? c.linkBusy : c.link}</button>
+    {message && <p className={`result-share-note ${message.error ? "is-error" : ""}`} aria-live="polite">{message.text}{message.url && <input readOnly value={message.url} onFocus={(event) => event.currentTarget.select()} />}</p>}
+  </>;
+}
+
+export function ResultsPage({ study, preferredBatteryMode, onNavigate, language, marketKey, share }: {
   study: ProjectCalculation;
   preferredBatteryMode: "solar-only" | "solar-battery" | string;
   onNavigate: (route: Route) => void;
   language: string;
   marketKey: MarketKey;
+  share?: ResultsShare;
 }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void document.fonts.ready.then(() => setTimeout(() => !cancelled && setReady(true), 600));
+    return () => { cancelled = true; };
+  }, []);
+  const sc = shareCopy(language);
   const project = study.project;
   const market = (project?.market ?? marketKey) as MarketKey;
   const region = project?.region ?? MARKET_REGION[market];
@@ -318,7 +384,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
-      <div className="results-layout"><main className="results-report">
+      <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
         <GenerationRangeCard study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
           <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
@@ -376,7 +442,10 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
               <div><span>{t.roofSegments}</span><strong>{solar.roofSegments?.length ?? 0}</strong></div>
               <div><span>{t.usableArea}</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div>
               <div><span>{t.peakSunshine}</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} {t.hoursYear}</strong></div>
+              {solar.maxArrayPanelsCount ? <div><span>{sc.googleLayout}</span><strong>{sc.googleLayoutValue(solar.maxArrayPanelsCount, f.n(solar.maxArrayCapacityKwp ?? 0, 1))}</strong></div> : null}
+              {solar.maxArrayYearlyDcKwh ? <div><span>{sc.googleYearly}</span><strong>{f.n(solar.maxArrayYearlyDcKwh)} {t.perYear}</strong></div> : null}
             </div>
+            {solar.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp && study.result.totalCapacityKwp > 0 ? <p className="result-note result-crosscheck">{sc.crossCheck(f.n(study.result.range.representative / study.result.totalCapacityKwp), f.n(solar.maxArrayYearlyDcKwh / solar.maxArrayCapacityKwp))}</p> : null}
             <div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>{t.segment(index + 1)}</strong><span>{t.pitchAz(segment.pitchDeg, segment.azimuthDeg)}</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} {t.hoursYear}</b></article>)}</div>
           </>}
           <p className="result-note">{solar.status === "ok" ? t.googleOk : t.googleNone}{solar.distanceM !== undefined ? ` ${t.nearest(solar.distanceM)}` : ""}</p>
@@ -397,8 +466,11 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><dt>{t.surfaces}</dt><dd>{t.surfacesValue(study.result.surfaces.length)}<small>{f.n(study.result.totalCapacityKwp, 2)} kWp</small></dd></div>
             <div><dt>{t.scenario}</dt><dd>{t.scenarioTitles[scenario.id]}<small>{scenario.available ? t.scenarioSub : t.planningComparison}</small></dd></div>
           </dl>
-          <button type="button" className="button-primary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> {t.downloadPdf}</button>
-          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
+          {share && (share.sharedId || share.onCreate) && !isDemo && <ShareActions share={share} language={language} />}
+          {!share?.sharedId && <>
+            <button type="button" className={`button-${share?.onCreate && !isDemo ? "secondary" : "primary"} wide`} onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> {share?.onCreate && !isDemo ? sc.studioReport : t.downloadPdf}</button>
+            <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
+          </>}
           <button type="button" className="button-secondary wide" onClick={() => window.print()}><Printer size={15} /> {t.print}</button>
         </section>
         <ResultAdvisor isDemo={isDemo} t={t} />

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Building2, Loader2, MapPin, MapPinned, Search } from "lucide-react";
-import { searchAddresses, useMapsKey, type AddressMatch, type Market } from "./ProjectLocationMap";
+import { placeDetails, placesAutocomplete, type PlaceSuggestion } from "@/lib/google-maps";
+import { countryRestriction, geocodeLanguage, searchAddresses, useMapsKey, type AddressMatch, type Market } from "./ProjectLocationMap";
 
 type Language = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
 
@@ -31,9 +32,39 @@ export function AddressGate({ language, market, placeholder, onSelect, onBrowseM
   const { key } = useMapsKey();
   const [query, setQuery] = useState("");
   const [state, setState] = useState<{ status: "idle" | "searching" | "none" | "other-country" | "choose"; matches: AddressMatch[] }>({ status: "idle", matches: [] });
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [active, setActive] = useState(-1);
+  const sessionRef = useRef("");
+  const typedRef = useRef(false);
+
+  useEffect(() => {
+    const input = query.trim();
+    if (!key || !typedRef.current || input.length < 3) return setSuggestions([]);
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      sessionRef.current ||= crypto.randomUUID();
+      placesAutocomplete(key, input, { regionCode: countryRestriction(market), language: geocodeLanguage(language, market), sessionToken: sessionRef.current, signal: controller.signal })
+        .then((items) => { setSuggestions(items.slice(0, 5)); setActive(-1); })
+        .catch(() => setSuggestions([]));
+    }, 220);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [query, key, market, language]);
+
+  const pickSuggestion = async (suggestion: PlaceSuggestion) => {
+    typedRef.current = false;
+    setQuery(suggestion.text);
+    setSuggestions([]);
+    setState({ status: "searching", matches: [] });
+    const match = key ? await placeDetails(key, suggestion.placeId, sessionRef.current, geocodeLanguage(language, market)).catch(() => null) : null;
+    sessionRef.current = "";
+    if (match) return onSelect({ ...match, label: match.label || suggestion.text });
+    void run(suggestion.text);
+  };
 
   const run = async (value = query) => {
     if (!value.trim()) return;
+    typedRef.current = false;
+    setSuggestions([]);
     setQuery(value);
     setState({ status: "searching", matches: [] });
     const result = await searchAddresses(value, market, language, key);
@@ -50,10 +81,36 @@ export function AddressGate({ language, market, placeholder, onSelect, onBrowseM
         <p className="mini-label"><MapPinned size={13} /> {t.eyebrow}</p>
         <h2>{t.title}</h2>
         <p className="address-gate__body">{t.body}</p>
-        <form className="address-gate__search" onSubmit={(event) => { event.preventDefault(); void run(); }}>
+        <form className="address-gate__search" onSubmit={(event) => { event.preventDefault(); if (active >= 0 && suggestions[active]) void pickSuggestion(suggestions[active]!); else void run(); }}>
           <Search size={19} aria-hidden="true" />
-          <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={placeholder} aria-label={t.title} enterKeyHint="search" autoComplete="street-address" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(event) => { typedRef.current = true; setQuery(event.target.value); }}
+            onKeyDown={(event) => {
+              if (!suggestions.length) return;
+              if (event.key === "ArrowDown") { event.preventDefault(); setActive((index) => (index + 1) % suggestions.length); }
+              else if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => (index <= 0 ? suggestions.length - 1 : index - 1)); }
+              else if (event.key === "Escape") setSuggestions([]);
+            }}
+            placeholder={placeholder}
+            aria-label={t.title}
+            aria-autocomplete="list"
+            aria-expanded={suggestions.length > 0}
+            aria-controls="address-gate-suggestions"
+            enterKeyHint="search"
+            autoComplete="off"
+          />
           <button type="submit" className="button-primary" disabled={!query.trim() || searching}>{searching ? <Loader2 size={16} className="spin" /> : <ArrowRight size={16} />} {t.search}</button>
+          {suggestions.length > 0 && <ul className="address-gate__suggestions" id="address-gate-suggestions" role="listbox">
+            {suggestions.map((suggestion, index) => <li key={suggestion.placeId} role="option" aria-selected={index === active}>
+              <button type="button" className={index === active ? "is-active" : ""} onMouseDown={(event) => event.preventDefault()} onClick={() => void pickSuggestion(suggestion)}>
+                {suggestion.precise ? <Building2 size={15} /> : <MapPin size={15} />}
+                <span><b>{suggestion.main}</b><small>{suggestion.secondary}</small></span>
+              </button>
+            </li>)}
+            <li className="address-gate__powered" aria-hidden="true">Google</li>
+          </ul>}
         </form>
         {state.status === "idle" && EXAMPLES[market.key] && <div className="address-gate__examples"><span>{t.examples}</span>{EXAMPLES[market.key]!.map((example) => <button type="button" key={example} onClick={() => void run(example)}>{example}</button>)}</div>}
         {searching && <p className="address-gate__note"><Loader2 size={14} className="spin" /> {t.searching}</p>}

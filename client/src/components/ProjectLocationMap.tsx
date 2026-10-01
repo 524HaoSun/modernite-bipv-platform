@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, Eye, EyeOff, Loader2, MapPin, MousePointerClick, Navigation, Pencil, Ruler, ScanSearch, Search, Undo2 } from "lucide-react";
+import { Crosshair, Eye, EyeOff, Loader2, Sun, MapPin, MousePointerClick, Navigation, Pencil, Ruler, ScanSearch, Search, Undo2 } from "lucide-react";
 import { googleGeocodeAll, googleTileSession, googleTileUrl, googleViewportInfo, type GeocodeMatch } from "@/lib/google-maps";
 import { trpc } from "@/lib/trpc";
 
@@ -40,6 +40,14 @@ export type BuildingPicker = {
   candidates: MapBuildingCandidate[];
   selectedId: number | null;
   onPick: (candidate: MapBuildingCandidate) => void;
+};
+
+/** Google Solar annual-flux overlay, fetched only when the user turns it on. */
+export type SunHeatmap = {
+  state: "idle" | "loading" | "ready" | "none";
+  visible: boolean;
+  data?: { dataUrl: string; corners: { nw: google.maps.LatLngLiteral; ne: google.maps.LatLngLiteral; sw: google.maps.LatLngLiteral }; minKwhPerKw: number; maxKwhPerKw: number; imageryDate?: string };
+  onToggle: () => void;
 };
 
 type GatewayLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -105,6 +113,10 @@ type MapText = {
   pickOther: string;
   detectAtPin: string;
   changeAddress: string;
+  sunLayer: string;
+  sunLoading: string;
+  sunNone: string;
+  sunLegend: string;
 };
 
 const EN_TEXT: MapText = {
@@ -160,6 +172,10 @@ const EN_TEXT: MapText = {
   pickOther: "Tap another outline to switch building",
   detectAtPin: "Detect at pin",
   changeAddress: "Change address",
+  sunLayer: "Roof sun",
+  sunLoading: "Loading roof sun map…",
+  sunNone: "No roof sun data for this site",
+  sunLegend: "kWh per kWp per year",
 };
 
 const ZH_TEXT: MapText = {
@@ -215,6 +231,10 @@ const ZH_TEXT: MapText = {
   pickOther: "点其他轮廓可切换建筑",
   detectAtPin: "识别图钉处",
   changeAddress: "更换地址",
+  sunLayer: "屋顶日照",
+  sunLoading: "正在加载屋顶日照…",
+  sunNone: "此处暂无屋顶日照数据",
+  sunLegend: "每 kWp 年发电 kWh",
 };
 
 const ZH_HANT_TEXT: MapText = {
@@ -270,6 +290,10 @@ const ZH_HANT_TEXT: MapText = {
   pickOther: "點其他輪廓可切換建築",
   detectAtPin: "識別圖釘處",
   changeAddress: "更換地址",
+  sunLayer: "屋頂日照",
+  sunLoading: "正在載入屋頂日照…",
+  sunNone: "此處暫無屋頂日照資料",
+  sunLegend: "每 kWp 年發電 kWh",
 };
 
 const FR_TEXT: MapText = {
@@ -325,6 +349,10 @@ const FR_TEXT: MapText = {
   pickOther: "Touchez un autre contour pour changer de bâtiment",
   detectAtPin: "Détecter au repère",
   changeAddress: "Changer d’adresse",
+  sunLayer: "Ensoleillement",
+  sunLoading: "Chargement de l’ensoleillement…",
+  sunNone: "Pas de données d’ensoleillement ici",
+  sunLegend: "kWh par kWc et par an",
 };
 
 const JA_TEXT: MapText = {
@@ -380,6 +408,10 @@ const JA_TEXT: MapText = {
   pickOther: "別の輪郭をタップすると建物を切り替えます",
   detectAtPin: "ピン位置で検出",
   changeAddress: "住所を変更",
+  sunLayer: "屋根の日射",
+  sunLoading: "屋根の日射マップを読み込み中…",
+  sunNone: "この地点の日射データはありません",
+  sunLegend: "kWp あたり年間 kWh",
 };
 
 const ES_TEXT: MapText = {
@@ -435,6 +467,10 @@ const ES_TEXT: MapText = {
   pickOther: "Toca otro contorno para cambiar de edificio",
   detectAtPin: "Detectar en el pin",
   changeAddress: "Cambiar dirección",
+  sunLayer: "Sol en cubierta",
+  sunLoading: "Cargando mapa solar de cubierta…",
+  sunNone: "Sin datos solares de cubierta aquí",
+  sunLegend: "kWh por kWp al año",
 };
 
 const IT_TEXT: MapText = {
@@ -490,6 +526,10 @@ const IT_TEXT: MapText = {
   pickOther: "Tocca un altro contorno per cambiare edificio",
   detectAtPin: "Rileva al segnaposto",
   changeAddress: "Cambia indirizzo",
+  sunLayer: "Sole sul tetto",
+  sunLoading: "Caricamento mappa solare del tetto…",
+  sunNone: "Nessun dato solare del tetto qui",
+  sunLegend: "kWh per kWp all’anno",
 };
 
 const MAP_TEXT: Record<GatewayLanguage, MapText> = {
@@ -530,6 +570,7 @@ type ProjectLocationMapProps = {
   buildingPicker?: BuildingPicker;
   /** When set, the in-map search is replaced by the chosen address and a button back to address search. */
   onChangeAddress?: () => void;
+  sunHeatmap?: SunHeatmap;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -655,7 +696,7 @@ function formatNominatimAddress(result: { display_name?: string; address?: Nomin
   return cleanAddressLabel(result.display_name ?? fallback, language);
 }
 
-function countryRestriction(market: Market) {
+export function countryRestriction(market: Market) {
   if (market.key === "GB") return "gb";
   if (market.key === "CA") return "ca";
   if (market.key === "JP") return "jp";
@@ -846,6 +887,7 @@ export function ProjectLocationMap({
   siteDetection,
   buildingPicker,
   onChangeAddress,
+  sunHeatmap,
 }: ProjectLocationMapProps) {
   const text = MAP_TEXT[language] ?? MAP_TEXT.en;
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -1437,6 +1479,12 @@ export function ProjectLocationMap({
         <div className="osm-tile-layer" aria-hidden="true">
           {tiles.map((tile) => <img key={tile.key} className={tile.layer === "under" ? "is-underlay" : undefined} src={tile.url} alt="" draggable={false} decoding="async" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} style={{ left: tile.left, top: tile.top, width: tile.size, height: tile.size }} />)}
         </div>
+        {sunHeatmap?.visible && sunHeatmap.data && (() => {
+          const { nw, ne, sw } = sunHeatmap.data.corners;
+          const p0 = projectToScreen(nw), p1 = projectToScreen(ne), p3 = projectToScreen(sw);
+          const matrix = `matrix(${(p1.x - p0.x) / 100}, ${(p1.y - p0.y) / 100}, ${(p3.x - p0.x) / 100}, ${(p3.y - p0.y) / 100}, ${p0.x}, ${p0.y})`;
+          return <img className="osm-sun-layer" src={sunHeatmap.data.dataUrl} alt="" draggable={false} style={{ transform: matrix }} />;
+        })()}
         <svg className="osm-vector-layer" aria-hidden="true">
           {candidateShapes.map(({ candidate, points }) => candidate.id === buildingPicker?.selectedId && area ? null : <polygon key={candidate.id} className={`osm-candidate-polygon ${toolStage === "pick" ? "is-inviting" : ""}`} points={points} />)}
           {area && <polygon className="osm-area-polygon" points={polygonPoints} />}
@@ -1536,7 +1584,13 @@ export function ProjectLocationMap({
       <div className="site-map-mode-control" aria-label={text.mapLayers}>
         <button type="button" className={mapMode === "aerial" ? "is-active" : ""} onClick={() => setMapMode("aerial")}><Navigation size={14} /> {text.aerial}</button>
         <button type="button" className={mapMode === "road" ? "is-active" : ""} onClick={() => setMapMode("road")}><Navigation size={14} /> {text.road}</button>
+        {sunHeatmap && marker && <button type="button" className={`site-sun-toggle ${sunHeatmap.visible ? "is-active" : ""}`} aria-pressed={sunHeatmap.visible} onClick={sunHeatmap.onToggle}>{sunHeatmap.state === "loading" ? <Loader2 size={14} className="spin" /> : <Sun size={14} />} {text.sunLayer}</button>}
       </div>
+      {sunHeatmap?.visible && sunHeatmap.state !== "idle" && <div className="site-sun-legend" aria-live="polite">
+        {sunHeatmap.state === "loading" ? <span>{text.sunLoading}</span>
+          : sunHeatmap.state === "none" || !sunHeatmap.data ? <span>{text.sunNone}</span>
+          : <><i aria-hidden="true" /><span><b>{sunHeatmap.data.minKwhPerKw}</b><b>{sunHeatmap.data.maxKwhPerKw}</b></span><small>{text.sunLegend} · Google Solar{sunHeatmap.data.imageryDate ? ` ${sunHeatmap.data.imageryDate}` : ""}</small></>}
+      </div>}
 
       {showReference && <div className="site-map-reference" aria-live="polite"><span><MapPin size={14} /></span><div><small>{text.openData}</small><b>{referenceLabel}</b><p>{text.ready}</p></div></div>}
 

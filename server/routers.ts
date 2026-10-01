@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getBuildingFootprint, getNearbyBuildings } from "./building-service";
 import { getBuildingProfile, getGroundElevation } from "./building-profile-service";
 import { getGoogleSolarReference } from "./google-solar-service";
+import { loadProject, PROJECT_ID, saveProject } from "./project-share-service";
+import { getSolarHeatmap } from "./solar-heatmap-service";
 import { ENV } from "./_core/env";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -40,6 +42,9 @@ export const appRouter = router({
     nearbyBuildings: publicProcedure
       .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }))
       .query(({ input }) => getNearbyBuildings(input.lat, input.lng)),
+    solarHeatmap: publicProcedure
+      .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180) }))
+      .query(({ input }) => getSolarHeatmap(input.lat, input.lng)),
     buildingProfile: publicProcedure
       .input(z.object({ lat: z.number().finite().min(-90).max(90), lng: z.number().finite().min(-180).max(180), market: z.enum(["GB", "EU", "CA", "JP"]) }))
       .query(({ input }) => getBuildingProfile(input.lat, input.lng, input.market)),
@@ -50,6 +55,21 @@ export const appRouter = router({
     publicConfig: publicProcedure.query(() => ({ googleMapsApiKey: ENV.googleMapsBrowserKey || null })),
   }),
 
+  sharedProject: router({
+    save: publicProcedure
+      .input(z.object({ language: z.string().max(10), payload: z.object({ study: z.record(z.string(), z.unknown()), context: z.record(z.string(), z.unknown()).nullable() }) }))
+      .mutation(({ input }) => {
+        if (JSON.stringify(input.payload).length > 1_500_000) throw new Error("Project is too large to share");
+        return saveProject(input.payload, input.language);
+      }),
+    get: publicProcedure
+      .input(z.object({ id: z.string().regex(PROJECT_ID) }))
+      .query(async ({ input }) => {
+        const payload = await loadProject(input.id);
+        if (!payload) throw new Error("Project not found");
+        return payload as { study: Record<string, unknown>; context: Record<string, unknown> | null };
+      }),
+  }),
   projectStudy: router({
     run: publicProcedure
       .input(projectCalculationInputSchema)

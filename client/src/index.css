@@ -5469,3 +5469,41 @@ html:lang(ja) .eyebrow {
 @media (prefers-reduced-motion: reduce) { .studio-tour__spotlight { transition: none; } }
 .studio-host-context .studio-guide-steps svg { grid-row: auto; color: currentColor; }
 .studio-host-context .studio-tour-button svg { grid-row: auto; color: currentColor; }
+
+/* Roof sun heatmap (Google Solar annual flux) */
+.osm-sun-layer { position: absolute; z-index: 2; top: 0; left: 0; width: 100px; height: 100px; transform-origin: 0 0; pointer-events: none; user-select: none; image-rendering: auto; mix-blend-mode: normal; opacity: .92; }
+.site-map-mode-control .site-sun-toggle.is-active { color: #2b1a00; background: #ffd25a; }
+.site-sun-legend { position: absolute; z-index: 4; left: 24px; bottom: 64px; display: grid; gap: 5px; width: 250px; padding: 10px 12px; border: 1px solid rgba(218,230,218,.96); border-radius: 14px; background: rgba(250,252,248,.95); box-shadow: 0 8px 20px rgba(35,64,44,.13); color: #34493c; font-size: 11px; }
+.site-sun-legend i { display: block; height: 8px; border-radius: 99px; background: linear-gradient(90deg, #00000a, #91009c, #e64016, #feb400, #fffff6); }
+.site-sun-legend span { display: flex; justify-content: space-between; }
+.site-sun-legend b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.site-sun-legend small { color: #6b7f72; font-size: 10px; }
+@media (max-width: 720px) { .site-sun-legend { left: 12px; bottom: 58px; width: 190px; } }
+.building-solar-potential { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; margin: 10px 0 2px; padding: 10px 12px; border: 1px solid rgba(240, 196, 80, .45); border-radius: 12px; background: linear-gradient(135deg, rgba(255, 246, 214, .75), rgba(250, 252, 248, .9)); color: #3f4f43; }
+.building-solar-potential > svg { margin-top: 2px; color: #c98a00; }
+.building-solar-potential p { display: grid; gap: 2px; margin: 0; }
+.building-solar-potential small { color: #7a6a3a; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.building-solar-potential b { font-size: 13px; }
+.building-solar-potential span { color: #6b7f72; font-size: 11px; line-height: 1.4; }
+
+/* Shared project + share actions */
+.shared-project-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(1180px, calc(100% - 32px)); margin: 14px auto 0; padding: 10px 14px; border: 1px solid rgba(190, 216, 194, .9); border-radius: 14px; background: rgba(240, 248, 241, .9); color: #2f4a39; font-size: 13px; }
+.shared-project-banner span { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+.shared-project-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 40vh; color: #4b6152; }
+.result-share-note { display: grid; gap: 6px; margin: 2px 0 4px; color: #2f6b45; font-size: 12px; font-weight: 600; }
+.result-share-note.is-error { color: #a33a2a; }
+.result-share-note input { width: 100%; padding: 7px 9px; border: 1px solid #d5e3d7; border-radius: 9px; background: #f7faf6; color: #2f4a39; font-size: 11px; }
+.result-crosscheck { margin-top: 8px; }
+html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite-advisor-panel, html.is-print-render .results-side-rail button, html.is-print-render .result-share-note, html.is-print-render .results-advisor { display: none !important; }
+@media print { .shared-project-banner, .result-share-note { display: none !important; } }
+
+/* Places autocomplete */
+.address-gate__search { position: relative; }
+.address-gate__suggestions { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none; border: 1px solid var(--m-line-strong); border-radius: 14px; background: #fff; box-shadow: 0 18px 40px rgba(28, 52, 36, .16); }
+.address-gate__suggestions button { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--m-ink, #1f2f25); text-align: left; cursor: pointer; }
+.address-gate__suggestions button:hover, .address-gate__suggestions button.is-active { background: rgba(225, 240, 228, .8); }
+.address-gate__suggestions button > svg { color: var(--v28-green, #2f6b45); }
+.address-gate__suggestions span { display: grid; gap: 1px; min-width: 0; }
+.address-gate__suggestions b { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.address-gate__suggestions small { overflow: hidden; color: var(--m-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.address-gate__powered { padding: 4px 10px 2px; color: #8a978e; font-size: 10px; text-align: right; }

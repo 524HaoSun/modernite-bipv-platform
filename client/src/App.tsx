@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import {
   ArrowLeft,
   ArrowRight,
+  Link2,
+  Loader2,
   BarChart3,
   BatteryCharging,
   Check,
@@ -43,10 +45,11 @@ import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
 import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
-import { ProjectLocationMap, cleanAddressLabel, geocodeLanguage, pointInPath, useMapsKey, usePrewarmLocationMap, type AddressMatch, type BuildingPicker, type MapBuildingCandidate, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection } from "@/components/ProjectLocationMap";
+import { ProjectLocationMap, cleanAddressLabel, geocodeLanguage, pointInPath, useMapsKey, usePrewarmLocationMap, type AddressMatch, type BuildingPicker, type MapBuildingCandidate, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection, type SunHeatmap } from "@/components/ProjectLocationMap";
 import { AddressGate } from "@/components/AddressGate";
 import { StudioTour } from "@/components/StudioTour";
 import { STUDIO_GUIDE_COPY } from "@/lib/studio-guide-copy";
+import { shareCopy } from "@/lib/share-copy";
 import { googleNearbyAddresses } from "@/lib/google-maps";
 import type { MarketAtlasCopy } from "@/components/MarketAtlas";
 import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
@@ -983,6 +986,8 @@ function loadContext(): ProjectContext {
 }
 
 function loadStudioLanguage(): StudioLanguage {
+  const requested = new URLSearchParams(window.location.search).get("lang");
+  if (STUDIO_LANGUAGES.some((language) => language.value === requested)) return requested as StudioLanguage;
   try {
     const stored = window.localStorage.getItem(STUDIO_LANGUAGE_STORAGE_KEY) as StudioLanguage | null;
     return STUDIO_LANGUAGES.some((language) => language.value === stored) ? stored! : "en";
@@ -1326,6 +1331,15 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
     },
     onUseDetected: detectedOutline ? () => onAreaChange(detectedOutline) : undefined,
   };
+  const [sunVisible, setSunVisible] = useState(false);
+  const sunQuery = trpc.site.solarHeatmap.useQuery({ lat: coordinates?.lat ?? 0, lng: coordinates?.lng ?? 0 }, { enabled: sunVisible && Boolean(coordinates), staleTime: Infinity, retry: 1 });
+  const sunData = sunQuery.data?.status === "ok" ? sunQuery.data : undefined;
+  const sunHeatmap: SunHeatmap = {
+    state: !sunVisible ? "idle" : sunQuery.isLoading ? "loading" : sunData ? "ready" : "none",
+    visible: sunVisible,
+    data: sunData,
+    onToggle: () => setSunVisible((visible) => !visible),
+  };
   const outlinedArea = context.siteArea ? new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(context.siteArea.areaM2) : null;
   const locationText = LOCATION_PAGE_TEXT[language];
   const locationLabel = location ? cleanAddressLabel(location.label, language) : "";
@@ -1353,6 +1367,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           siteDetection={siteDetection}
           buildingPicker={buildingPicker}
           onChangeAddress={() => setAddressSearch(true)}
+          sunHeatmap={sunHeatmap}
         />
         <aside className="location-panel location-panel--site">
           <div className="location-panel-heading"><span>03</span><div><p className="mini-label">{copy.projectContext}</p><h2>{locationText.siteBrief}</h2></div></div>
@@ -2024,7 +2039,49 @@ function CalculationLoadingPage({ error, onBack, language }: { error: string | n
   );
 }
 
+const SHARED_PROJECT_PATH = /^\/p\/([A-Za-z0-9]{10})\/?$/;
+
+function sharedProjectId() {
+  const path = APP_BASE_PATH && window.location.pathname.startsWith(APP_BASE_PATH) ? window.location.pathname.slice(APP_BASE_PATH.length) : window.location.pathname;
+  return path.match(SHARED_PROJECT_PATH)?.[1] ?? null;
+}
+
+function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }: {
+  id: string;
+  language: StudioLanguage;
+  copy: GatewayCopy;
+  onLanguageChange: (language: StudioLanguage) => void;
+  onContinue: (study: ProjectCalculation | null, context: ProjectContext | null, route: GatewayRoute) => void;
+}) {
+  const query = trpc.sharedProject.get.useQuery({ id }, { retry: 1, staleTime: Infinity });
+  const printing = new URLSearchParams(window.location.search).get("print") === "1";
+  const c = shareCopy(language);
+  const study = (query.data?.study ?? null) as ProjectCalculation | null;
+  const context = (query.data?.context ?? null) as ProjectContext | null;
+  useEffect(() => {
+    document.documentElement.classList.toggle("is-print-render", printing);
+  }, [printing]);
+  const continueTo = (route: GatewayRoute) => onContinue(study, context, route);
+  return (
+    <main className="gateway-shell gateway-shell--results shared-project">
+      {!printing && <GatewayHeader route="results" language={language} copy={copy} canOpenStudio={Boolean(study)} onLanguageChange={onLanguageChange} onNavigate={continueTo} />}
+      {!printing && study && <div className="shared-project-banner"><span><Link2 size={14} /> {c.sharedBanner}</span><button type="button" className="button-secondary" onClick={() => continueTo("results")}>{c.continueHere} <ArrowRight size={14} /></button></div>}
+      {query.isLoading && <section className="results-page gateway-page shared-project-state"><Loader2 size={18} className="spin" /> {c.loading}</section>}
+      {query.isError && <section className="results-page gateway-page shared-project-state"><p>{c.missing}</p><button type="button" className="button-primary" onClick={() => continueTo("entry")}>{c.backHome}</button></section>}
+      {study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage
+        study={study}
+        preferredBatteryMode={context?.energySettings?.batteryMode ?? "solar-only"}
+        onNavigate={continueTo}
+        language={language}
+        marketKey={context?.marketKey ?? (study.project?.market as MarketKey | undefined) ?? "GB"}
+        share={{ sharedId: id }}
+      /></Suspense>}
+    </main>
+  );
+}
+
 export default function App() {
+  const [sharedId, setSharedId] = useState(sharedProjectId);
   const [route, setRoute] = useState<GatewayRoute>(() => routeFromPath(window.location.pathname));
   const [context, setContext] = useState<ProjectContext>(loadContext);
   const [studioLanguage, setStudioLanguage] = useState<StudioLanguage>(loadStudioLanguage);
@@ -2199,6 +2256,22 @@ export default function App() {
     return lines.join("\n");
   }, [advisorCaseId, context, market.name, route, study]);
 
+  const saveSharedProject = trpc.sharedProject.save.useMutation();
+  const createShare = useCallback(async () => {
+    if (!study) throw new Error("No study");
+    const { id } = await saveSharedProject.mutateAsync({ language: studioLanguage, payload: { study: study as unknown as Record<string, unknown>, context: context as unknown as Record<string, unknown> } });
+    return id;
+  }, [context, saveSharedProject, study, studioLanguage]);
+  const continueFromShared = useCallback((sharedStudy: ProjectCalculation | null, sharedContext: ProjectContext | null, nextRoute: GatewayRoute) => {
+    if (sharedStudy) setStudy(sharedStudy);
+    if (sharedContext && markets.some((item) => item.key === sharedContext.marketKey)) setContext({ ...sharedContext, version: 3, updatedAt: Date.now() });
+    setSharedId(null);
+    window.history.replaceState({}, "", routePath(nextRoute));
+    navigate(nextRoute);
+  }, [navigate]);
+
+  if (sharedId) return <SharedProjectPage id={sharedId} language={studioLanguage} copy={copy} onLanguageChange={setStudioLanguage} onContinue={continueFromShared} />;
+
   const showGateway = route !== "studio";
   return (
     <>
@@ -2224,7 +2297,7 @@ export default function App() {
           marketKey={context.marketKey}
         />}
         {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} language={studioLanguage} />}
-        {route === "results" && study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} /></Suspense>}
+        {route === "results" && study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} share={{ onCreate: createShare }} /></Suspense>}
         {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       <ModerniteAdvisor language={studioLanguage} route={route} getContext={getAdvisorContext} caseId={advisorCaseId} />

@@ -26,6 +26,10 @@ export type GoogleSolarReference = {
   maxArrayAreaM2?: number;
   maxArrayPanelsCount?: number;
   maxSunshineHoursPerYear?: number;
+  panelCapacityWatts?: number;
+  maxArrayCapacityKwp?: number;
+  maxArrayYearlyDcKwh?: number;
+  panelConfigs?: { panels: number; capacityKwp: number; yearlyDcKwh: number }[];
   roofSegments?: GoogleSolarRoofSegment[];
   boundingBox?: { sw: { lat: number; lng: number }; ne: { lat: number; lng: number } };
   note: string;
@@ -44,6 +48,8 @@ type BuildingInsights = {
     maxArrayPanelsCount?: number;
     maxArrayAreaMeters2?: number;
     maxSunshineHoursPerYear?: number;
+    panelCapacityWatts?: number;
+    solarPanelConfigs?: { panelsCount?: number; yearlyEnergyDcKwh?: number }[];
     wholeRoofStats?: SizeAndSunshine;
     roofSegmentStats?: ({ pitchDegrees?: number; azimuthDegrees?: number; stats?: SizeAndSunshine; center?: LatLng; planeHeightAtCenterMeters?: number })[];
   };
@@ -83,6 +89,12 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
       planeHeightAslM: round(segment.planeHeightAtCenterMeters, 2),
     };
   }).sort((a, b) => b.areaM2 - a.areaM2);
+  const watts = potential?.panelCapacityWatts;
+  const configs = (potential?.solarPanelConfigs ?? [])
+    .filter((c) => (c.panelsCount ?? 0) > 0 && Number.isFinite(c.yearlyEnergyDcKwh))
+    .map((c) => ({ panels: c.panelsCount!, capacityKwp: watts ? round((c.panelsCount! * watts) / 1000, 2)! : 0, yearlyDcKwh: Math.round(c.yearlyEnergyDcKwh!) }));
+  const largest = configs[configs.length - 1];
+  const panelConfigs = configs.length > 8 ? [0.25, 0.5, 0.75, 1].map((q) => configs[Math.max(0, Math.ceil(q * configs.length) - 1)]!) : configs;
   return {
     status: "ok",
     buildingId: payload.name,
@@ -94,6 +106,10 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
     maxArrayAreaM2: round(potential?.maxArrayAreaMeters2),
     maxArrayPanelsCount: potential?.maxArrayPanelsCount,
     maxSunshineHoursPerYear: round(potential?.maxSunshineHoursPerYear, 0),
+    panelCapacityWatts: watts,
+    maxArrayCapacityKwp: watts && potential?.maxArrayPanelsCount ? round((potential.maxArrayPanelsCount * watts) / 1000, 2) : undefined,
+    maxArrayYearlyDcKwh: largest?.yearlyDcKwh,
+    panelConfigs,
     roofSegments: segments,
     boundingBox: toLatLng(payload.boundingBox?.sw) && toLatLng(payload.boundingBox?.ne) ? { sw: toLatLng(payload.boundingBox?.sw)!, ne: toLatLng(payload.boundingBox?.ne)! } : undefined,
     note: "Google Solar roof model (aerial imagery and DSM). Used as a roof-geometry reference only; generation follows the customer empirical model.",

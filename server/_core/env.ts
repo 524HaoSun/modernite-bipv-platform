@@ -11,4 +11,10 @@ export const ENV = {
   googleSolarApiKey: process.env.GOOGLE_SOLAR_API_KEY ?? "",
   googleMapsBrowserKey: process.env.GOOGLE_MAPS_BROWSER_KEY ?? "",
   weatherCacheDir: process.env.WEATHER_CACHE_DIR ?? ".cache/weather",
+  dataDir: process.env.DATA_DIR ?? ".data",
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "",
+  cfAccountId: process.env.CF_ACCOUNT_ID ?? "",
+  cfApiToken: process.env.CF_API_TOKEN ?? "",
+  cfD1DatabaseId: process.env.CF_D1_DATABASE_ID ?? "",
+  cfWebAnalyticsToken: process.env.CF_WEB_ANALYTICS_TOKEN ?? "",
 };

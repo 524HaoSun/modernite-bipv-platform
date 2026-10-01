@@ -71,11 +71,14 @@ export function serveStatic(app: Express) {
 
   // Public browser config is inlined so the map can start without a round trip.
   const publicConfig = JSON.stringify({ googleMapsApiKey: ENV.googleMapsBrowserKey || null }).replace(/</g, "\\u003c");
+  const analytics = /^[a-f0-9]{32}$/i.test(ENV.cfWebAnalyticsToken)
+    ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${ENV.cfWebAnalyticsToken}"}'></script>`
+    : "";
   let indexHtml: string | null = null;
   app.use("*", (_req, res) => {
     indexHtml ??= fs
       .readFileSync(path.resolve(distPath, "index.html"), "utf-8")
-      .replace("</head>", `<script>window.__MODERNITE_PUBLIC_CONFIG__=${publicConfig}</script></head>`);
+      .replace("</head>", `<script>window.__MODERNITE_PUBLIC_CONFIG__=${publicConfig}</script>${analytics}</head>`);
     res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(indexHtml);
   });
 }
