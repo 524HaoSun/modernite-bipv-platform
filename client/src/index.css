@@ -5065,6 +5065,8 @@ html:lang(ja) .eyebrow {
 .building-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 8px; }
 .building-profile-grid label { position: relative; display: grid; gap: 3px; min-width: 0; }
 .building-profile-grid label.is-wide { grid-column: 1 / -1; }
+.building-profile-grid label.is-check { display: flex; align-items: center; gap: 6px; color: #5b7160; font-size: 10.5px; font-weight: 700; cursor: pointer; }
+.building-profile-grid label.is-check input { width: auto; height: auto; padding: 0; }
 .building-profile-grid label > span { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; color: #5b7160; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .building-profile-grid input, .building-profile-grid select { width: 100%; min-width: 0; height: 28px; padding: 0 26px 0 8px; border: 1px solid #cfdccd; border-radius: 7px; color: #22392a; background: #fff; font: inherit; font-size: 11.5px; font-weight: 700; }
 .building-profile-grid select { padding-right: 8px; }

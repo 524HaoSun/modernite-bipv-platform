@@ -105,12 +105,18 @@ const PATCHES = [
   {
     id: "parametric-roof-config",
     find: "wwr:d.wwr,parametric:true};}",
-    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'?{roofPlanes:d.roofPlanes}:{})};}",
+    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'?{roofPlanes:d.roofPlanes}:{}),...(d.chimney===false?{chimney:false}:{})};}",
   },
   {
     id: "parametric-roof-cache",
     find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
-    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&Gt.region!=='JP'?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{})};",
+    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&Gt.region!=='JP'?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{}),...(d.chimney===false?{chimney:false}:{})};",
+  },
+  {
+    // UK pitched houses always get a chimney stack; setDimensions({chimney:false}) removes it for homes without one.
+    id: "chimney-optional",
+    find: 'if(p==="UK"&&O!=="flat"&&i.kind!=="bungalow"){',
+    replace: 'if(p==="UK"&&O!=="flat"&&i.kind!=="bungalow"&&i.chimney!==false){',
   },
   {
     // Measured multi-plane roofs (roofForm 'custom'): faces, wall infill, gutters and chimney follow the planes.

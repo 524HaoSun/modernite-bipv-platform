@@ -253,7 +253,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
  * Studio `setDimensions` payload for a building type. Studio widths cover every unit of an
  * attached row (semi = 2, terrace = 3), and must stay inside ModerniteBuildingCore.validate().
  */
-export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number; roofPlanes?: RoofPlane[] }, wwr = 0.2) {
+export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number; roofPlanes?: RoofPlane[]; chimney?: boolean }, wwr = 0.2) {
   const units = type.units || 1;
   return {
     width: round1(clamp(values.widthM * units, 4 * units, 150)),
@@ -264,5 +264,6 @@ export function studioDimensions(type: StudioBuildingType, values: { widthM: num
     roofForm: values.roofForm,
     pitch: Math.round(clamp(values.roofPitchDeg, 5, 55)),
     ...(values.roofForm === "custom" && values.roofPlanes?.length ? { roofPlanes: values.roofPlanes } : {}),
+    ...(values.chimney === false ? { chimney: false } : {}),
   };
 }

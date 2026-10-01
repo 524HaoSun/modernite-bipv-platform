@@ -1789,7 +1789,7 @@ function StudioPage({
     const bridge = studioWindow.ModerniteEnergyBridge;
     const buildingType = building ? studioTypeById(building.typeId) : undefined;
     if (building && buildingType && buildingType.region === studioRegion && bridge?.dimensions && bridge.setDimensions) {
-      const buildingKey = JSON.stringify([building.typeId, building.widthM, building.depthM, building.floors, building.storeyHeightM, building.roofForm, building.roofPitchDeg, building.roofForm === "custom" ? building.roofPlanes : null, building.frontAzimuthDeg]);
+      const buildingKey = JSON.stringify([building.typeId, building.widthM, building.depthM, building.floors, building.storeyHeightM, building.roofForm, building.roofPitchDeg, building.roofForm === "custom" ? building.roofPlanes : null, building.frontAzimuthDeg, building.chimney !== false]);
       if (root.dataset.hostBuilding !== buildingKey) {
         const houseSelect = studioDocument.querySelector<HTMLSelectElement>("#house-select");
         if (houseSelect && houseSelect.value !== building.typeId && Array.from(houseSelect.options).some((option) => option.value === building.typeId)) {

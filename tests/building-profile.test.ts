@@ -65,5 +65,7 @@ describe("building profile", () => {
     const semi = studioTypeById("UK02")!;
     const dims = studioDimensions(semi, { widthM: 6, depthM: 200, floors: 2.4, storeyHeightM: 9, roofForm: "gable", roofPitchDeg: 80 }, 0.25);
     expect(dims).toEqual({ width: 12, depth: 100, floors: 2, storeyHeight: 5, wwr: 0.25, roofForm: "gable", pitch: 55 });
+    expect(studioDimensions(semi, { widthM: 6, depthM: 8, floors: 2, storeyHeightM: 3, roofForm: "hip", roofPitchDeg: 30, chimney: false })).toMatchObject({ chimney: false });
+    expect(studioDimensions(semi, { widthM: 6, depthM: 8, floors: 2, storeyHeightM: 3, roofForm: "hip", roofPitchDeg: 30, chimney: true })).not.toHaveProperty("chimney");
   });
 });
