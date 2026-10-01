@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, LineChart, MessageCircle,
+  ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, LineChart, MessageCircle,
   Pencil, Printer, Send, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
+import { PageIntro } from "@/components/PageIntro";
+import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
 import type { ProjectCalculation } from "../../../server/estimate-service";
 import type { FinancialScenario, SurfaceResult } from "../../../types/solar";
 
@@ -297,15 +299,14 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const typeId = project?.buildingTypeId;
   return (
     <section className="results-page gateway-page">
-      <div className="results-topline">
-        <div>
-          <button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> {t.back}</button>
-          <p className="eyebrow"><Sparkles size={14} /> {t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p>{t.intro}</p>
-        </div>
-        <div className="result-case"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>
-      </div>
+      <PageIntro
+        chapter={7}
+        eyebrow={WORKFLOW_LABELS[language as WorkflowLanguage]?.results ?? WORKFLOW_LABELS.en.results}
+        icon={<Sparkles size={14} />}
+        title={t.title}
+        lede={t.intro}
+        aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
+      />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
       <div className="results-layout"><main className="results-report">
         <GenerationRangeCard study={study} scenario={scenario} f={f} />

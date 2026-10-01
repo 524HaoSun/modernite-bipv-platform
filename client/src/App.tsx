@@ -15,6 +15,7 @@ import {
   Gauge,
   Globe2,
   Home,
+  Layers3,
   Leaf,
   Lightbulb,
   LineChart,
@@ -39,6 +40,8 @@ import { MARKET_TO_STUDIO_REGION, studioTypeById } from "../../lib/studio-catalo
 import { GoogleSiteViewer } from "@/components/GoogleSiteViewer";
 import { ResultsPage } from "@/components/ResultsReport";
 import { resultsCopy } from "@/lib/results-copy";
+import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
+import { PageIntro } from "@/components/PageIntro";
 import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
@@ -176,15 +179,6 @@ const DEMO_STUDIO_SNAPSHOT: StudioCalculationSnapshot = {
   ],
 };
 
-const WORKFLOW_LABELS: Record<StudioLanguage, { project: string; market: string; location: string; studio: string; energy: string; calculation: string; results: string }> = {
-  en: { project: "Project", market: "Market", location: "Site", studio: "Design Studio", energy: "Energy", calculation: "Calculation", results: "Results" },
-  zh: { project: "项目", market: "市场", location: "场地", studio: "设计工作室", energy: "能耗", calculation: "计算", results: "结果" },
-  "zh-Hant": { project: "專案", market: "市場", location: "場地", studio: "設計工作室", energy: "能耗", calculation: "計算", results: "結果" },
-  fr: { project: "Projet", market: "Marché", location: "Site", studio: "Studio de conception", energy: "Énergie", calculation: "Calcul", results: "Résultats" },
-  ja: { project: "プロジェクト", market: "市場", location: "敷地", studio: "デザインスタジオ", energy: "エネルギー", calculation: "計算", results: "結果" },
-  es: { project: "Proyecto", market: "Mercado", location: "Sitio", studio: "Estudio de diseño", energy: "Energía", calculation: "Cálculo", results: "Resultados" },
-  it: { project: "Progetto", market: "Mercato", location: "Sito", studio: "Studio di progettazione", energy: "Energia", calculation: "Calcolo", results: "Risultati" },
-};
 
 const STUDIO_BRIDGE_COPY: Record<StudioLanguage, { facets: string; returnToSite: string; prepareStudy: string; openingStudio: string; runtimeNotice: string; siteContext: string }> = {
   en: { facets: "Building · Products · Finishes · Environment", returnToSite: "Back to site", prepareStudy: "Continue to energy", openingStudio: "Opening Design Studio", runtimeNotice: "Loading the retained customer Studio workspace and applying your site context.", siteContext: "Site context" },
@@ -1208,7 +1202,8 @@ function EntryPage({ copy, language, onLanguageChange, onStart, onNavigate }: {
   );
 }
 
-function MarketPage({ market, europeanCountry, copy, onMarketChange, onEuropeanCountryChange, onNavigate }: {
+function MarketPage({ language, market, europeanCountry, copy, onMarketChange, onEuropeanCountryChange, onNavigate }: {
+  language: StudioLanguage;
   market: Market;
   europeanCountry: EuropeanMarket | null;
   copy: GatewayCopy;
@@ -1218,19 +1213,7 @@ function MarketPage({ market, europeanCountry, copy, onMarketChange, onEuropeanC
 }) {
   return (
     <section className="market-page gateway-page">
-      <div className="market-intro-grid">
-        <div className="market-chapter-mark" aria-hidden="true"><span>01</span><i /></div>
-        <div className="market-intro-copy">
-          <button className="back-link" type="button" onClick={() => onNavigate("entry")}><ArrowLeft size={15} /> {copy.back}</button>
-          <p className="eyebrow"><Globe2 size={14} /> {copy.marketStep}</p>
-          <h1>{copy.marketTitle}</h1>
-          <p>{copy.marketIntro}</p>
-        </div>
-        <aside className="market-interaction-note">
-          <span><Compass size={16} /></span>
-          <p>{copy.dragHint}</p>
-        </aside>
-      </div>
+      <PageIntro chapter={2} eyebrow={WORKFLOW_LABELS[language].market} icon={<Globe2 size={14} />} title={copy.marketTitle} lede={copy.marketIntro} />
       <MarketAtlas market={market} europeanCountry={europeanCountry} copy={copy} onMarketChange={onMarketChange} onEuropeanCountryChange={onEuropeanCountryChange} onContinue={() => onNavigate("location")} />
     </section>
   );
@@ -1252,15 +1235,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   const locationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
   return (
     <section className="location-page gateway-page">
-      <div className="location-scene-heading">
-        <div className="location-chapter-mark" aria-hidden="true"><span>03</span><i /></div>
-        <div className="location-scene-copy">
-          <button className="back-link" type="button" onClick={() => onNavigate("market")}><ArrowLeft size={15} /> {copy.back}</button>
-          <p className="eyebrow"><MapPinned size={14} /> {copy.locationStep}</p>
-          <h1>{locationText.title}</h1>
-          <p>{locationText.intro}</p>
-        </div>
-      </div>
+      <PageIntro chapter={3} eyebrow={WORKFLOW_LABELS[language].location} icon={<MapPinned size={14} />} title={locationText.title} lede={locationText.intro} />
       <div className="location-workbench">
         <ProjectLocationMap
           language={language}
@@ -1486,15 +1461,7 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, l
   const one = (value: number) => value.toLocaleString(language, { maximumFractionDigits: 1 });
   return (
     <section className="energy-page gateway-page">
-      <div className="energy-page-intro">
-        <div className="energy-chapter-mark" aria-hidden="true"><span>05</span><i /></div>
-        <div>
-          <button className="back-link" type="button" onClick={() => onNavigate("studio")}><ArrowLeft size={15} /> {text.energyBack}</button>
-          <p className="eyebrow"><Lightbulb size={14} /> {text.energyEyebrow}</p>
-          <h1>{text.energyTitle}</h1>
-          <p>{text.energyIntro}</p>
-        </div>
-      </div>
+      <PageIntro chapter={5} eyebrow={WORKFLOW_LABELS[language].energy} icon={<Lightbulb size={14} />} title={text.energyTitle} lede={text.energyIntro} />
       <div className="energy-page-workbench">
         <aside className="configured-building-card">
           <div className="configured-building-card__title"><span><Home size={19} /></span><div><p className="mini-label">{text.configuredBuilding}</p><button type="button" onClick={() => onNavigate("studio")}>{text.viewInStudio} <ArrowRight size={14} /></button></div></div>
@@ -1811,14 +1778,7 @@ function StudioPage({
           <button type="button" className="studio-calculate" onClick={continueToEnergy}><ArrowRight size={14} /> {bridgeCopy.prepareStudy}</button>
         </div>
       </header>
-      <section className="studio-host-intro">
-        <div className="studio-host-chapter" aria-hidden="true"><span>04</span><i /></div>
-        <div>
-          <p className="eyebrow">{text.studioStepEyebrow}</p>
-          <h1>{text.studioTitle}</h1>
-          <p>{text.studioIntro}</p>
-        </div>
-      </section>
+      <PageIntro chapter={4} eyebrow={WORKFLOW_LABELS[language].studio} icon={<Layers3 size={14} />} title={text.studioTitle} lede={text.studioIntro} className="studio-page-intro" />
       <section className="studio-host-context">
         <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">Weather source</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label="Weather source">{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? MISC_COPY[language].weatherLoading(WEATHER_SOURCE_LABELS[weatherSource].short) : MISC_COPY[language].weatherUnavailable(WEATHER_SOURCE_LABELS[weatherSource].short)}</em>}</span>}</span>
         <span><Globe2 size={22} /><small>{text.market}</small><b>{market.name}</b></span>
@@ -2015,7 +1975,7 @@ export default function App() {
       {showGateway && <main className={`gateway-shell gateway-shell--${route}`}>
         <GatewayHeader route={route} language={studioLanguage} copy={copy} canOpenStudio={Boolean(context.location)} onLanguageChange={setStudioLanguage} onNavigate={navigate} />
         {route === "entry" && <EntryPage copy={copy} language={studioLanguage} onLanguageChange={setStudioLanguage} onStart={beginProject} onNavigate={navigate} />}
-        {route === "market" && <MarketPage market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
+        {route === "market" && <MarketPage language={studioLanguage} market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
         {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onBuildingChange={updateBuilding} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
           settings={context.energySettings}

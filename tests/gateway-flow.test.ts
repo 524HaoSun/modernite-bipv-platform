@@ -8,6 +8,7 @@ const styles = fs.readFileSync(path.join(root, "client/src/index.css"), "utf8");
 const map = fs.readFileSync(path.join(root, "client/src/components/ProjectLocationMap.tsx"), "utf8");
 const results = fs.readFileSync(path.join(root, "client/src/components/ResultsReport.tsx"), "utf8");
 const resultsText = fs.readFileSync(path.join(root, "client/src/lib/results-copy.ts"), "utf8");
+const workflow = fs.readFileSync(path.join(root, "client/src/lib/workflow-labels.ts"), "utf8");
 
 describe("V28-aligned entry gateway", () => {
   it("keeps the customer Studio runtime available behind the new entry flow", () => {
@@ -96,9 +97,9 @@ describe("V28-aligned entry gateway", () => {
 
   it("extends the project journey from the site through Design Studio, energy and results", () => {
     expect(app).toContain("WORKFLOW_LABELS");
-    expect(app).toContain('studio: "Design Studio"');
-    expect(app).toContain('energy: "Energy"');
-    expect(app).toContain('results: "Results"');
+    expect(workflow).toContain('studio: "Design Studio"');
+    expect(workflow).toContain('energy: "Energy"');
+    expect(workflow).toContain('results: "Results"');
     expect(app).toContain("STUDIO_BRIDGE_COPY");
     expect(app).toContain("studio-bridge-bar");
     expect(app).toContain("Building · Products · Finishes · Environment");
@@ -160,7 +161,8 @@ describe("V28-aligned entry gateway", () => {
   it("features an interactive rotatable market globe, library, and 7-language system matching Studio V31", () => {
     const atlas = fs.readFileSync(path.join(root, "client/src/components/MarketAtlas.tsx"), "utf8");
     expect(app).toContain("journey-rail");
-    expect(app).toContain("market-intro-grid");
+    expect(app).toContain("<PageIntro chapter={2}");
+    expect(styles).toContain(".page-intro__chapter");
     expect(atlas).toContain("market-next-action");
     expect(app).toContain("MarketAtlas");
     expect(app).toContain('"zh-Hant"');
