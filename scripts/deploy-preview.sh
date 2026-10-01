@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Build a standalone bundle (server.mjs + public/) and push it to the preview VM.
-# The VM already runs modernite.service (systemd) behind Caddy; /opt/modernite/.env holds secrets.
+# Manual deploy: build the bundle locally and push it straight to the VM (needs gcloud access).
+# Normal path is automatic: push to main -> .github/workflows/deploy-production.yml publishes the bundle to the
+# "preview-latest" release -> the VM's modernite-autodeploy.timer installs it (see deploy/vm/).
+# The VM runs modernite.service (systemd) behind Caddy; /opt/modernite/.env holds secrets.
 # Public URLs: https://modernite.wenda.global (Cloudflare Tunnel "modernite-gcp6" -> Caddy :8080) and https://34-3-99-93.sslip.io.
 set -euo pipefail
 
@@ -12,13 +14,7 @@ OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 
 cd "$(dirname "$0")/.."
-pnpm vite build
-npx esbuild server/_core/index.ts --platform=node --bundle --format=esm --target=node22 \
-  --external:vite '--external:*/vite.config' \
-  --banner:js="import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" \
-  --outfile="$OUT/server.mjs"
-cp -r dist/public "$OUT/public"
-tar -C "$OUT" -czf "$OUT/modernite-deploy.tgz" server.mjs public
+bash scripts/build-deploy-bundle.sh "$OUT"
 
 GC=(--account="$ACCOUNT" --project="$PROJECT" --zone="$ZONE" --quiet)
 gcloud compute scp "$OUT/modernite-deploy.tgz" "$VM:/tmp/" "${GC[@]}"

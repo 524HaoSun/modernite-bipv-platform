@@ -102,6 +102,20 @@ pnpm build
 
 Then confirm `client/public/studio.html` still matches the protected SHA-256.
 
+## Production Deployment (automatic)
+
+Live site: https://modernite.wenda.global (Node server on a GCP VM behind Caddy and a Cloudflare Tunnel).
+
+Every push to `main` deploys automatically:
+
+1. `.github/workflows/deploy-production.yml` runs `pnpm check` and `pnpm test`, builds the bundle with `scripts/build-deploy-bundle.sh` and uploads it to the rolling `preview-latest` release.
+2. The VM's `modernite-autodeploy.timer` (`deploy/vm/`) checks that release every minute, verifies the checksum, installs the bundle and restarts the app. If the new version fails its health check it rolls back to the previous one.
+3. The workflow turns green only once `https://modernite.wenda.global/build.json` reports the pushed commit (usually 3–5 minutes after the push).
+
+A failed check or test stops the deploy, so the live site keeps running the last good version. No secrets live in GitHub: API keys stay in `/opt/modernite/.env` on the VM. `scripts/deploy-preview.sh` is a manual fallback that needs gcloud access to the VM.
+
+Work on a branch and merge to `main` through a pull request when it is ready to go live.
+
 ## Deployment Note
 
 GitHub Pages is configured as a static preview deployment at:

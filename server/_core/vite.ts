@@ -64,7 +64,7 @@ export function serveStatic(app: Express) {
       index: false,
       setHeaders(res, filePath) {
         if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        else if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
+        else if (filePath.endsWith(".html") || filePath.endsWith("build.json")) res.setHeader("Cache-Control", "no-cache");
       },
     }),
   );
