@@ -39,7 +39,7 @@ describe("V28-aligned entry gateway", () => {
 
   it("includes a restrained local-model calculation transition and optional AI study control", () => {
     expect(app).toContain("Preparing your personalised project outlook.");
-    expect(resultsText).toContain("Customer V31 hourly model · PVGIS weather");
+    expect(resultsText).toContain("Hourly model · PVGIS weather");
     expect(resultsText).toContain("Hourly weather");
     expect(resultsText).toContain("Modernité Design Guide");
     expect(results).toContain("ADVISOR_ASK_EVENT");

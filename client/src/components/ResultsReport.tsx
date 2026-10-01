@@ -32,6 +32,7 @@ type Fmt = {
   t: ResultsCopy;
   n: (value: number, digits?: number) => string;
   money: (value: number) => string;
+  moneyCompact: (value: number) => string;
   month: (index: number) => string;
   compass: (deg: number) => string;
 };
@@ -74,11 +75,13 @@ function useFormatters(language: string, currency: string): Fmt {
   return useMemo(() => {
     const t = resultsCopy(language);
     const money = new Intl.NumberFormat(t.locale, { style: "currency", currency, maximumFractionDigits: 0 });
+    const compact = new Intl.NumberFormat(t.locale, { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 });
     const months = new Intl.DateTimeFormat(t.locale, { month: "short" });
     return {
       t,
       n: (value, digits = 0) => value.toLocaleString(t.locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
       money: (value) => money.format(Math.round(value)),
+      moneyCompact: (value) => compact.format(Math.round(value)),
       month: (index) => months.format(new Date(2025, index, 1)),
       compass: (deg) => t.compass[Math.round((((deg % 360) + 360) % 360) / 45) % 8],
     };
@@ -206,33 +209,88 @@ function ScenarioComparisonPanel({ scenarios, scenario, onSelect, f }: { scenari
   </section>;
 }
 
+function niceStep(range: number, target: number) {
+  const raw = range / Math.max(1, target);
+  const power = 10 ** Math.floor(Math.log10(raw));
+  return ([1, 2, 2.5, 5, 10].find((m) => m * power >= raw) ?? 10) * power;
+}
+
+const CHART = { left: 78, right: 732, top: 30, bottom: 214, width: 760, height: 252 };
+
 function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; f: Fmt }) {
   const { t } = f;
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const visible = scenarios.filter((item) => item.id !== "battery-only" && item.available && item.annualCashFlows.length > 0);
-  const maxAbs = Math.max(1, ...visible.flatMap((item) => item.annualCashFlows.map((flow) => Math.abs(flow.cumulativeNetGbp))));
-  const pathFor = (item: FinancialScenario) => item.annualCashFlows.map((flow, index) => {
-    const x = 54 + (index / Math.max(1, item.annualCashFlows.length - 1)) * 646;
-    const y = 164 - (flow.cumulativeNetGbp / maxAbs) * 112;
-    return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
-  }).join(" ");
+  const years = Math.max(1, ...visible.map((item) => item.annualCashFlows.length));
+  const values = visible.flatMap((item) => item.annualCashFlows.map((flow) => flow.cumulativeNetGbp));
+  const step = niceStep(Math.max(1, Math.max(0, ...values) - Math.min(0, ...values)), 4);
+  const yMin = Math.floor(Math.min(0, ...values) / step) * step;
+  const yMax = Math.max(step, Math.ceil(Math.max(0, ...values) / step) * step);
+  const ticks = Array.from({ length: Math.round((yMax - yMin) / step) + 1 }, (_, i) => yMin + i * step);
+  const xAt = (index: number) => CHART.left + (index / Math.max(1, years - 1)) * (CHART.right - CHART.left);
+  const yAt = (value: number) => CHART.bottom - ((value - yMin) / (yMax - yMin)) * (CHART.bottom - CHART.top);
+  const points = (item: FinancialScenario) => item.annualCashFlows.map((flow, index) => `${xAt(index).toFixed(1)},${yAt(flow.cumulativeNetGbp).toFixed(1)}`);
+  const zeroY = yAt(0);
+  const yearTicks = [1, 5, 10, 15, 20, 25].filter((year) => year <= years);
+  const breaks = visible.flatMap((item) => {
+    const flows = item.annualCashFlows;
+    const index = flows.findIndex((flow) => flow.cumulativeNetGbp >= 0);
+    if (index <= 0) return [];
+    const before = flows[index - 1]!.cumulativeNetGbp, after = flows[index]!.cumulativeNetGbp;
+    return [{ item, x: xAt(index - 1 + (0 - before) / Math.max(1e-9, after - before)), year: item.breakEvenYear ?? flows[index]!.year }];
+  }).sort((a, b) => a.x - b.x);
+  const labelRows = breaks.map((entry, i) => (i > 0 && entry.x - breaks[i - 1]!.x < 120 ? 1 : 0));
+  const selected = visible.find((item) => item.id === scenario.id) ?? visible[0];
+  const areaPath = selected ? `M${xAt(0)},${zeroY} L${points(selected).join(" L")} L${xAt(selected.annualCashFlows.length - 1)},${zeroY} Z` : "";
   const selectedFinal = scenario.annualCashFlows.at(-1);
+  const onMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - box.left) / box.width) * CHART.width;
+    setHoverIndex(Math.max(0, Math.min(years - 1, Math.round(((x - CHART.left) / (CHART.right - CHART.left)) * (years - 1)))));
+  };
   return <section className="result-section cash-position-card premium-chart-card">
     <div className="result-section-heading"><div><p className="mini-label">{t.cashLabel}</p><h2>{t.cashTitle}</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.noBreakEven}</span></div>
     {visible.length > 0 ? <>
-      <svg className="cash-position-chart" viewBox="0 0 760 242" role="img" aria-label={t.cashTitle}>
-        <rect x="36" y="26" width="690" height="168" rx="18" fill="rgba(245,250,244,.82)" />
-        {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="54" y1={164 - ratio * 112} x2="700" y2={164 - ratio * 112} className="chart-grid" />)}
-        <line x1="54" y1="164" x2="700" y2="164" className="chart-axis" />
-        {visible.map((item) => <path key={`${item.id}-glow`} d={pathFor(item)} className={`cash-position-line-glow ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: SCENARIO_COLORS[item.id] }} />)}
-        {visible.map((item) => <path key={item.id} d={pathFor(item)} className={`cash-position-line ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: SCENARIO_COLORS[item.id] }} />)}
-        {visible.map((item) => {
-          const breakFlow = item.breakEvenYear === null ? undefined : item.annualCashFlows.find((flow) => flow.year === item.breakEvenYear);
-          if (!breakFlow) return null;
-          const x = 54 + ((breakFlow.year - 1) / Math.max(1, item.annualCashFlows.length - 1)) * 646;
-          const y = 164 - (breakFlow.cumulativeNetGbp / maxAbs) * 112;
-          return <g key={`${item.id}-break`}><circle cx={x} cy={y} r={item.id === scenario.id ? 5.5 : 4} fill={SCENARIO_COLORS[item.id]} stroke="#fff" strokeWidth="2" /><text x={x + 8} y={y - 8}>{t.year(breakFlow.year)}</text></g>;
+      <svg className="cash-position-chart" viewBox={`0 0 ${CHART.width} ${CHART.height}`} role="img" aria-label={t.cashTitle} onPointerMove={onMove} onPointerLeave={() => setHoverIndex(null)}>
+        <defs>
+          <clipPath id="cash-above"><rect x={CHART.left} y={CHART.top - 4} width={CHART.right - CHART.left} height={Math.max(0, zeroY - CHART.top + 4)} /></clipPath>
+          <clipPath id="cash-below"><rect x={CHART.left} y={zeroY} width={CHART.right - CHART.left} height={Math.max(0, CHART.bottom - zeroY + 4)} /></clipPath>
+        </defs>
+        {ticks.map((tick) => <g key={tick} className={tick === 0 ? "cash-zero" : "cash-tick"}>
+          <line x1={CHART.left} x2={CHART.right} y1={yAt(tick)} y2={yAt(tick)} />
+          <text x={CHART.left - 10} y={yAt(tick) + 4} textAnchor="end">{tick === 0 ? "0" : f.moneyCompact(tick)}</text>
+        </g>)}
+        {yearTicks.map((year) => <text key={year} className="cash-year" x={xAt(year - 1)} y={CHART.bottom + 24} textAnchor={year === 1 ? "start" : year === years ? "end" : "middle"}>{t.year(year)}</text>)}
+        {selected && <>
+          <path d={areaPath} className="cash-area is-positive" clipPath="url(#cash-above)" />
+          <path d={areaPath} className="cash-area is-negative" clipPath="url(#cash-below)" />
+        </>}
+        {visible.map((item) => <polyline key={item.id} points={points(item).join(" ")} className={`cash-position-line ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: SCENARIO_COLORS[item.id] }} />)}
+        {breaks.map(({ item, x, year }, i) => {
+          const selectedLine = item.id === scenario.id;
+          const labelY = CHART.top + 8 + labelRows[i]! * 22;
+          return <g key={`${item.id}-break`} className={`cash-break ${selectedLine ? "is-selected" : ""}`}>
+            <line x1={x} x2={x} y1={labelY + 6} y2={zeroY} style={{ stroke: SCENARIO_COLORS[item.id] }} />
+            <circle cx={x} cy={zeroY} r={selectedLine ? 5.5 : 4.5} fill={SCENARIO_COLORS[item.id]} />
+            <text x={x} y={labelY} textAnchor={x > CHART.right - 70 ? "end" : x < CHART.left + 70 ? "start" : "middle"} style={{ fill: SCENARIO_COLORS[item.id] }}>{t.breakEvenYear(year)}</text>
+          </g>;
         })}
-        <text x="54" y="220">{t.year(1)}</text><text x="700" y="220" textAnchor="end">{t.year(25)}</text>
+        {visible.map((item) => {
+          const last = item.annualCashFlows.at(-1)!;
+          return <circle key={`${item.id}-end`} cx={xAt(item.annualCashFlows.length - 1)} cy={yAt(last.cumulativeNetGbp)} r={item.id === scenario.id ? 4.5 : 3.5} fill="#fff" stroke={SCENARIO_COLORS[item.id]} strokeWidth="2.5" />;
+        })}
+        {hoverIndex !== null && (() => {
+          const x = xAt(hoverIndex);
+          const rows = visible.map((item) => ({ item, value: item.annualCashFlows[hoverIndex]?.cumulativeNetGbp })).filter((row) => row.value !== undefined);
+          const boxX = x > CHART.right - 170 ? x - 162 : x + 12;
+          return <g className="cash-hover" pointerEvents="none">
+            <line x1={x} x2={x} y1={CHART.top} y2={CHART.bottom} />
+            {rows.map(({ item, value }) => <circle key={item.id} cx={x} cy={yAt(value!)} r="4" fill={SCENARIO_COLORS[item.id]} stroke="#fff" strokeWidth="1.5" />)}
+            <rect x={boxX} y={CHART.top + 44} width="150" height={26 + rows.length * 18} rx="9" />
+            <text x={boxX + 12} y={CHART.top + 62} className="cash-hover-title">{t.year(hoverIndex + 1)}</text>
+            {rows.map(({ item, value }, i) => <text key={item.id} x={boxX + 12} y={CHART.top + 80 + i * 18}><tspan style={{ fill: SCENARIO_COLORS[item.id] }}>●</tspan> {f.money(value!)}</text>)}
+          </g>;
+        })()}
       </svg>
       <div className="cash-position-values">
         <span><i>{t.selectedScenario}</i><b>{t.scenarioTitles[scenario.id]}</b></span>

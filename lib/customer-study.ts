@@ -155,7 +155,7 @@ function weatherProvenance(weather: core.Weather): WeatherProvenance {
   return {
     kind: weather.synthetic ? "customer-synthetic" : String(weather.source ?? "").startsWith("NASA POWER") ? "nasa-power" : "pvgis-tmy",
     name: weather.name,
-    source: weather.source ?? (weather.synthetic ? "Customer V31 synthetic regional climate" : "Hourly weather"),
+    source: weather.source ?? (weather.synthetic ? "Synthetic regional climate" : "Hourly weather"),
     sourceURL: weather.sourceURL,
     annualGhiKwhM2: Math.round(total("ghi")),
     annualDniKwhM2: Math.round(total("dni")),
@@ -270,8 +270,8 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
 
   const ledger: LedgerEntry[] = [
     { id: "location", label: "Site", value: `${input.address} (${input.coordinates.lat.toFixed(4)}, ${input.coordinates.lng.toFixed(4)}, UTC${input.timezone >= 0 ? "+" : ""}${input.timezone})`, provenance: "user", stepNumber: 1, fieldKey: "location", params: { address: input.address, lat: Math.round(input.coordinates.lat * 1e4) / 1e4, lng: Math.round(input.coordinates.lng * 1e4) / 1e4, tz: input.timezone } },
-    { id: "irradiance", label: "Hourly weather", value: `${weather.source} · GHI ${weather.annualGhiKwhM2} / DNI ${weather.annualDniKwhM2} / DHI ${weather.annualDhiKwhM2} kWh/m² · mean ${weather.meanAirTemperatureC} °C`, provenance: "data", stepNumber: 1, fieldKey: "irradiance", params: { kind: weather.kind, source: weather.source, name: weather.name ?? null, ghi: weather.annualGhiKwhM2, dni: weather.annualDniKwhM2, dhi: weather.annualDhiKwhM2, temp: weather.meanAirTemperatureC }, note: synthetic ? "Customer V31 synthetic regional climate — site weather (NASA POWER / PVGIS) was not available." : weather.kind === "nasa-power" ? "Historical year from NASA POWER, as used by the customer Studio (not a typical year)." : undefined },
-    { id: "generation", label: "Generation model", value: "Customer V31 hourly model: solar position → isotropic plane-of-array (beam / sky diffuse / ground reflected, albedo 0.2) → empirical cell temperature and efficiency → 90% AC factor", provenance: "manufacturer", stepNumber: 2, fieldKey: "generation" },
+    { id: "irradiance", label: "Hourly weather", value: `${weather.source} · GHI ${weather.annualGhiKwhM2} / DNI ${weather.annualDniKwhM2} / DHI ${weather.annualDhiKwhM2} kWh/m² · mean ${weather.meanAirTemperatureC} °C`, provenance: "data", stepNumber: 1, fieldKey: "irradiance", params: { kind: weather.kind, source: weather.source, name: weather.name ?? null, ghi: weather.annualGhiKwhM2, dni: weather.annualDniKwhM2, dhi: weather.annualDhiKwhM2, temp: weather.meanAirTemperatureC }, note: synthetic ? "Synthetic regional climate — site weather (NASA POWER / PVGIS) was not available." : weather.kind === "nasa-power" ? "Historical year from NASA POWER, as used by the customer Studio (not a typical year)." : undefined },
+    { id: "generation", label: "Generation model", value: "Hourly model: solar position → isotropic plane-of-array (beam / sky diffuse / ground reflected, albedo 0.2) → empirical cell temperature and efficiency → 90% AC factor", provenance: "manufacturer", stepNumber: 2, fieldKey: "generation" },
     { id: "capacity", label: "Product capacity", value: `${sim.kwp.toFixed(2)} kWp across ${surfaceResults.length} surfaces`, provenance: "manufacturer", stepNumber: 3, fieldKey: "capacity", params: { kwp: Math.round(sim.kwp * 100) / 100, surfaces: surfaceResults.length } },
     { id: "orientation", label: "Building orientation", value: `Studio model rotated ${north}° (front façade azimuth)`, provenance: "user", stepNumber: 3, fieldKey: "orientation", params: { deg: north } },
     { id: "building", label: "Building energy model", value: `${building.width} × ${building.depth} m, ${building.floors} storeys · one-node hourly RC model · ${heatingLabel}`, provenance: "assumed", stepNumber: 4, fieldKey: "building", params: { width: building.width, depth: building.depth, floors: building.floors, heat: p.heatMode } },
@@ -303,15 +303,15 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     schedule,
     ledger,
     summary: synthetic
-      ? "This study runs the customer V31 hourly model on the customer's synthetic regional climate because site weather was unavailable. Re-run when NASA POWER or PVGIS is reachable."
+      ? "This study runs the hourly model on the built-in synthetic regional climate because site weather was unavailable. Re-run when NASA POWER or PVGIS is reachable."
       : weather.kind === "nasa-power"
-        ? `This study runs the customer V31 hourly model on the NASA POWER ${input.weather.year ?? ""} hourly year for the selected site.`
-        : "This study runs the customer V31 hourly model on a PVGIS typical meteorological year for the selected site.",
+        ? `This study runs the hourly model on the NASA POWER ${input.weather.year ?? ""} hourly year for the selected site.`
+        : "This study runs the hourly model on a PVGIS typical meteorological year for the selected site.",
     engine: {
       method: "deterministic",
       irradianceDatabase: weather.source,
       albedo: p.albedo,
-      conversionRule: "Customer V31 hourly empirical model (2026-09-22 coefficients)",
+      conversionRule: "Hourly empirical model (2026-09-22 coefficients)",
       guardsTriggered: [...(synthetic ? ["customer-synthetic-climate"] : []), ...(sim.irradiationWarnings > 0 ? ["irradiation-consistency"] : [])],
     },
   };
@@ -337,7 +337,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       database: weather.source,
       note: synthetic
         ? "NASA POWER and PVGIS could not be reached, so the customer's built-in synthetic regional climate was used. Figures are indicative only."
-        : `Hourly ${weather.source} weather for the site (${weather.hours} hours). The customer V31 model is the only generation calculation.`,
+        : `Hourly ${weather.source} weather for the site (${weather.hours} hours). The hourly model is the only generation calculation.`,
     },
     energy: {
       annualDemandKwh: Math.round(annualDemand),
@@ -372,5 +372,5 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
 /** Offline study on the customer's built-in synthetic climate (demo and PVGIS outage fallback). */
 export function syntheticWeatherFor(market: Market, location: core.Location): core.Weather {
   const key = regionForMarket(market) as core.ClimateKey;
-  return { ...core.synthetic(key, location), source: `Customer V31 synthetic climate (${core.CLIMATES[key].name})` };
+  return { ...core.synthetic(key, location), source: `Synthetic regional climate (${core.CLIMATES[key].name})` };
 }
