@@ -4,8 +4,9 @@
  * roof form and pitch, and front orientation. Every value records its source so the user can
  * see what was measured and override anything that looks wrong.
  */
-import type { BuildingFootprint, LatLng } from "./building-footprint";
+import { minimumRectangle, type BuildingFootprint, type LatLng } from "./building-footprint";
 import type { GoogleSolarReference, GoogleSolarRoofSegment } from "./google-solar";
+import { fitRoofPlanes, type RoofPlane } from "./roof-planes";
 import { studioTypeById, studioTypesForRegion, roofFormsFor, type StudioBuildingType, type StudioRegion, type StudioRoofForm } from "./studio-catalog";
 
 export type ProfileSource = "osm" | "google-maps" | "google-solar" | "google-elevation" | "estimated" | "catalog";
@@ -22,6 +23,8 @@ export type BuildingProfile = {
   storeyHeightM: ProfileField<number>;
   roofForm: ProfileField<StudioRoofForm>;
   roofPitchDeg: ProfileField<number>;
+  /** Measured roof planes for roofForm "custom" (Studio building frame, see lib/roof-planes.ts). */
+  roofPlanes?: RoofPlane[];
   frontAzimuthDeg: ProfileField<number>;
   heightM?: ProfileField<number>;
   footprintAreaM2?: number;
@@ -139,6 +142,12 @@ export function chooseBuildingType(region: StudioRegion, facts: { floors?: numbe
   return table.detached;
 }
 
+function rectangleCenter(path: LatLng[], site: LatLng): LatLng {
+  const project = projector(site), mPerDegLng = 111_320 * Math.cos((site.lat * Math.PI) / 180);
+  const { center } = minimumRectangle(path.map(project));
+  return { lat: site.lat + center.y / M_PER_DEG_LAT, lng: site.lng + center.x / mPerDegLng };
+}
+
 export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   const { region, site } = input;
   const footprint = input.footprint?.status === "ok" ? input.footprint : null;
@@ -182,9 +191,12 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   });
   const type: StudioBuildingType = studioTypeById(typeId) ?? regionDefault;
   const detected = Boolean(footprint || segments.length);
+  const measured = footprint?.path?.length && width && depth && front && roofFormsFor(type, true).includes("custom")
+    ? fitRoofPlanes(segments, { center: rectangleCenter(footprint.path, site), frontAzimuthDeg: front.value, widthM: width.value, depthM: depth.value })
+    : null;
   const allowedRoofs = roofFormsFor(type);
-  const roofForm: ProfileField<StudioRoofForm> = roof && allowedRoofs.includes(roof.form) ? { value: roof.form, source: "google-solar" } : { value: type.roofForm, source: "catalog" };
-  const roofPitchDeg: ProfileField<number> = roof && roof.form !== "flat" && roofForm.source === "google-solar" ? { value: roof.pitchDeg, source: "google-solar" } : { value: type.pitch, source: "catalog" };
+  const roofForm: ProfileField<StudioRoofForm> = measured ? { value: "custom", source: "google-solar" } : roof && allowedRoofs.includes(roof.form) ? { value: roof.form, source: "google-solar" } : { value: type.roofForm, source: "catalog" };
+  const roofPitchDeg: ProfileField<number> = measured ? { value: measured.pitchDeg, source: "google-solar" } : roof && roof.form !== "flat" && roofForm.source === "google-solar" ? { value: roof.pitchDeg, source: "google-solar" } : { value: type.pitch, source: "catalog" };
 
   return {
     region,
@@ -196,6 +208,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
     storeyHeightM: { value: type.storeyHeight, source: "catalog" },
     roofForm,
     roofPitchDeg,
+    ...(measured ? { roofPlanes: measured.planes } : {}),
     frontAzimuthDeg: front ?? { value: 180, source: "catalog" },
     heightM,
     footprintAreaM2: footprint?.footprintAreaM2,
@@ -223,7 +236,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
  * Studio `setDimensions` payload for a building type. Studio widths cover every unit of an
  * attached row (semi = 2, terrace = 3), and must stay inside ModerniteBuildingCore.validate().
  */
-export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number }, wwr = 0.2) {
+export function studioDimensions(type: StudioBuildingType, values: { widthM: number; depthM: number; floors: number; storeyHeightM: number; roofForm: StudioRoofForm; roofPitchDeg: number; roofPlanes?: RoofPlane[] }, wwr = 0.2) {
   const units = type.units || 1;
   return {
     width: round1(clamp(values.widthM * units, 4 * units, 150)),
@@ -233,5 +246,6 @@ export function studioDimensions(type: StudioBuildingType, values: { widthM: num
     wwr: clamp(wwr, 0, 0.7),
     roofForm: values.roofForm,
     pitch: Math.round(clamp(values.roofPitchDeg, 5, 55)),
+    ...(values.roofForm === "custom" && values.roofPlanes?.length ? { roofPlanes: values.roofPlanes } : {}),
   };
 }

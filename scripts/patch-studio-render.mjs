@@ -23,6 +23,28 @@ const FXAA_FRAGMENT = [
   "float lb=dot(b,luma);gl_FragColor=vec4((lb<lo||lb>hi)?a:b,m.a);}",
 ].join("");
 
+// Lower envelope of roof planes over the building rectangle; must match lib/roof-planes.ts.
+// Heights are relative to the wall top; points are [x, height, z] in the building frame.
+const ROOF_PLANES = [
+  "const ModerniteRoofPlanes=(()=>{",
+  "const H=(p,x,z)=>p.a*x+p.b*z+p.k;",
+  "function clip(poly,f){const out=[];for(let i=0;i<poly.length;i++){const A=poly[i],B=poly[(i+1)%poly.length],fa=f(A),fb=f(B);if(fa<=0)out.push(A);if(fa<=0!==fb<=0){const t=fa/(fa-fb);out.push([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t]);}}return out;}",
+  "function clean(poly){const out=[];for(const p of poly){const q=out[out.length-1];if(!q||Math.hypot(p[0]-q[0],p[1]-q[1])>1e-6)out.push(p);}if(out.length>1&&Math.hypot(out[0][0]-out[out.length-1][0],out[0][1]-out[out.length-1][1])<=1e-6)out.pop();return out.filter((p,i)=>{const a=out[(i+out.length-1)%out.length],b=out[(i+1)%out.length];return Math.abs((p[0]-a[0])*(b[1]-a[1])-(p[1]-a[1])*(b[0]-a[0]))>1e-7;});}",
+  "const area=poly=>poly.reduce((s,p,i)=>{const q=poly[(i+1)%poly.length];return s+p[0]*q[1]-q[0]*p[1];},0)/2;",
+  "function cells(planes,w,d){const rect=[[w/2,d/2],[-w/2,d/2],[-w/2,-d/2],[w/2,-d/2]];return planes.map((p,i)=>{let poly=rect;planes.forEach((q,j)=>{if(j!==i&&poly.length)poly=clip(poly,([x,z])=>H(p,x,z)-H(q,x,z)+(j<i?1e-7:-1e-7));});return {plane:i,poly:clean(poly)};}).filter(c=>c.poly.length>=3&&area(c.poly)>1e-3);}",
+  "const z=(planes,x,y)=>Math.min(...planes.map(p=>H(p,x,y)));",
+  "function faces(planes,w,d){return cells(planes,w,d).map(c=>c.poly.map(([x,y])=>[x,H(planes[c.plane],x,y),y]));}",
+  "function top(planes,w,d){return Math.max(...faces(planes,w,d).flat().map(p=>p[1]));}",
+  "function level(planes,w,y){const a=z(planes,-w/2,y),b=z(planes,0,y),c=z(planes,w/2,y);return Math.max(a,b,c)-Math.min(a,b,c)<.05;}",
+  // Wall infill under the roof along each side of the wall rectangle, wound to face outwards.
+  "function gables(planes,w,d){const out=[];for(const [P,Q,n] of [[[w/2,-d/2],[w/2,d/2],[1,0]],[[-w/2,d/2],[-w/2,-d/2],[-1,0]],[[w/2,d/2],[-w/2,d/2],[0,1]],[[-w/2,-d/2],[w/2,-d/2],[0,-1]]]){const at=s=>[P[0]+(Q[0]-P[0])*s,P[1]+(Q[1]-P[1])*s],lin=p=>{const A=H(p,...P),B=H(p,...Q);return [A,B-A];},ss=new Set([0,1]);for(let i=0;i<planes.length;i++)for(let j=i+1;j<planes.length;j++){const [a0,a1]=lin(planes[i]),[b0,b1]=lin(planes[j]);if(Math.abs(a1-b1)>1e-9){const s=(b0-a0)/(a1-b1);if(s>0&&s<1)ss.add(s);}}",
+  "const prof=[...ss].sort((a,b)=>a-b).map(s=>{const [x,y]=at(s);return [x,Math.max(0,z(planes,x,y)),y];});if(Math.max(...prof.map(p=>p[1]))<.05)continue;",
+  "let poly=[[P[0],0,P[1]],...prof,[Q[0],0,Q[1]]].filter((p,i,arr)=>i===0||Math.hypot(p[0]-arr[i-1][0],p[1]-arr[i-1][1],p[2]-arr[i-1][2])>1e-6);if(Math.hypot(poly[0][0]-poly[poly.length-1][0],poly[0][1]-poly[poly.length-1][1],poly[0][2]-poly[poly.length-1][2])<=1e-6)poly.pop();",
+  "let nx=0,nz=0;for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length];nx+=(p[1]-q[1])*(p[2]+q[2]);nz+=(p[0]-q[0])*(p[1]+q[1]);}if(nx*n[0]+nz*n[1]<0)poly.reverse();if(poly.length>=3)out.push(poly);}return out;}",
+  "function valid(planes){return Array.isArray(planes)&&planes.length>=2&&planes.length<=12&&planes.every(p=>p&&[p.a,p.b,p.k].every(Number.isFinite)&&Math.abs(p.a)<=2&&Math.abs(p.b)<=2&&Math.abs(p.k)<=60);}",
+  "return {faces,gables,top,level,z,valid};})();",
+].join("");
+
 const PATCHES = [
   {
     id: "renderer-power",
@@ -81,12 +103,38 @@ const PATCHES = [
   {
     id: "parametric-roof-config",
     find: "wwr:d.wwr,parametric:true};}",
-    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{})};}",
+    replace: "wwr:d.wwr,parametric:true,...(Number.isFinite(d.pitch)?{pitch:d.pitch}:{}),...(d.roofForm?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'?{roofPlanes:d.roofPlanes}:{})};}",
   },
   {
     id: "parametric-roof-cache",
     find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
-    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{})};",
+    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&Gt.region!=='JP'?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{})};",
+  },
+  {
+    // Measured multi-plane roofs (roofForm 'custom'): faces, wall infill, gutters and chimney follow the planes.
+    id: "roof-planes-core",
+    find: "root.ModerniteBuildingCore={values,validate,change,metrics,config};",
+    replace: `${ROOF_PLANES}root.ModerniteRoofPlanes=ModerniteRoofPlanes;root.ModerniteBuildingCore={values,validate,change,metrics,config};`,
+  },
+  {
+    id: "roof-planes-infill",
+    find: 'if(O==="mono"){$(n,"HighMonoWall"',
+    replace: 'if(O==="custom")for(let C of ModerniteRoofPlanes.gables(i.roofPlanes,r,a))Sa(n,"Gable",C.map(([x,h,y])=>[x,c+h,y]),d);if(O==="mono"){$(n,"HighMonoWall"',
+  },
+  {
+    id: "roof-planes-faces",
+    find: "F=fr({width:r+2*l,depth:z,eave:J,pitch:E,form:O,z:B})",
+    replace: 'F=O==="custom"?ModerniteRoofPlanes.faces(i.roofPlanes,r+2*l,z).map((P,K)=>Ap("slope_"+K,P.map(([x,h,y])=>[x,c+h,y+B]))):fr({width:r+2*l,depth:z,eave:J,pitch:E,form:O,z:B})',
+  },
+  {
+    id: "roof-planes-gutters",
+    find: 'for(let ot of[-1,1]){let ct=ot>0?C:0,K=O==="mono"&&ot<0?c+(a+l)*W:c-(l+ct)*W;',
+    replace: 'for(let ot of[-1,1]){if(O==="custom"&&!ModerniteRoofPlanes.level(i.roofPlanes,r+2*l,ot*(a/2+l)))continue;let ct=ot>0?C:0,K=O==="custom"?c+ModerniteRoofPlanes.z(i.roofPlanes,0,ot*(a/2+l)):O==="mono"&&ot<0?c+(a+l)*W:c-(l+ct)*W;',
+  },
+  {
+    id: "roof-planes-chimney",
+    find: "B=c+Math.min(a,r)/2*W+.75",
+    replace: 'B=(O==="custom"?c+ModerniteRoofPlanes.top(i.roofPlanes,r,a):c+Math.min(a,r)/2*W)+.75',
   },
   {
     // Embedded in the Modernité platform (studio.html?embed=modernite): the host owns the AI advisor and

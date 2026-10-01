@@ -4,7 +4,8 @@
  */
 
 export type StudioRegion = "UK" | "EU" | "CA" | "JP";
-export type StudioRoofForm = "hip" | "gable" | "flat" | "mono";
+/** "custom" = measured multi-plane roof (lib/roof-planes.ts), detached non-Japanese types only. */
+export type StudioRoofForm = "hip" | "gable" | "flat" | "mono" | "custom";
 export type StudioBuildingType = {
   id: string;
   labelEn: string;
@@ -102,4 +103,7 @@ export const studioTypeById = (id: string) => STUDIO_BUILDING_TYPES.find((type) 
 export const MARKET_TO_STUDIO_REGION: Record<string, StudioRegion> = { GB: "UK", EU: "EU", CA: "CA", JP: "JP" };
 
 /** Roof forms the Studio geometry can draw for a building type (mono-pitch only exists in the Japanese set). */
-export const roofFormsFor = (type: StudioBuildingType): StudioRoofForm[] => (type.region === "JP" ? ["gable", "hip", "flat", "mono"] : ["hip", "gable", "flat"]);
+export const roofFormsFor = (type: StudioBuildingType, measured = false): StudioRoofForm[] => [
+  ...(measured && type.region !== "JP" && type.units === 1 ? ["custom" as const] : []),
+  ...(type.region === "JP" ? ["gable", "hip", "flat", "mono"] as const : ["hip", "gable", "flat"] as const),
+];
