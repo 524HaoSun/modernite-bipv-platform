@@ -242,6 +242,14 @@ const PATCHES = [
     find: 'let c=i.width,l=i.depth,u=t?.config.baseHeight||.28,p=t?bp(t):0,d=t?t.depth/2+l/2+.06:0;Ft(n,"Terrace_Deck",[c+.3,.16,l+.25],[p,u-.09,d],e.paving);let h=t?al(t,"front"):[],S=h.filter(b=>b.kind==="door"&&Math.abs(b.x-p)<c/2).sort((b,m)=>b.y-m.y)[0],x=1.2,',
     replace: 'let c=i.width,l=i.depth,u=t?.config.baseHeight||.28,p=t?bp(t):0,d=t?t.depth/2+l/2+.06:0;let h=t?al(t,"front"):[],w=t?t.config.width:c,S=h.filter(b=>b.kind==="door"&&Math.abs(b.x-p)<w/2).sort((b,m)=>Math.round(b.y*2)-Math.round(m.y*2)||Math.abs(b.x-p)-Math.abs(m.x-p))[0];S&&w>c&&(p=Pf(S.x,p-w/2+c/2,p+w/2-c/2));Ft(n,"Terrace_Deck",[c+.3,.16,l+.25],[p,u-.09,d],e.paving);let x=1.2,',
   },
+  {
+    // Solar shading canopy: the customer centres it on the unit and only raises it to clear openings,
+    // so an off-centre door ended up beside the canopy. Centre it on the unit's lowest door instead,
+    // kept inside the unit width.
+    id: "shading-door-align",
+    find: "o=((e.config.targetUnit||0)-((e.config.units||1)-1)/2)*e.config.width,c=al(e,a)",
+    replace: "o=((e.config.targetUnit||0)-((e.config.units||1)-1)/2)*e.config.width,mrW=e.config.width,mrD=al(e,a).filter(u=>u.kind===\"door\"&&Math.abs(u.x-o)<mrW/2).sort((u,v)=>Math.round(u.y*2)-Math.round(v.y*2)||Math.abs(u.x-o)-Math.abs(v.x-o))[0];mrD&&mrW>t.width&&(o=Pf(mrD.x,o-mrW/2+t.width/2,o+mrW/2-t.width/2));let c=al(e,a)",
+  },
 ];
 
 const [input, output = "client/public/studio.html"] = process.argv.slice(2);

@@ -1,3 +1,3 @@
-47a134543d3fc67c75e181889497d19dd2833555df7e3ed7febbe4a8b54c9807  client/public/studio.html
+21e9346c8427fc30047c9758815caafae9966eb53fee9b193300fb63b8a52e55  client/public/studio.html
 # customer original Modernite-Solar-Studio-V31-Gas-Boiler-Defaults.html: e0017ad9761f374c16b6b230771f0dae2c072158cfa0100067c158575c225441
 # rebuilt with: node scripts/patch-studio-render.mjs <customer-original> client/public/studio.html
