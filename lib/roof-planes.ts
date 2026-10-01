@@ -90,6 +90,27 @@ const angleGap = (a: number, b: number) => {
 };
 
 /**
+ * True when the pitched roof planes mostly face the side walls, i.e. the ridge runs from front to
+ * back. The Studio's standard gable always runs its ridge parallel to the front.
+ */
+export function ridgeRunsFrontToBack(segments: GoogleSolarRoofSegment[], frontAzimuthDeg: number): boolean {
+  let side = 0, frontBack = 0;
+  for (const s of segments) {
+    if (s.pitchDeg < 10) continue;
+    const r = ((s.azimuthDeg - frontAzimuthDeg) * Math.PI) / 180;
+    side += s.areaM2 * Math.abs(Math.sin(r));
+    frontBack += s.areaM2 * Math.abs(Math.cos(r));
+  }
+  return side > 1.5 * frontBack;
+}
+
+/** Gable with its ridge along the building depth, eaves at height 0 on the side walls. */
+export function sideGablePlanes(pitchDeg: number, widthM: number): RoofPlane[] {
+  const t = Math.round(Math.tan((pitchDeg * Math.PI) / 180) * 1e4) / 1e4, k = Math.round(t * (widthM / 2) * 1e4) / 1e4;
+  return [{ a: -t, b: 0, k }, { a: t, b: 0, k }];
+}
+
+/**
  * Fits Studio roof planes to Google Solar segments, or null when the segments do not form a
  * lower-envelope roof over the building rectangle (or there are fewer than two pitched planes).
  */

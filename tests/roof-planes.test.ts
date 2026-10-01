@@ -3,7 +3,7 @@ import path from "node:path";
 import vm from "node:vm";
 import { describe, expect, it } from "vitest";
 import type { GoogleSolarRoofSegment } from "../lib/google-solar";
-import { envelopeCells, fitRoofPlanes, planArea, roofHeightAt, type RoofPlane } from "../lib/roof-planes";
+import { envelopeCells, fitRoofPlanes, planArea, ridgeRunsFrontToBack, roofHeightAt, sideGablePlanes, type RoofPlane } from "../lib/roof-planes";
 
 const center = { lat: 51.5, lng: -0.12 };
 const mPerDegLng = 111_320 * Math.cos((center.lat * Math.PI) / 180);
@@ -89,5 +89,18 @@ describe("measured multi-plane roofs", () => {
     expect(studio.level(gablePlanes, 10.6, 4.3)).toBe(true);
     expect(studio.level(fitRoofPlanes(hip, frame)!.planes, 10.6, 2)).toBe(false);
     expect(studio.top(gablePlanes, 10, 8)).toBeCloseTo(4 * t, 3);
+  });
+
+  it("detects ridges running front to back and builds a side gable", () => {
+    expect(ridgeRunsFrontToBack(gable, 180)).toBe(false);
+    expect(ridgeRunsFrontToBack(hip, 180)).toBe(false);
+    expect(ridgeRunsFrontToBack([segment(90, 2, 0, 0, 60), segment(270, -2, 0, 0, 50), segment(180, 0, -3, 0, 8)], 180)).toBe(true);
+    const planes = sideGablePlanes(35, 10);
+    expect(roofHeightAt(planes, 5, 3)).toBeCloseTo(0, 3);
+    expect(roofHeightAt(planes, -5, -3)).toBeCloseTo(0, 3);
+    expect(roofHeightAt(planes, 0, 0)).toBeCloseTo(5 * t, 3);
+    const studio = studioRoofPlanes();
+    expect(studio.valid(planes)).toBe(true);
+    expect(studio.gables(planes, 10, 8)).toHaveLength(2);
   });
 });

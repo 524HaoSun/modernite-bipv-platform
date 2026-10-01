@@ -104,6 +104,7 @@ export const MARKET_TO_STUDIO_REGION: Record<string, StudioRegion> = { GB: "UK",
 
 /** Roof forms the Studio geometry can draw for a building type (mono-pitch only exists in the Japanese set). */
 export const roofFormsFor = (type: StudioBuildingType, measured = false): StudioRoofForm[] => [
-  ...(measured && type.region !== "JP" && type.units === 1 ? ["custom" as const] : []),
+  // Japanese detached houses and bungalows use the Studio's timber-house builder, which has no plane roofs.
+  ...(measured && type.units === 1 && !(type.region === "JP" && ["detached", "bungalow"].includes(type.kind)) ? ["custom" as const] : []),
   ...(type.region === "JP" ? ["gable", "hip", "flat", "mono"] as const : ["hip", "gable", "flat"] as const),
 ];

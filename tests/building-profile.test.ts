@@ -61,6 +61,18 @@ describe("building profile", () => {
     expect(profile.roofPlanes).toBeUndefined();
   });
 
+  it("turns the gable ridge front to back when the roof slopes face the side walls", () => {
+    const at = (east: number, north: number) => ({ lat: 34.65 + north / 110_540, lng: 135.55 + east / (111_320 * Math.cos((34.65 * Math.PI) / 180)) });
+    const path = [at(-4.75, -13), at(4.75, -13), at(4.75, 13), at(-4.75, 13), at(-4.75, -13)];
+    const footprint = { status: "ok" as const, source: "osm" as const, path, footprintAreaM2: 247, widthM: 9.5, depthM: 26, frontAzimuthDeg: 0, frontSource: "road" as const, attachedSides: 0, note: "", buildingTag: "apartments" };
+    const seg = (azimuthDeg: number, areaM2: number): GoogleSolarRoofSegment => ({ pitchDeg: 18, azimuthDeg, areaM2, groundAreaM2: areaM2, sunshineMedianHoursPerYear: null });
+    const solar = { status: "ok" as const, distanceM: 2, roofSegments: [seg(270, 130), seg(90, 120)] } as never;
+    const profile = buildProfile({ region: "JP", site: at(0, 0), footprint, solar });
+    expect(profile.buildingTypeId.value).toBe("JP03");
+    expect(profile.roofForm.value).toBe("custom");
+    expect(profile.roofPlanes?.map((p) => [p.a, p.b])).toEqual([[-0.3249, 0], [0.3249, 0]]);
+  });
+
   it("scales Studio dimensions by units and keeps them in range", () => {
     const semi = studioTypeById("UK02")!;
     const dims = studioDimensions(semi, { widthM: 6, depthM: 200, floors: 2.4, storeyHeightM: 9, roofForm: "gable", roofPitchDeg: 80 }, 0.25);

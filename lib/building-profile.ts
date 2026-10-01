@@ -6,7 +6,7 @@
  */
 import { minimumRectangle, type BuildingFootprint, type LatLng } from "./building-footprint";
 import type { GoogleSolarReference, GoogleSolarRoofSegment } from "./google-solar";
-import { fitRoofPlanes, type RoofPlane } from "./roof-planes";
+import { fitRoofPlanes, ridgeRunsFrontToBack, sideGablePlanes, type RoofPlane } from "./roof-planes";
 import { studioTypeById, studioTypesForRegion, roofFormsFor, type StudioBuildingType, type StudioRegion, type StudioRoofForm } from "./studio-catalog";
 
 export type ProfileSource = "osm" | "google-maps" | "google-solar" | "google-elevation" | "estimated" | "catalog";
@@ -207,9 +207,13 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   });
   const type: StudioBuildingType = studioTypeById(typeId) ?? regionDefault;
   const detected = Boolean(footprint || segments.length);
-  const measured = !composite && footprint?.path?.length && width && depth && front && roofFormsFor(type, true).includes("custom")
-    ? fitRoofPlanes(segments, { center: rectangleCenter(footprint.path, site), frontAzimuthDeg: front.value, widthM: width.value, depthM: depth.value })
-    : null;
+  const planesAllowed = Boolean(width && depth && front && roofFormsFor(type, true).includes("custom"));
+  const measured = (planesAllowed && !composite && footprint?.path?.length
+    ? fitRoofPlanes(segments, { center: rectangleCenter(footprint!.path!, site), frontAzimuthDeg: front!.value, widthM: width!.value, depthM: depth!.value })
+    : null)
+    ?? (planesAllowed && roof?.form === "gable" && ridgeRunsFrontToBack(segments, front!.value)
+      ? { planes: sideGablePlanes(roof.pitchDeg, width!.value), pitchDeg: roof.pitchDeg }
+      : null);
   const allowedRoofs = roofFormsFor(type);
   const roofForm: ProfileField<StudioRoofForm> = measured ? { value: "custom", source: "google-solar" } : roof && allowedRoofs.includes(roof.form) ? { value: roof.form, source: "google-solar" } : { value: type.roofForm, source: "catalog" };
   const roofPitchDeg: ProfileField<number> = measured ? { value: measured.pitchDeg, source: "google-solar" } : roof && roof.form !== "flat" && roofForm.source === "google-solar" ? { value: roof.pitchDeg, source: "google-solar" } : { value: type.pitch, source: "catalog" };

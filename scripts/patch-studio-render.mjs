@@ -110,7 +110,7 @@ const PATCHES = [
   {
     id: "parametric-roof-cache",
     find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
-    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&Gt.region!=='JP'?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{}),...(d.chimney===false?{chimney:false}:{})};",
+    replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{}),...(d.roofForm==='custom'&&ModerniteRoofPlanes.valid(d.roofPlanes)&&(Gt.units||1)===1&&!(Gt.region==='JP'&&['detached','bungalow'].includes(Gt.kind))?{roofForm:'custom',roofPlanes:d.roofPlanes.map(p=>({a:p.a,b:p.b,k:p.k}))}:{}),...(d.chimney===false?{chimney:false}:{})};",
   },
   {
     // UK pitched houses always get a chimney stack; setDimensions({chimney:false}) removes it for homes without one.
@@ -203,6 +203,29 @@ const PATCHES = [
     id: "advisor-core-bridge",
     find: "document.body.append(r);let a=[],s=!1,o=null,c=0;",
     replace: "document.body.append(r);window.ModerniteAdvisorCore={context:()=>dl(hi.snapshot()),answer:(q,intent)=>Wf(q,hi.snapshot(),intent),label:key=>kt(key,$e())};let a=[],s=!1,o=null,c=0;",
+  },
+  {
+    // Coplanar faces z-fight (flicker) as the camera moves. Walls are 0.28 m boxes whose outer face is
+    // the facade plane: the room ceiling behind each window started on that plane, and the end walls
+    // ran the full depth through the front/rear wall corners. The street top matched the lawn top.
+    id: "zfight-room-ceiling",
+    find: '$(i,"RoomCeiling",[a,.08,r],[t.u,n+e-.19,-r/2],st("interior","#d8d2c4"))',
+    replace: '$(i,"RoomCeiling",[a,.08,r-.3],[t.u,n+e-.19,-r/2-.15],st("interior","#d8d2c4"))',
+  },
+  {
+    id: "zfight-end-walls",
+    find: 'Us(n,{id:i.id+"_end_"+C,origin:[C*r/2,0,0],angle:C*Math.PI/2,width:a,',
+    replace: 'Us(n,{id:i.id+"_end_"+C,origin:[C*r/2,0,0],angle:C*Math.PI/2,width:a-.56,',
+  },
+  {
+    id: "zfight-door-threshold",
+    find: '$(e,"DoorThreshold",[n+.19,.06,.33],[0,.01,.09],st("stone","#b3b2a4"))',
+    replace: '$(e,"DoorThreshold",[n+.19,.06,.33],[0,.013,.09],st("stone","#b3b2a4"))',
+  },
+  {
+    id: "zfight-street",
+    find: 'Ft(t,"Residential_Street",[n+6,.08,4],[a,-.15,e.max.z+4.2]',
+    replace: 'Ft(t,"Residential_Street",[n+6,.08,4],[a,-.145,e.max.z+4.2]',
   },
   {
     // Front-garden railing: the customer only looks for a door within the deck span around the unit
