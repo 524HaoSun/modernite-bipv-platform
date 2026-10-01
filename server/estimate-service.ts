@@ -106,7 +106,7 @@ function factPack(study: StoredStudy) {
   };
 }
 
-export async function askProjectAssistant(caseId: string, question: string) {
+export async function askProjectAssistant(caseId: string, question: string, language = "en") {
   purgeExpiredStudies();
   const study = studies.get(caseId);
   if (!study) throw new Error("This project study has expired. Run the calculation again to continue the discussion.");
@@ -117,7 +117,7 @@ export async function askProjectAssistant(caseId: string, question: string) {
       messages: [
         {
           role: "system",
-          content: "You are Modernité’s project-study assistant. Answer only from the supplied factual study record. Do not invent numbers, guarantees, financial outcomes, product specifications, warranties, or site observations. Explain that final design decisions require a qualified project review. Keep the answer concise and professional.",
+          content: `You are Modernité’s project-study assistant. Answer only from the supplied factual study record. Do not invent numbers, guarantees, financial outcomes, product specifications, warranties, or site observations. Explain that final design decisions require a qualified project review. Keep the answer concise and professional. Write every field in the language with BCP 47 code "${language}".`,
         },
         { role: "user", content: `Question: ${question}\n\nFactual study record:\n${JSON.stringify(facts)}` },
       ],
@@ -223,6 +223,7 @@ export const projectCalculationInputSchema = z.object({
 export const projectAssistantInputSchema = z.object({
   caseId: z.string().regex(/^MOD-[A-F0-9]{8}$/),
   question: z.string().trim().min(2).max(600),
+  language: z.string().max(12).optional(),
 });
 
 export const designAssistantInputSchema = z.object({

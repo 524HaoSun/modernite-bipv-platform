@@ -56,7 +56,22 @@ export type ProjectEnergy = {
   note: string;
 };
 
+export type StudyProject = {
+  market: Market;
+  region: "UK" | "EU" | "CA" | "JP";
+  currency: string;
+  address: string;
+  coordinates: { lat: number; lng: number };
+  buildingTypeId: string;
+  building: { width: number; depth: number; floors: number; storeyHeight: number; usage: "office" | "residential" };
+  frontAzimuthDeg: number;
+  heatMode: "gas" | "pump" | "direct";
+  electricHotWater: boolean;
+  evCharger: boolean;
+};
+
 export type CustomerStudy = {
+  project?: StudyProject;
   result: EstimateResult;
   validation: ProjectValidation;
   energy: ProjectEnergy;
@@ -302,6 +317,19 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   };
 
   return {
+    project: {
+      market: input.market,
+      region,
+      currency: currency.currency,
+      address: input.address,
+      coordinates: input.coordinates,
+      buildingTypeId: input.snapshot.building.id,
+      building: { width: building.width, depth: building.depth, floors: building.floors, storeyHeight: building.storeyHeight ?? DEFAULT_BUILDING.storeyHeight, usage: building.usage === "office" ? "office" : "residential" },
+      frontAzimuthDeg: north,
+      heatMode: p.heatMode as StudyProject["heatMode"],
+      electricHotWater: settings?.electricHotWater ?? false,
+      evCharger: settings?.evCharger ?? false,
+    },
     result,
     validation: {
       status: weather.kind,

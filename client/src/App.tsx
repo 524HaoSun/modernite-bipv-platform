@@ -33,10 +33,12 @@ import {
   Zap,
   X,
 } from "lucide-react";
-import { BuildingProfileCard, type AppliedBuilding } from "@/components/BuildingProfileCard";
+import { BuildingProfileCard, buildingTypeLabel, type AppliedBuilding } from "@/components/BuildingProfileCard";
 import { studioDimensions } from "../../lib/building-profile";
-import { studioTypeById } from "../../lib/studio-catalog";
+import { MARKET_TO_STUDIO_REGION, studioTypeById } from "../../lib/studio-catalog";
 import { GoogleSiteViewer } from "@/components/GoogleSiteViewer";
+import { ResultsPage } from "@/components/ResultsReport";
+import { resultsCopy } from "@/lib/results-copy";
 import { ProjectLocationMap, cleanAddressLabel, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
 import { publicPath } from "@/lib/paths";
@@ -257,12 +259,13 @@ const OUTER_UI_COPY = {
     energyIntro: "The Design Studio defines the building and solar surfaces. These inputs connect household demand, tariff assumptions, storage preference, and a 25-year planning view before the study is calculated.",
     configuredBuilding: "Your configured building",
     viewInStudio: "View in Design Studio",
-    detachedHouse: "UK01 · Detached house",
+    office: "Office",
+    solarArea: "Solar surface area",
+    buildingSize: "Size",
+    storeys: (n: number) => `${n} storeys`,
+    noSurfaces: "No solar products placed yet",
     residential: "Residential",
-    houseSurfaces: "House with 4 active surfaces",
     activeSolarSurfaces: "Active solar surfaces",
-    fourOfSix: "4 of 6 surfaces",
-    totalRoofArea: "Total roof area",
     buildingFootprint: "Building footprint",
     energyNoteTitle: "Your energy inputs help us calculate savings, self-consumption and payback.",
     energyNoteBody: "We combine your building design with household energy use to model real-world performance over 25 years.",
@@ -324,11 +327,6 @@ const OUTER_UI_COPY = {
     calculationBody: "Applying your configured surfaces, household use, tariff assumptions, storage preference, and local climate profile.",
     calculationStages: ["Surface model", "Home demand", "Generation range", "Scenario value"],
     returnStudio: "Return to Design Studio",
-    resultsBack: "Update home energy",
-    resultsEyebrow: "Project study · approved empirical model",
-    resultsTitle: "From configured surfaces to a complete project outlook.",
-    resultsIntro: "Generation uses the approved product-specific empirical coefficients and a local regional climate profile. Household answers shape the value case, savings, export income, and storage comparison without changing the deterministic generation output.",
-    studyReference: "Study reference",
   },
   zh: {
     workspace: "项目工作区",
@@ -358,12 +356,13 @@ const OUTER_UI_COPY = {
     energyIntro: "设计工作室定义建筑和光伏表面；这里补充家庭用电、费率假设、储能偏好和 25 年规划视图。",
     configuredBuilding: "已配置建筑",
     viewInStudio: "在设计工作室查看",
-    detachedHouse: "UK01 · 独栋住宅",
+    office: "办公",
+    solarArea: "光伏面积",
+    buildingSize: "尺寸",
+    storeys: (n: number) => `${n} 层`,
+    noSurfaces: "尚未放置光伏产品",
     residential: "住宅",
-    houseSurfaces: "含 4 个有效光伏面的住宅",
     activeSolarSurfaces: "有效光伏面",
-    fourOfSix: "6 个表面中的 4 个",
-    totalRoofArea: "屋顶总面积",
     buildingFootprint: "建筑占地面积",
     energyNoteTitle: "能耗输入将帮助计算节省、自用率和回本周期。",
     energyNoteBody: "我们会把建筑设计与家庭用电结合，模拟 25 年真实使用表现。",
@@ -425,11 +424,6 @@ const OUTER_UI_COPY = {
     calculationBody: "正在应用已配置表面、家庭用电、费率假设、储能偏好和本地气候数据。",
     calculationStages: ["表面模型", "家庭需求", "发电区间", "场景价值"],
     returnStudio: "返回设计工作室",
-    resultsBack: "更新家庭能耗",
-    resultsEyebrow: "项目研究 · 已批准经验模型",
-    resultsTitle: "从已配置表面到完整项目展望。",
-    resultsIntro: "发电量使用已批准的产品经验系数和本地区域气候曲线。家庭答案会影响价值、节省、上网收益和储能对比，但不会改变确定性的发电输出。",
-    studyReference: "研究编号",
   },
   "zh-Hant": {
     workspace: "專案工作區",
@@ -459,12 +453,13 @@ const OUTER_UI_COPY = {
     energyIntro: "設計工作室定義建築和光伏表面；這裡補充家庭用電、費率假設、儲能偏好和 25 年規劃視圖。",
     configuredBuilding: "已配置建築",
     viewInStudio: "在設計工作室查看",
-    detachedHouse: "UK01 · 獨棟住宅",
+    office: "辦公",
+    solarArea: "光電面積",
+    buildingSize: "尺寸",
+    storeys: (n: number) => `${n} 層`,
+    noSurfaces: "尚未放置光電產品",
     residential: "住宅",
-    houseSurfaces: "含 4 個有效光伏面的住宅",
     activeSolarSurfaces: "有效光伏面",
-    fourOfSix: "6 個表面中的 4 個",
-    totalRoofArea: "屋頂總面積",
     buildingFootprint: "建築佔地面積",
     energyNoteTitle: "能耗輸入將幫助計算節省、自用率和回本週期。",
     energyNoteBody: "我們會把建築設計與家庭用電結合，模擬 25 年真實使用表現。",
@@ -526,17 +521,409 @@ const OUTER_UI_COPY = {
     calculationBody: "正在套用已配置表面、家庭用電、費率假設、儲能偏好和本地氣候資料。",
     calculationStages: ["表面模型", "家庭需求", "發電區間", "場景價值"],
     returnStudio: "返回設計工作室",
-    resultsBack: "更新家庭能耗",
-    resultsEyebrow: "專案研究 · 已批准經驗模型",
-    resultsTitle: "從已配置表面到完整專案展望。",
-    resultsIntro: "發電量使用已批准的產品經驗係數和本地區域氣候曲線。家庭答案會影響價值、節省、上網收益和儲能對比，但不會改變確定性的發電輸出。",
-    studyReference: "研究編號",
+  },
+  fr: {
+    workspace: "Espace projet",
+    studioProgressLabel: "Avancement du projet : Design Studio",
+    studioAriaLanguage: "Langue du Studio",
+    studioStepEyebrow: "Design Studio",
+    studioTitle: "Configurez votre bâtiment et votre conception solaire.",
+    studioIntro: "Utilisez le Modernité Solar Studio pour modéliser le bâtiment, choisir produits et finitions, et définir la configuration solaire.",
+    currentSite: "Site actuel",
+    market: "Marché",
+    studioProgress: "Avancement du Studio",
+    activeSurfacesConfigured: (count: number) => `${count} surfaces solaires actives configurées`,
+    fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
+    configurationComplete: "Configuration terminée",
+    nextEnergyTitle: "Ensuite, personnalisez l'énergie du foyer.",
+    nextEnergyBody: "Configurez le projet avec les outils Bâtiment, Produits et Finitions. L'éclairage reste disponible dans le Studio ; l'export des fichiers se fait à l'étape Résultats.",
+    step05: "Étape 05",
+    homeEnergyCta: "Parlez-nous de l'énergie du foyer",
+    configurationRequired: "Configuration requise",
+    configurationRequiredBody: "Ajoutez un produit solaire compatible dans Produits ; le calcul du projet deviendra alors disponible.",
+    calculationNotStarted: "Calcul non lancé",
+    addProductBeforeEnergy: "Ajoutez au moins un produit solaire à l'étape Produits avant de passer à l'énergie du foyer.",
+    addProductBeforeStudy: "Ajoutez au moins un produit solaire à l'étape Produits avant de calculer l'étude.",
+    energyBack: "Retour au Design Studio",
+    energyEyebrow: "Énergie du foyer",
+    energyTitle: "Personnalisez la valeur de votre conception solaire.",
+    energyIntro: "Le Design Studio définit le bâtiment et les surfaces solaires. Ces données relient la consommation du foyer, les tarifs, le stockage et la vision à 25 ans avant le calcul.",
+    configuredBuilding: "Votre bâtiment configuré",
+    viewInStudio: "Voir dans le Design Studio",
+    office: "Bureaux",
+    solarArea: "Surface solaire",
+    buildingSize: "Dimensions",
+    storeys: (n: number) => `${n} niveaux`,
+    noSurfaces: "Aucun produit solaire placé",
+    residential: "Résidentiel",
+    activeSolarSurfaces: "Surfaces solaires actives",
+    buildingFootprint: "Emprise au sol",
+    energyNoteTitle: "Vos données énergie permettent de calculer économies, autoconsommation et retour sur investissement.",
+    energyNoteBody: "Nous combinons la conception du bâtiment et la consommation du foyer pour modéliser la performance réelle sur 25 ans.",
+    planningInputs: "Données de planification",
+    energyCashTitle: "Énergie du foyer et trésorerie",
+    energyFormIntro: "À compléter après la configuration du Studio. Ces réponses influencent la demande, la comparaison du stockage et la vision à 25 ans, pas le bâtiment ni la bibliothèque produits.",
+    electricityUse: "Consommation électrique",
+    chooseSource: "Choisissez une source",
+    useBill: "Utiliser ma facture",
+    enterAnnual: "Saisir les kWh annuels",
+    notSure: "Je ne sais pas",
+    aiEstimate: "Utiliser une estimation IA prudente",
+    annualUse: "Consommation annuelle",
+    householdRhythm: "Rythme du foyer",
+    estimatedDemandOnly: "Uniquement pour une demande estimée",
+    peopleLiving: "Nombre d'occupants",
+    dayQuestion: "Quelqu'un est-il généralement présent en journée ?",
+    occupancy: { usually: "Souvent", sometimes: "Parfois", rarely: "Rarement" },
+    electricHome: "Qu'est-ce qui est électrique chez vous ?",
+    selectAny: "Sélectionnez tout ce qui s'applique",
+    services: { electricHeating: "Chauffage électrique", heatPump: "Pompe à chaleur", electricHotWater: "Eau chaude électrique", evCharger: "Recharge VE" },
+    homeEnergyOption: "Option énergie",
+    compareStorage: "Comparer le stockage après la production",
+    solarOnly: "Solaire seul",
+    exportSurplus: "Injecter le surplus",
+    addBattery: "Ajouter une batterie",
+    increaseOnSite: "Augmenter l'autoconsommation",
+    usableBattery: "Capacité utile",
+    batteryPrice: "Prix de la batterie",
+    optional: "Facultatif",
+    cashInputs: "Données de trésorerie facultatives",
+    installedSolarPrice: "Prix du solaire installé",
+    quoteNote: "Un prix permet d'afficher une trésorerie indicative sur 25 ans. Ce n'est pas un devis.",
+    waitingStudio: "En attente du Design Studio",
+    calculateResults: "Calculer les résultats",
+    planningProfile: "Votre profil de planification",
+    livePreview: "Aperçu en direct",
+    estimatedAnnualUse: "Consommation annuelle estimée",
+    homeProfile: "Profil du foyer",
+    directSolarUse: "Autoconsommation directe attendue",
+    aboutPercent: (value: number) => `Environ ${value} %`,
+    electricLoads: "Charges électriques",
+    storageScenario: "Scénario de stockage",
+    planningCostUsed: "Coût de planification retenu",
+    estimateLabel: "estimation",
+    energyBill: "Facture d'énergie",
+    moderniteEstimate: "Estimation Modernité",
+    person: "personne",
+    people: "personnes",
+    daytimePresence: "présence en journée",
+    noMajorLoads: "Aucune charge électrique importante",
+    batteryConsidered: (kwh: number) => `Batterie de ${kwh} kWh envisagée`,
+    solarOnlyBaseline: "Référence solaire seul",
+    connectsTo: "Ces réponses alimentent",
+    connectors: ["Couverture solaire directe", "Économies sur facture", "Revenus d'injection", "Solaire ou batterie", "Trésorerie sur 25 ans", "Explication des résultats"],
+    calculationEyebrow: "Calcul de l'étude",
+    calculationTitle: "Préparation de votre étude personnalisée.",
+    calculationErrorTitle: "L'étude doit être revue.",
+    calculationBody: "Application des surfaces configurées, de la consommation du foyer, des tarifs, du stockage et du climat local.",
+    calculationStages: ["Modèle des surfaces", "Demande du foyer", "Fourchette de production", "Valeur des scénarios"],
+    returnStudio: "Retour au Design Studio",
+  },
+  ja: {
+    workspace: "プロジェクトワークスペース",
+    studioProgressLabel: "進捗：デザインスタジオ",
+    studioAriaLanguage: "スタジオの言語",
+    studioStepEyebrow: "デザインスタジオ",
+    studioTitle: "建物と太陽光デザインを設定します。",
+    studioIntro: "Modernité Solar Studio で建物をモデル化し、製品と仕上げを選び、太陽光構成を決定します。",
+    currentSite: "現在の敷地",
+    market: "市場",
+    studioProgress: "スタジオの進捗",
+    activeSurfacesConfigured: (count: number) => `太陽光面 ${count} 面を設定済み`,
+    fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
+    configurationComplete: "設定完了",
+    nextEnergyTitle: "次に、家庭のエネルギーを設定します。",
+    nextEnergyBody: "建物・製品・仕上げのツールでプロジェクトを設定してください。照明はスタジオ内で引き続き利用でき、ファイル出力は結果ステップで行います。",
+    step05: "ステップ 05",
+    homeEnergyCta: "家庭のエネルギーを入力",
+    configurationRequired: "設定が必要です",
+    configurationRequiredBody: "製品ステップで対応する太陽光製品を追加すると、計算が利用できます。",
+    calculationNotStarted: "未計算",
+    addProductBeforeEnergy: "家庭のエネルギーに進む前に、製品ステップで太陽光製品を 1 つ以上追加してください。",
+    addProductBeforeStudy: "検討を計算する前に、製品ステップで太陽光製品を 1 つ以上追加してください。",
+    energyBack: "デザインスタジオに戻る",
+    energyEyebrow: "家庭のエネルギー",
+    energyTitle: "太陽光デザインの価値をパーソナライズ。",
+    energyIntro: "建物と太陽光面はデザインスタジオで決まります。ここでの入力は、計算前に家庭の需要・料金・蓄電の希望・25 年計画を結び付けます。",
+    configuredBuilding: "設定した建物",
+    viewInStudio: "デザインスタジオで表示",
+    office: "オフィス",
+    solarArea: "太陽光面積",
+    buildingSize: "寸法",
+    storeys: (n: number) => `${n} 階`,
+    noSurfaces: "太陽光製品は未配置です",
+    residential: "住宅",
+    activeSolarSurfaces: "太陽光面",
+    buildingFootprint: "建築面積",
+    energyNoteTitle: "エネルギー入力から、節約額・自家消費・回収期間を計算します。",
+    energyNoteBody: "建物デザインと家庭の電力使用を組み合わせ、25 年間の実性能をモデル化します。",
+    planningInputs: "計画入力",
+    energyCashTitle: "家庭のエネルギーと収支",
+    energyFormIntro: "スタジオ設定後に入力してください。家庭の需要・蓄電比較・25 年計画に影響し、建物や製品ライブラリは変わりません。",
+    electricityUse: "電力使用量",
+    chooseSource: "入力方法を選択",
+    useBill: "電気料金明細を使う",
+    enterAnnual: "年間 kWh を入力",
+    notSure: "わからない",
+    aiEstimate: "控えめな AI 推定を使う",
+    annualUse: "年間電力使用量",
+    householdRhythm: "生活リズム",
+    estimatedDemandOnly: "推定需要の場合のみ",
+    peopleLiving: "居住人数",
+    dayQuestion: "日中は誰かが在宅していますか？",
+    occupancy: { usually: "たいてい", sometimes: "ときどき", rarely: "ほとんどない" },
+    electricHome: "電気で動かしているものは？",
+    selectAny: "該当するものをすべて選択",
+    services: { electricHeating: "電気暖房", heatPump: "ヒートポンプ", electricHotWater: "電気給湯", evCharger: "EV 充電" },
+    homeEnergyOption: "エネルギーオプション",
+    compareStorage: "発電後に蓄電を比較",
+    solarOnly: "太陽光のみ",
+    exportSurplus: "余剰電力を売電",
+    addBattery: "蓄電池を追加",
+    increaseOnSite: "自家消費を増やす",
+    usableBattery: "実効容量",
+    batteryPrice: "蓄電池価格",
+    optional: "任意",
+    cashInputs: "任意の収支入力",
+    installedSolarPrice: "太陽光の設置価格",
+    quoteNote: "価格を入力すると 25 年の参考収支を表示します。見積りではありません。",
+    waitingStudio: "デザインスタジオを待機中",
+    calculateResults: "検討結果を計算",
+    planningProfile: "計画プロファイル",
+    livePreview: "ライブプレビュー",
+    estimatedAnnualUse: "推定年間使用量",
+    homeProfile: "世帯プロファイル",
+    directSolarUse: "想定自家消費",
+    aboutPercent: (value: number) => `約 ${value}%`,
+    electricLoads: "電気負荷",
+    storageScenario: "蓄電シナリオ",
+    planningCostUsed: "計画費用",
+    estimateLabel: "推定",
+    energyBill: "電気料金明細",
+    moderniteEstimate: "Modernité 推定",
+    person: "人",
+    people: "人",
+    daytimePresence: "日中在宅",
+    noMajorLoads: "主な電気負荷なし",
+    batteryConsidered: (kwh: number) => `${kwh} kWh 蓄電池を検討`,
+    solarOnlyBaseline: "太陽光のみの基準",
+    connectsTo: "この回答が反映される項目",
+    connectors: ["太陽光の直接充足", "電気代削減", "売電収入", "太陽光と蓄電池", "25 年収支", "結果の解説"],
+    calculationEyebrow: "検討を計算中",
+    calculationTitle: "パーソナライズした検討を準備しています。",
+    calculationErrorTitle: "検討の見直しが必要です。",
+    calculationBody: "設定した面、家庭の使用量、料金、蓄電の希望、地域の気候を適用しています。",
+    calculationStages: ["面モデル", "家庭の需要", "発電レンジ", "シナリオ価値"],
+    returnStudio: "デザインスタジオに戻る",
+  },
+  es: {
+    workspace: "Espacio del proyecto",
+    studioProgressLabel: "Progreso del proyecto: Design Studio",
+    studioAriaLanguage: "Idioma del Studio",
+    studioStepEyebrow: "Design Studio",
+    studioTitle: "Configure su edificio y su diseño solar.",
+    studioIntro: "Use Modernité Solar Studio para modelar el edificio, elegir productos y acabados y definir la configuración solar.",
+    currentSite: "Emplazamiento actual",
+    market: "Mercado",
+    studioProgress: "Progreso del Studio",
+    activeSurfacesConfigured: (count: number) => `${count} superficies solares activas configuradas`,
+    fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
+    configurationComplete: "Configuración completa",
+    nextEnergyTitle: "Ahora, personalice la energía del hogar.",
+    nextEnergyBody: "Configure el proyecto con las herramientas Edificio, Productos y Acabados. La iluminación sigue disponible en el Studio; la exportación de archivos se hace en Resultados.",
+    step05: "Paso 05",
+    homeEnergyCta: "Cuéntenos sobre la energía del hogar",
+    configurationRequired: "Configuración necesaria",
+    configurationRequiredBody: "Añada un producto solar compatible en Productos; después podrá calcular el proyecto.",
+    calculationNotStarted: "Cálculo no iniciado",
+    addProductBeforeEnergy: "Añada al menos un producto solar en Productos antes de continuar a la energía del hogar.",
+    addProductBeforeStudy: "Añada al menos un producto solar en Productos antes de calcular el estudio.",
+    energyBack: "Volver a Design Studio",
+    energyEyebrow: "Energía del hogar",
+    energyTitle: "Personalice el valor de su diseño solar.",
+    energyIntro: "Design Studio define el edificio y las superficies solares. Estos datos conectan la demanda del hogar, las tarifas, el almacenamiento y la visión a 25 años antes del cálculo.",
+    configuredBuilding: "Su edificio configurado",
+    viewInStudio: "Ver en Design Studio",
+    office: "Oficinas",
+    solarArea: "Superficie solar",
+    buildingSize: "Dimensiones",
+    storeys: (n: number) => `${n} plantas`,
+    noSurfaces: "Aún no hay productos solares",
+    residential: "Residencial",
+    activeSolarSurfaces: "Superficies solares activas",
+    buildingFootprint: "Superficie en planta",
+    energyNoteTitle: "Sus datos de energía permiten calcular ahorro, autoconsumo y retorno.",
+    energyNoteBody: "Combinamos el diseño del edificio con el consumo del hogar para modelar el rendimiento real durante 25 años.",
+    planningInputs: "Datos de planificación",
+    energyCashTitle: "Energía del hogar y caja",
+    energyFormIntro: "Complételos tras configurar el Studio. Influyen en la demanda, la comparación de almacenamiento y la visión a 25 años, no en el edificio ni en la biblioteca de productos.",
+    electricityUse: "Consumo eléctrico",
+    chooseSource: "Elija una fuente",
+    useBill: "Usar mi factura",
+    enterAnnual: "Introducir kWh anuales",
+    notSure: "No estoy seguro",
+    aiEstimate: "Usar una estimación prudente con IA",
+    annualUse: "Consumo anual",
+    householdRhythm: "Ritmo del hogar",
+    estimatedDemandOnly: "Solo para demanda estimada",
+    peopleLiving: "Personas en la vivienda",
+    dayQuestion: "¿Suele haber alguien en casa durante el día?",
+    occupancy: { usually: "Normalmente", sometimes: "A veces", rarely: "Rara vez" },
+    electricHome: "¿Qué es eléctrico en casa?",
+    selectAny: "Seleccione lo que corresponda",
+    services: { electricHeating: "Calefacción eléctrica", heatPump: "Bomba de calor", electricHotWater: "Agua caliente eléctrica", evCharger: "Recarga de VE" },
+    homeEnergyOption: "Opción energética",
+    compareStorage: "Comparar almacenamiento tras la generación",
+    solarOnly: "Solo solar",
+    exportSurplus: "Verter el excedente",
+    addBattery: "Añadir batería",
+    increaseOnSite: "Aumentar el autoconsumo",
+    usableBattery: "Batería útil",
+    batteryPrice: "Precio de la batería",
+    optional: "Opcional",
+    cashInputs: "Datos de caja opcionales",
+    installedSolarPrice: "Precio del solar instalado",
+    quoteNote: "Un precio permite mostrar una línea de caja orientativa a 25 años. No es un presupuesto.",
+    waitingStudio: "Esperando a Design Studio",
+    calculateResults: "Calcular resultados",
+    planningProfile: "Su perfil de planificación",
+    livePreview: "Vista previa",
+    estimatedAnnualUse: "Consumo anual estimado",
+    homeProfile: "Perfil del hogar",
+    directSolarUse: "Autoconsumo directo esperado",
+    aboutPercent: (value: number) => `Aprox. ${value} %`,
+    electricLoads: "Cargas eléctricas",
+    storageScenario: "Escenario de almacenamiento",
+    planningCostUsed: "Coste de planificación",
+    estimateLabel: "estimación",
+    energyBill: "Factura de energía",
+    moderniteEstimate: "Estimación Modernité",
+    person: "persona",
+    people: "personas",
+    daytimePresence: "presencia diurna",
+    noMajorLoads: "Sin cargas eléctricas importantes",
+    batteryConsidered: (kwh: number) => `Batería de ${kwh} kWh considerada`,
+    solarOnlyBaseline: "Referencia solo solar",
+    connectsTo: "Estas respuestas alimentan",
+    connectors: ["Cobertura solar directa", "Ahorro en factura", "Ingresos por excedentes", "Solar o batería", "Caja a 25 años", "Explicación del resultado"],
+    calculationEyebrow: "Calculando el estudio",
+    calculationTitle: "Preparando su estudio personalizado.",
+    calculationErrorTitle: "El estudio necesita revisión.",
+    calculationBody: "Aplicando las superficies configuradas, el consumo del hogar, las tarifas, el almacenamiento y el clima local.",
+    calculationStages: ["Modelo de superficies", "Demanda del hogar", "Rango de generación", "Valor de escenarios"],
+    returnStudio: "Volver a Design Studio",
+  },
+  it: {
+    workspace: "Area di progetto",
+    studioProgressLabel: "Avanzamento: Design Studio",
+    studioAriaLanguage: "Lingua dello Studio",
+    studioStepEyebrow: "Design Studio",
+    studioTitle: "Configura l'edificio e il progetto solare.",
+    studioIntro: "Usa Modernité Solar Studio per modellare l'edificio, scegliere prodotti e finiture e definire la configurazione solare.",
+    currentSite: "Sito attuale",
+    market: "Mercato",
+    studioProgress: "Avanzamento dello Studio",
+    activeSurfacesConfigured: (count: number) => `${count} superfici solari attive configurate`,
+    fallbackAddress: "30 St James's Street, London SW1A 1HF, United Kingdom",
+    configurationComplete: "Configurazione completata",
+    nextEnergyTitle: "Ora personalizza l'energia domestica.",
+    nextEnergyBody: "Configura il progetto con gli strumenti Edificio, Prodotti e Finiture. L'illuminazione resta disponibile nello Studio; l'esportazione dei file avviene nella fase Risultati.",
+    step05: "Fase 05",
+    homeEnergyCta: "Raccontaci i consumi di casa",
+    configurationRequired: "Configurazione necessaria",
+    configurationRequiredBody: "Aggiungi un prodotto solare compatibile in Prodotti; poi il calcolo sarà disponibile.",
+    calculationNotStarted: "Calcolo non avviato",
+    addProductBeforeEnergy: "Aggiungi almeno un prodotto solare in Prodotti prima di passare all'energia domestica.",
+    addProductBeforeStudy: "Aggiungi almeno un prodotto solare in Prodotti prima di calcolare lo studio.",
+    energyBack: "Torna al Design Studio",
+    energyEyebrow: "Energia domestica",
+    energyTitle: "Personalizza il valore del tuo progetto solare.",
+    energyIntro: "Il Design Studio definisce edificio e superfici solari. Questi dati collegano consumi domestici, tariffe, accumulo e visione a 25 anni prima del calcolo.",
+    configuredBuilding: "Il tuo edificio configurato",
+    viewInStudio: "Apri nel Design Studio",
+    office: "Uffici",
+    solarArea: "Superficie solare",
+    buildingSize: "Dimensioni",
+    storeys: (n: number) => `${n} piani`,
+    noSurfaces: "Nessun prodotto solare posizionato",
+    residential: "Residenziale",
+    activeSolarSurfaces: "Superfici solari attive",
+    buildingFootprint: "Impronta a terra",
+    energyNoteTitle: "I tuoi dati energetici servono a calcolare risparmio, autoconsumo e rientro.",
+    energyNoteBody: "Combiniamo il progetto dell'edificio con i consumi domestici per modellare le prestazioni reali in 25 anni.",
+    planningInputs: "Dati di pianificazione",
+    energyCashTitle: "Energia domestica e flussi di cassa",
+    energyFormIntro: "Completa dopo aver configurato lo Studio. Influenzano domanda, confronto dell'accumulo e visione a 25 anni, non l'edificio o la libreria prodotti.",
+    electricityUse: "Consumo elettrico",
+    chooseSource: "Scegli una fonte",
+    useBill: "Usa la mia bolletta",
+    enterAnnual: "Inserisci i kWh annui",
+    notSure: "Non sono sicuro",
+    aiEstimate: "Usa una stima IA prudente",
+    annualUse: "Consumo annuo",
+    householdRhythm: "Abitudini domestiche",
+    estimatedDemandOnly: "Solo per la domanda stimata",
+    peopleLiving: "Persone residenti",
+    dayQuestion: "Di giorno c'è di solito qualcuno in casa?",
+    occupancy: { usually: "Di solito", sometimes: "A volte", rarely: "Raramente" },
+    electricHome: "Cosa è elettrico in casa?",
+    selectAny: "Seleziona tutte le voci pertinenti",
+    services: { electricHeating: "Riscaldamento elettrico", heatPump: "Pompa di calore", electricHotWater: "Acqua calda elettrica", evCharger: "Ricarica VE" },
+    homeEnergyOption: "Opzione energetica",
+    compareStorage: "Confronta l'accumulo dopo la produzione",
+    solarOnly: "Solo solare",
+    exportSurplus: "Immetti il surplus",
+    addBattery: "Aggiungi una batteria",
+    increaseOnSite: "Aumenta l'autoconsumo",
+    usableBattery: "Capacità utile",
+    batteryPrice: "Prezzo della batteria",
+    optional: "Facoltativo",
+    cashInputs: "Dati di cassa facoltativi",
+    installedSolarPrice: "Prezzo del solare installato",
+    quoteNote: "Un prezzo abilita una linea di cassa indicativa a 25 anni. Non è un preventivo.",
+    waitingStudio: "In attesa del Design Studio",
+    calculateResults: "Calcola i risultati",
+    planningProfile: "Il tuo profilo di pianificazione",
+    livePreview: "Anteprima",
+    estimatedAnnualUse: "Consumo annuo stimato",
+    homeProfile: "Profilo domestico",
+    directSolarUse: "Autoconsumo diretto atteso",
+    aboutPercent: (value: number) => `Circa ${value}%`,
+    electricLoads: "Carichi elettrici",
+    storageScenario: "Scenario di accumulo",
+    planningCostUsed: "Costo di pianificazione",
+    estimateLabel: "stima",
+    energyBill: "Bolletta",
+    moderniteEstimate: "Stima Modernité",
+    person: "persona",
+    people: "persone",
+    daytimePresence: "presenza diurna",
+    noMajorLoads: "Nessun carico elettrico rilevante",
+    batteryConsidered: (kwh: number) => `Batteria da ${kwh} kWh considerata`,
+    solarOnlyBaseline: "Riferimento solo solare",
+    connectsTo: "Queste risposte alimentano",
+    connectors: ["Copertura solare diretta", "Risparmio in bolletta", "Ricavi da immissione", "Solare o batteria", "Cassa a 25 anni", "Spiegazione del risultato"],
+    calculationEyebrow: "Calcolo dello studio",
+    calculationTitle: "Stiamo preparando il tuo studio personalizzato.",
+    calculationErrorTitle: "Lo studio va rivisto.",
+    calculationBody: "Applicazione di superfici configurate, consumi domestici, tariffe, accumulo e clima locale.",
+    calculationStages: ["Modello superfici", "Domanda domestica", "Intervallo di produzione", "Valore degli scenari"],
+    returnStudio: "Torna al Design Studio",
   },
 } as const;
 
+const MISC_COPY: Record<StudioLanguage, { heroCaption: string; weatherLoading: (source: string) => string; weatherUnavailable: (source: string) => string; noLocation: string; aborted: string; addProduct: string; noStudy: string }> = {
+  en: { heroCaption: "Architecture, solar geometry, and digital design intelligence.", weatherLoading: (s) => `Loading ${s} weather…`, weatherUnavailable: (s) => `${s} unavailable · synthetic climate`, noLocation: "Choose a project location before preparing a project study.", aborted: "The project-study request ended before it completed. Your Design Studio choices remain unchanged; wait a moment and try again.", addProduct: "Add at least one supported solar product in the Products step before calculating the project study.", noStudy: "No active project study is available. Return to Design Studio and prepare a new study." },
+  zh: { heroCaption: "建筑、太阳几何与数字化设计智能。", weatherLoading: (s) => `正在加载 ${s} 气象…`, weatherUnavailable: (s) => `${s} 不可用 · 使用合成气候`, noLocation: "请先选择项目位置，再准备项目研究。", aborted: "项目研究请求在完成前中断。设计工作室中的选择未改变，请稍候重试。", addProduct: "计算项目研究前，请在“产品”步骤中至少添加一个支持的光伏产品。", noStudy: "当前没有项目研究。请返回设计工作室准备新的研究。" },
+  "zh-Hant": { heroCaption: "建築、太陽幾何與數位設計智慧。", weatherLoading: (s) => `正在載入 ${s} 氣象…`, weatherUnavailable: (s) => `${s} 無法使用 · 使用合成氣候`, noLocation: "請先選擇專案位置，再準備專案研究。", aborted: "專案研究請求在完成前中斷。設計工作室中的選擇未改變，請稍候重試。", addProduct: "計算專案研究前，請在「產品」步驟中至少加入一個支援的光電產品。", noStudy: "目前沒有專案研究。請返回設計工作室準備新的研究。" },
+  fr: { heroCaption: "Architecture, géométrie solaire et intelligence de conception numérique.", weatherLoading: (s) => `Chargement de la météo ${s}…`, weatherUnavailable: (s) => `${s} indisponible · climat synthétique`, noLocation: "Choisissez l'emplacement du projet avant de préparer l'étude.", aborted: "La demande d'étude s'est interrompue. Vos choix dans le Design Studio sont conservés ; réessayez dans un instant.", addProduct: "Ajoutez au moins un produit solaire compatible à l'étape Produits avant de calculer l'étude.", noStudy: "Aucune étude active. Retournez au Design Studio pour en préparer une." },
+  ja: { heroCaption: "建築、太陽の幾何学、デジタルデザインの知性。", weatherLoading: (s) => `${s} 気象を読み込み中…`, weatherUnavailable: (s) => `${s} 利用不可 · 合成気候`, noLocation: "検討を作成する前にプロジェクトの場所を選択してください。", aborted: "検討リクエストが完了前に終了しました。デザインスタジオの設定はそのままです。少し待って再試行してください。", addProduct: "検討を計算する前に、製品ステップで対応する太陽光製品を 1 つ以上追加してください。", noStudy: "有効な検討がありません。デザインスタジオに戻って検討を作成してください。" },
+  es: { heroCaption: "Arquitectura, geometría solar e inteligencia de diseño digital.", weatherLoading: (s) => `Cargando meteo ${s}…`, weatherUnavailable: (s) => `${s} no disponible · clima sintético`, noLocation: "Elija la ubicación del proyecto antes de preparar el estudio.", aborted: "La solicitud del estudio terminó antes de completarse. Sus elecciones en Design Studio se mantienen; vuelva a intentarlo en un momento.", addProduct: "Añada al menos un producto solar compatible en Productos antes de calcular el estudio.", noStudy: "No hay un estudio activo. Vuelva a Design Studio y prepare uno nuevo." },
+  it: { heroCaption: "Architettura, geometria solare e intelligenza progettuale digitale.", weatherLoading: (s) => `Caricamento meteo ${s}…`, weatherUnavailable: (s) => `${s} non disponibile · clima sintetico`, noLocation: "Scegli la posizione del progetto prima di preparare lo studio.", aborted: "La richiesta dello studio si è interrotta. Le scelte nel Design Studio restano invariate; riprova tra poco.", addProduct: "Aggiungi almeno un prodotto solare compatibile in Prodotti prima di calcolare lo studio.", noStudy: "Nessuno studio attivo. Torna al Design Studio e preparane uno nuovo." },
+};
+
 function outerCopy(language: StudioLanguage) {
-  if (language === "zh" || language === "zh-Hant") return OUTER_UI_COPY[language];
-  return OUTER_UI_COPY.en;
+  return OUTER_UI_COPY[language] ?? OUTER_UI_COPY.en;
 }
 
 function routeFromPath(pathname: string): GatewayRoute {
@@ -598,9 +985,9 @@ export type WeatherSourceKey = "nasa-power" | "pvgis-tmy";
 export type StudyRequestExtras = { timezone?: number; timezoneName?: string; buildingNorthDeg?: number; weatherSource?: WeatherSourceKey };
 
 const WEATHER_SOURCE_STORAGE_KEY = "modernite-weather-source";
-const WEATHER_SOURCE_LABELS: Record<WeatherSourceKey, { short: string; loading: string }> = {
-  "nasa-power": { short: "NASA POWER", loading: "Loading NASA POWER weather…" },
-  "pvgis-tmy": { short: "PVGIS TMY", loading: "Loading PVGIS weather…" },
+const WEATHER_SOURCE_LABELS: Record<WeatherSourceKey, { short: string }> = {
+  "nasa-power": { short: "NASA POWER" },
+  "pvgis-tmy": { short: "PVGIS TMY" },
 };
 
 function readWeatherSource(): WeatherSourceKey {
@@ -616,6 +1003,12 @@ function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSn
   const location = context?.location ?? DEFAULT_PROJECT_LOCATION;
   const energySettings = { ...DEFAULT_ENERGY_SETTINGS, ...context?.energySettings };
   const timezone = extras.timezone ?? Math.round(location.coordinates.lng / 15);
+  const applied = context?.building;
+  if (snapshot === DEMO_STUDIO_SNAPSHOT && applied) {
+    const units = studioTypeById(applied.typeId)?.units || 1;
+    snapshot = { ...snapshot, building: { ...snapshot.building, id: applied.typeId, width: applied.widthM * units, depth: applied.depthM, floors: applied.floors, storeyHeight: applied.storeyHeightM } };
+    extras = { buildingNorthDeg: applied.frontAzimuthDeg, ...extras };
+  }
   const study = runCustomerStudy({
     market: marketKey,
     address: location.label,
@@ -802,7 +1195,7 @@ function EntryPage({ copy, language, onLanguageChange, onStart, onNavigate }: {
       </div>
       <figure className="entry-visual">
         <img src={HERO_IMAGE_URL} alt="Contemporary residence with a discreet integrated solar roof in a mature garden" />
-        <figcaption>Architecture, solar geometry, and digital design intelligence.</figcaption>
+        <figcaption>{MISC_COPY[language].heroCaption}</figcaption>
       </figure>
       <div className="entry-foreground foregroundFoliageBlur" aria-hidden="true" />
       <label className="entry-language-hotspot" aria-label="Select language">
@@ -914,42 +1307,8 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           </button>
         </aside>
       </div>
-      {viewerMode && context.location && <GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} initialMode={viewerMode} onClose={() => setViewerMode(null)} />}
+      {viewerMode && context.location && <GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} language={language} initialMode={viewerMode} onClose={() => setViewerMode(null)} />}
     </section>
-  );
-}
-
-function DesignAssistant({ stage }: { stage: "design" | "energy" }) {
-  const [open, setOpen] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ question: string; answer: string }>>([]);
-  const ask = trpc.projectStudy.designHelp.useMutation();
-  const submit = async () => {
-    const prompt = question.trim();
-    if (!prompt || ask.isPending) return;
-    setQuestion("");
-    const response = await ask.mutateAsync({ question: prompt, stage }).catch(() => ({ answer: "Modernité Design Guide is unavailable at the moment. Your Design Studio choices are still saved locally in this session." }));
-    setMessages((current) => [{ question: prompt, answer: response.answer }, ...current]);
-  };
-  return (
-    <aside className={`design-assistant ${open ? "is-open" : ""}`} aria-label="Modernité Design Guide">
-      <label className="design-assistant-toggle">
-        <input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} />
-        <span><MessageCircle size={16} /> Modernité Design Guide</span>
-        <ChevronDown size={15} />
-      </label>
-      {open && <div className="design-assistant-panel">
-        <p>Ask the Design Guide about the current design step or what a household-energy choice means. The customer product library remains unchanged.</p>
-        <div className="assistant-prompts">
-          <button type="button" onClick={() => setQuestion(stage === "energy" ? "What does daytime occupancy change in the study?" : "What should I save before preparing the project study?")}>{stage === "energy" ? "What does daytime occupancy change?" : "What should I save before calculation?"}</button>
-        </div>
-        <div className="assistant-composer">
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" />
-          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send Design Guide question"><Send size={15} /></button>
-        </div>
-        {messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}><small>{message.question}</small><p>{message.answer}</p></article>)}
-      </div>}
-    </aside>
   );
 }
 
@@ -1077,15 +1436,54 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language }: 
   );
 }
 
-function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, language }: {
+type StudioFacts = { typeId: string; width: number; depth: number; floors: number; usage: "office" | "residential"; surfaces: number; solarAreaM2: number };
+
+function useStudioFacts(enabled: boolean) {
+  const [facts, setFacts] = useState<StudioFacts | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    const read = () => {
+      try {
+        const frame = document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame");
+        const bridge = (frame?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge;
+        const snapshot = bridge?.snapshot?.();
+        if (!snapshot) return;
+        const dims = bridge?.dimensions?.();
+        const active = snapshot.surfaces.filter((surface) => surface.enabled !== false && surface.area > 0);
+        const next: StudioFacts = {
+          typeId: snapshot.building.id,
+          width: dims?.width ?? snapshot.building.width ?? 0,
+          depth: dims?.depth ?? snapshot.building.depth ?? 0,
+          floors: dims?.floors ?? snapshot.building.floors ?? 0,
+          usage: snapshot.building.usage === "office" ? "office" : "residential",
+          surfaces: active.length,
+          solarAreaM2: active.reduce((sum, surface) => sum + surface.area, 0),
+        };
+        setFacts((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next));
+      } catch {
+        /* Studio still loading */
+      }
+    };
+    read();
+    const timer = window.setInterval(read, 2000);
+    return () => window.clearInterval(timer);
+  }, [enabled]);
+  return facts;
+}
+
+function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, language, marketKey }: {
   settings: HomeEnergySettings;
   canCalculate: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
   onPrepare: () => void;
   onNavigate: (route: GatewayRoute) => void;
   language: StudioLanguage;
+  marketKey: MarketKey;
 }) {
   const text = outerCopy(language);
+  const facts = useStudioFacts(true);
+  const regionName = resultsCopy(language).regions[MARKET_TO_STUDIO_REGION[marketKey] ?? "UK"];
+  const one = (value: number) => value.toLocaleString(language, { maximumFractionDigits: 1 });
   return (
     <section className="energy-page gateway-page">
       <div className="energy-page-intro">
@@ -1102,11 +1500,11 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, l
           <div className="configured-building-card__title"><span><Home size={19} /></span><div><p className="mini-label">{text.configuredBuilding}</p><button type="button" onClick={() => onNavigate("studio")}>{text.viewInStudio} <ArrowRight size={14} /></button></div></div>
           <img src={BUILDING_PREVIEW_URL} alt="Configured detached house model preview" />
           <div className="configured-building-facts">
-            <span><MapPinned size={15} /><b>{text.detachedHouse}</b><small>{language === "zh" || language === "zh-Hant" ? "英国" : "United Kingdom"}</small></span>
-            <span><Home size={15} /><b>{text.residential}</b><small>{text.houseSurfaces}</small></span>
-            <span><BarChart3 size={15} /><b>{text.activeSolarSurfaces}</b><small>{text.fourOfSix}</small></span>
-            <span><Pencil size={15} /><b>{text.totalRoofArea}</b><small>183.6 m²</small></span>
-            <span><FileText size={15} /><b>{text.buildingFootprint}</b><small>91.8 m²</small></span>
+            <span><MapPinned size={15} /><b>{facts ? `${facts.typeId} · ${buildingTypeLabel(facts.typeId, language)}` : "—"}</b><small>{regionName}</small></span>
+            <span><Home size={15} /><b>{facts?.usage === "office" ? text.office : text.residential}</b><small>{facts ? `${text.buildingSize} ${one(facts.width)} × ${one(facts.depth)} m · ${text.storeys(facts.floors)}` : "—"}</small></span>
+            <span><BarChart3 size={15} /><b>{text.activeSolarSurfaces}</b><small>{facts?.surfaces ? facts.surfaces : text.noSurfaces}</small></span>
+            <span><Pencil size={15} /><b>{text.solarArea}</b><small>{facts ? `${one(facts.solarAreaM2)} m²` : "—"}</small></span>
+            <span><FileText size={15} /><b>{text.buildingFootprint}</b><small>{facts ? `${one(facts.width * facts.depth)} m²` : "—"}</small></span>
           </div>
           <div className="energy-note-card"><Lightbulb size={24} /><p><b>{text.energyNoteTitle}</b><small>{text.energyNoteBody}</small></p></div>
         </aside>
@@ -1243,7 +1641,7 @@ function StudioPage({
         const controller = new AbortController();
         weatherAbortRef.current = controller;
         const sourceLabel = WEATHER_SOURCE_LABELS[weatherSource];
-        setWeatherState({ status: "loading", label: sourceLabel.loading });
+        setWeatherState({ status: "loading", label: MISC_COPY[language].weatherLoading(sourceLabel.short) });
         const weatherQuery = new URLSearchParams({ lat: String(site.lat), lon: String(site.lon), tz: String(site.tz), zone: site.zone, year: String(year), address: addressLabel });
         fetch(`${APP_BASE_PATH}/api/weather/${weatherSource}?${weatherQuery}`, { signal: controller.signal })
           .then(async (response) => {
@@ -1422,7 +1820,7 @@ function StudioPage({
         </div>
       </section>
       <section className="studio-host-context">
-        <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">Weather source</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label="Weather source">{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? WEATHER_SOURCE_LABELS[weatherSource].loading : `${WEATHER_SOURCE_LABELS[weatherSource].short} unavailable · synthetic climate`}</em>}</span>}</span>
+        <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">Weather source</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label="Weather source">{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? MISC_COPY[language].weatherLoading(WEATHER_SOURCE_LABELS[weatherSource].short) : MISC_COPY[language].weatherUnavailable(WEATHER_SOURCE_LABELS[weatherSource].short)}</em>}</span>}</span>
         <span><Globe2 size={22} /><small>{text.market}</small><b>{market.name}</b></span>
         <span><Home size={22} /><small>{text.studioProgress}</small><b>{text.activeSurfacesConfigured(configuredSurfaceCount || 4)}</b><i /></span>
         <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
@@ -1470,305 +1868,12 @@ function CalculationLoadingPage({ error, onBack, language }: { error: string | n
   );
 }
 
-function ResultAssistant({ study }: { study: ProjectCalculation }) {
-  const [open, setOpen] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ question: string; answer: string; evidence: string[] }>>([]);
-  const ask = trpc.projectStudy.ask.useMutation();
-
-  const submit = async () => {
-    const prompt = question.trim();
-    if (!prompt || ask.isPending) return;
-    setQuestion("");
-    try {
-      const response = await ask.mutateAsync({ caseId: study.caseId, question: prompt });
-      setMessages((current) => [{ question: prompt, answer: response.answer, evidence: response.evidence }, ...current]);
-    } catch {
-      setMessages((current) => [{ question: prompt, answer: "Modernité Design Guide is unavailable at the moment. The deterministic study and source ledger remain available below.", evidence: [] }, ...current]);
-    }
-  };
-
-  return (
-    <aside className={`result-assistant ${open ? "is-open" : ""}`}>
-      <label className="assistant-toggle">
-        <input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} />
-        <span><MessageCircle size={16} /> Modernité Design Guide</span>
-        <ChevronDown size={16} />
-      </label>
-      {open && <div className="assistant-panel">
-        <p>Ask the Design Guide for an explanation of the result, assumptions, or the local climate profile. Numeric outputs remain tied to the deterministic study.</p>
-        <div className="assistant-prompts">
-          <button type="button" onClick={() => setQuestion("How does the local climate profile affect this result?")}>How is the climate profile used?</button>
-          <button type="button" onClick={() => setQuestion("Which configured surface contributes the most generation?")}>Which surface contributes most?</button>
-        </div>
-        <div className="assistant-composer">
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" />
-          <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label="Send Design Guide question"><Send size={15} /></button>
-        </div>
-        {messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}>
-          <small>{message.question}</small>
-          <p>{message.answer}</p>
-          {message.evidence.length > 0 && <ul>{message.evidence.map((item) => <li key={item}>{item}</li>)}</ul>}
-        </article>)}
-      </div>}
-    </aside>
-  );
-}
-
-function PersistentStudyAssistant({ route, study }: { route: GatewayRoute; study: ProjectCalculation | null }) {
-  const [open, setOpen] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ question: string; answer: string }>>([]);
-  const designHelp = trpc.projectStudy.designHelp.useMutation();
-  const resultHelp = trpc.projectStudy.ask.useMutation();
-  const isResults = route === "results" && study !== null;
-  const isEnergy = route === "energy";
-  const shouldFloat = false;
-  useEffect(() => {
-    const openAssistant = () => setOpen(true);
-    window.addEventListener("modernite:open-assistant", openAssistant);
-    return () => window.removeEventListener("modernite:open-assistant", openAssistant);
-  }, []);
-  if (!shouldFloat) return null;
-  if (!isEnergy && !isResults) return null;
-  const submit = async () => {
-    const prompt = question.trim();
-    if (!prompt || designHelp.isPending || resultHelp.isPending) return;
-    setQuestion("");
-    try {
-      const response = isResults
-        ? await resultHelp.mutateAsync({ caseId: study!.caseId, question: prompt })
-        : await designHelp.mutateAsync({ question: prompt, stage: isEnergy ? "energy" : "design" });
-      setMessages((current) => [{ question: prompt, answer: response.answer }, ...current]);
-    } catch {
-      setMessages((current) => [{ question: prompt, answer: "Modernité Design Guide is temporarily unavailable. Your project settings and deterministic study remain unchanged." }, ...current]);
-    }
-  };
-  const title = "Modernité Design Guide";
-  const helper = isResults ? "Ask about generation, assumptions, the local climate profile, or the 25-year comparison." : isEnergy ? "Ask what any household-energy choice changes before calculation." : "Ask about configuring the supplied customer Studio.";
-  return <aside className={`persistent-study-assistant ${open ? "is-open" : ""}`} aria-label="Modernité Design Guide">
-    <label className="assistant-toggle"><input type="checkbox" checked={open} onChange={(event) => setOpen(event.target.checked)} /><span><MessageCircle size={16} /> {title}</span><ChevronDown size={16} /></label>
-    {open && <div className="assistant-panel"><p>{helper}</p><div className="assistant-prompts"><button type="button" onClick={() => setQuestion(isResults ? "What is the main assumption behind this annual range?" : isEnergy ? "What does daytime occupancy change?" : "What should I configure before continuing to energy?")}>{isResults ? "Explain the annual range" : isEnergy ? "Explain daytime occupancy" : "What should I configure?"}</button></div><div className="assistant-composer"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Ask the Design Guide a question" aria-label="Ask the Design Guide a question" /><button type="button" onClick={() => void submit()} disabled={!question.trim() || designHelp.isPending || resultHelp.isPending} aria-label="Send Design Guide question"><Send size={15} /></button></div>{messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}><small>{message.question}</small><p>{message.answer}</p></article>)}</div>}
-  </aside>;
-}
-
-const ORIENTATION_SERIES = [
-  ["South", "south", "#07573f"],
-  ["East", "east", "#4d9b71"],
-  ["West", "west", "#a5c979"],
-  ["North", "north", "#79aeca"],
-  ["Horizontal", "horizontal", "#f1b33d"],
-] as const;
-
-function MonthlyProfileChart({ study }: { study: ProjectCalculation }) {
-  const [selectedMonth, setSelectedMonth] = useState(5);
-  const entries = study.result.monthlyByOrientation;
-  const max = Math.max(1, ...entries.map((entry) => entry.total));
-  const selected = entries[selectedMonth] ?? entries[0];
-  const topOrientation = selected
-    ? ORIENTATION_SERIES.slice().sort(([, a], [, b]) => selected[b] - selected[a])[0]
-    : ORIENTATION_SERIES[0];
-
-  return <section className="result-section monthly-profile-card premium-chart-card">
-    <div className="result-section-heading">
-      <div><p className="mini-label">Monthly generation profile</p><h2>Seasonal output by solar orientation</h2></div>
-      <span className="chart-total">{Math.round(study.result.range.representative).toLocaleString()} kWh/year</span>
-    </div>
-    <div className="orientation-legend">{ORIENTATION_SERIES.map(([label, , color]) => <span key={label}><i style={{ backgroundColor: color }} />{label}</span>)}</div>
-    <div className="monthly-chart-stage">
-      <svg className="monthly-profile-chart" viewBox="0 0 760 310" role="img" aria-label="Monthly energy generation stacked by south, east, west, north, and horizontal orientation">
-        <defs>
-          <linearGradient id="monthlyGlow" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#fff8da" stopOpacity=".9" /><stop offset="1" stopColor="#eaf6eb" stopOpacity=".15" /></linearGradient>
-        </defs>
-        <rect x="34" y="24" width="690" height="218" rx="18" fill="url(#monthlyGlow)" opacity=".6" />
-        {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="58" y1={244 - ratio * 190} x2="710" y2={244 - ratio * 190} className="chart-grid" />)}
-        <line x1="58" y1="244" x2="710" y2="244" className="chart-axis" />
-        {entries.map((entry, index) => {
-          const x = 70 + index * 53;
-          const barWidth = 33;
-          let y = 244;
-          return <g key={entry.month} onClick={() => setSelectedMonth(index)} className={selectedMonth === index ? "is-selected" : ""}>
-            <rect x={x - 5} y="38" width={barWidth + 10} height="206" rx="17" fill={selectedMonth === index ? "rgba(255,255,255,.72)" : "transparent"} />
-            {ORIENTATION_SERIES.map(([label, key, color]) => {
-              const height = (entry[key] / max) * 190;
-              y -= height;
-              return height > 0.45 ? <rect key={label} x={x} y={y} width={barWidth} height={height} rx={y < 60 ? 5 : 2} fill={color}><title>{`${entry.monthName}: ${label} ${Math.round(entry[key])} kWh`}</title></rect> : null;
-            })}
-            <circle cx={x + barWidth / 2} cy={Math.max(42, y - 10)} r={selectedMonth === index ? 4.6 : 0} fill="#f0b83a" />
-            <text x={x + barWidth / 2} y="268" textAnchor="middle">{entry.monthName}</text>
-          </g>;
-        })}
-      </svg>
-      {selected && <aside className="month-inspector">
-        <span>{selected.monthName}</span>
-        <strong>{Math.round(selected.total).toLocaleString()} kWh</strong>
-        <small>Largest share: {topOrientation[0]} · {Math.round(selected[topOrientation[1]]).toLocaleString()} kWh</small>
-        <em>Click any month to inspect how the stacked bar is built from orientation outputs.</em>
-      </aside>}
-    </div>
-    <p className="result-note"><CircleHelp size={14} /> Each bar is intentionally stacked by configured surface orientation, so the user can see whether seasonal value is coming from south roof planes, east/west balancing, north surfaces, or horizontal additions.</p>
-  </section>;
-}
-
-function CashPositionChart({ scenarios, scenario }: { scenarios: FinancialScenario[]; scenario: FinancialScenario }) {
-  const visible = scenarios.filter((item) => item.id !== "battery-only" && item.available && item.annualCashFlows.length > 0);
-  const allValues = visible.flatMap((item) => item.annualCashFlows.map((flow) => flow.cumulativeNetGbp));
-  const maxAbs = Math.max(1, ...allValues.map((value) => Math.abs(value)));
-  const scenarioColors: Record<string, string> = { "solar-only": "#0c6249", "solar-battery": "#d6a226", "battery-only": "#789" };
-  const pathFor = (item: FinancialScenario) => item.annualCashFlows.map((flow, index) => {
-    const x = 54 + (index / Math.max(1, item.annualCashFlows.length - 1)) * 646;
-    const y = 164 - (flow.cumulativeNetGbp / maxAbs) * 112;
-    return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
-  }).join(" ");
-  const selectedFinal = scenario.annualCashFlows.at(-1);
-
-  return <section className="result-section cash-position-card premium-chart-card">
-    <div className="result-section-heading"><div><p className="mini-label">25-year planning view</p><h2>Cash position, break-even, and scenario spread</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? `Break-even year ${scenario.breakEvenYear}` : "No break-even in the shown horizon"}</span></div>
-    {visible.length > 0 ? <>
-      <svg className="cash-position-chart" viewBox="0 0 760 242" role="img" aria-label={`Twenty-five year cumulative cash position for ${scenario.title}`}>
-        <defs>
-          <linearGradient id="cashPositive" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#f5cf61" stopOpacity=".35" /><stop offset="1" stopColor="#f5cf61" stopOpacity="0" /></linearGradient>
-        </defs>
-        <rect x="36" y="26" width="690" height="168" rx="18" fill="rgba(245,250,244,.82)" />
-        {[0.25, 0.5, 0.75, 1].map((ratio) => <line key={ratio} x1="54" y1={164 - ratio * 112} x2="700" y2={164 - ratio * 112} className="chart-grid" />)}
-        <line x1="54" y1="164" x2="700" y2="164" className="chart-axis" />
-        {visible.map((item) => <path key={`${item.id}-glow`} d={pathFor(item)} className={`cash-position-line-glow ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: scenarioColors[item.id] }} />)}
-        {visible.map((item) => <path key={item.id} d={pathFor(item)} className={`cash-position-line ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: scenarioColors[item.id] }} />)}
-        {visible.map((item) => {
-          const breakEvenYear = item.breakEvenYear;
-          if (breakEvenYear === null) return null;
-          const breakFlow = item.annualCashFlows.find((flow) => flow.year === breakEvenYear);
-          if (!breakFlow) return null;
-          const x = 54 + ((breakEvenYear - 1) / Math.max(1, item.annualCashFlows.length - 1)) * 646;
-          const y = 164 - (breakFlow.cumulativeNetGbp / maxAbs) * 112;
-          return <g key={`${item.id}-break`}><circle cx={x} cy={y} r={item.id === scenario.id ? 5.5 : 4} fill={scenarioColors[item.id]} stroke="#fff" strokeWidth="2" /><text x={x + 8} y={y - 8}>Y{breakEvenYear}</text></g>;
-        })}
-        <text x="54" y="220">Year 1</text><text x="700" y="220" textAnchor="end">Year 25</text>
-      </svg>
-      <div className="cash-position-values">
-        <span><i>Selected scenario</i><b>{scenario.title}</b></span>
-        <span><i>Year 25 cumulative</i><b>£{Math.round(selectedFinal?.cumulativeNetGbp ?? scenario.net25YearGbp).toLocaleString()}</b></span>
-        <span><i>First-year benefit</i><b>£{Math.round(scenario.firstYearBenefitGbp).toLocaleString()}</b></span>
-      </div>
-      <div className="cash-scenario-legend">{visible.map((item) => <span key={item.id}><i style={{ backgroundColor: scenarioColors[item.id] }} />{item.title}</span>)}</div>
-    </> : <p className="result-note">{scenario.unavailableReason ?? "Enter the requested project and battery prices in Design Studio to view this comparison."}</p>}
-    <p className="result-note">This is an indicative planning scenario based on the inputs supplied. It is not an installation quotation or a guaranteed return.</p>
-  </section>;
-}
-
-function ScenarioComparisonPanel({ scenarios, scenario, onSelect }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; onSelect: (id: string) => void }) {
-  const visible = scenarios.filter((item) => item.id !== "battery-only");
-  return <section className="result-section scenario-comparison-panel scenario-premium-panel"><div className="result-section-heading"><div><p className="mini-label">Solar and storage options</p><h2>Choose the planning case to inspect.</h2></div><span className="validation-status ready">25-year view</span></div><div className="scenario-options">{visible.map((item) => <button key={item.id} type="button" className={`${scenario.id === item.id ? "is-selected" : ""} ${!item.available ? "is-unavailable" : ""}`} onClick={() => onSelect(item.id)}><span>{item.id === "solar-battery" ? <BatteryCharging size={17} /> : <SunMedium size={17} />}</span><div><b>{item.title}</b><small>{item.available ? `${item.breakEvenYear ? `Break-even year ${item.breakEvenYear}` : "Planning comparison"} · £${Math.round(item.net25YearGbp).toLocaleString()} by year 25` : item.unavailableReason}</small></div></button>)}</div><p className="result-note"><ShieldCheck size={14} /> Battery value is shown as an editable planning comparison, while the generation figure stays anchored to the configured BIPV surfaces.</p></section>;
-}
-
-function EnergyFlowPanel({ study, scenario }: { study: ProjectCalculation; scenario: FinancialScenario }) {
-  const firstYear = scenario.annualCashFlows[0];
-  const generation = study.result.range.representative;
-  const directUse = firstYear?.directUseKwh ?? generation * 0.38;
-  const exported = firstYear?.exportKwh ?? Math.max(0, generation - directUse);
-  const storageValue = scenario.id === "solar-battery" ? Math.max(0, generation - directUse - exported) : 0;
-  const total = Math.max(1, directUse + exported + storageValue);
-  const flows = [
-    { label: "Used at home", value: directUse, color: "#0b6047", detail: "Offsets imported electricity" },
-    { label: "Exported", value: exported, color: "#8fbf79", detail: "Sent to grid at export rate" },
-    { label: "Battery shifted", value: storageValue, color: "#efba45", detail: scenario.id === "solar-battery" ? "Stored for evening use" : "Enable battery to model storage" },
-  ];
-  return <section className="result-section energy-flow-panel">
-    <div className="result-section-heading"><div><p className="mini-label">Energy flow</p><h2>Where the generated electricity goes</h2></div><span className="chart-total">{Math.round(generation).toLocaleString()} kWh/year</span></div>
-    <div className="energy-flow-visual">
-      <div className="energy-flow-source"><SunMedium size={25} /><strong>{Math.round(generation).toLocaleString()}</strong><small>Generated</small></div>
-      <div className="energy-flow-bars">{flows.map((flow) => <article key={flow.label} style={{ ["--flow-color" as string]: flow.color, ["--flow-width" as string]: `${Math.max(5, (flow.value / total) * 100)}%` }}><span><i /></span><div><b>{flow.label}</b><strong>{Math.round(flow.value).toLocaleString()} kWh</strong><small>{flow.detail}</small></div></article>)}</div>
-    </div>
-  </section>;
-}
-
-function EnergyAppliedChain({ study, scenario, onNavigate }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: GatewayRoute) => void }) {
-  const firstYear = scenario.annualCashFlows[0];
-  const directUse = firstYear?.directUseKwh ?? 0;
-  const exported = firstYear?.exportKwh ?? 0;
-  const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.arbitrageIncomeGbp ?? 0);
-  const directPercent = Math.round((directUse / Math.max(1, study.energy.annualDemandKwh)) * 100);
-  const keptPercent = Math.round((directUse / Math.max(1, study.result.range.representative)) * 100);
-  return <section className="result-section energy-applied-chain"><div className="result-section-heading"><div><p className="mini-label">Your energy answers · applied</p><h2>How household inputs shape the value case</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> Edit energy inputs</button></div><div className="applied-chain-grid"><article><span><Home size={17} /></span><p>01 · Household</p><strong>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</strong><small>{study.energy.note}</small></article><i><ArrowRight size={18} /></i><article><span><SunMedium size={17} /></span><p>02 · Self-use and export</p><strong>{Math.round(directUse).toLocaleString()} used · {Math.round(exported).toLocaleString()} exported</strong><small>{directPercent}% of annual demand met directly by solar · {keptPercent}% of generation kept at home.</small></article><i><ArrowRight size={18} /></i><article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · Estimated value</p><strong>£{Math.round(value).toLocaleString()} / year</strong><small>{scenario.breakEvenYear ? `${scenario.breakEvenYear}-year simple break-even` : "Long-term planning case"} on £{Math.round(scenario.upfrontGbp).toLocaleString()} estimated cost.</small></article></div><p className="result-note"><Gauge size={14} /> Calculation first, explanation second. The figures above are calculated from project inputs; the Design Guide explains them without changing the numbers.</p></section>;
-}
-
-function GenerationRangeCard({ study, scenario }: { study: ProjectCalculation; scenario: FinancialScenario }) {
-  const range = study.result.range;
-  const band = Math.max(1, range.high - range.low);
-  const representativePosition = ((range.representative - range.low) / band) * 100;
-  return <section className="result-section generation-range-card generation-hero-card">
-    <div className="range-card-top"><div><p className="mini-label">Project study result</p><strong>{range.representative.toLocaleString()} <small>kWh / year</small></strong><p>Representative annual generation from {study.result.surfaces.length} configured BIPV surfaces.</p></div><span><i /> Customer V31 model · {study.weather.kind === "customer-synthetic" ? "synthetic climate" : study.weather.kind === "nasa-power" ? "NASA POWER weather" : "PVGIS weather"}</span></div>
-    <div className="range-insight-grid">
-      <div className="range-window"><div className="range-window-head"><span>Annual estimate range</span><b>{range.low.toLocaleString()} – {range.high.toLocaleString()} kWh / year</b></div><div className="range-points"><span><i>Low</i><b>{range.low.toLocaleString()}</b></span><span className="is-main"><i>Representative</i><b>{range.representative.toLocaleString()}</b></span><span><i>High</i><b>{range.high.toLocaleString()}</b></span></div><div className="range-track"><em style={{ left: "0%" }} /><strong style={{ left: `${representativePosition}%` }} /><em style={{ left: "100%" }} /></div><p>Use this range to discuss conservative, representative, and upper planning cases.</p></div>
-      <div className="hero-result-metrics">
-        <article><span><BarChart3 size={18} /></span><small>Configured capacity</small><b>{study.result.totalCapacityKwp.toFixed(2)} kWp</b></article>
-        <article><span><Zap size={18} /></span><small>First-year value</small><b>£{Math.round(scenario.firstYearBenefitGbp).toLocaleString()}</b></article>
-        <article><span><LineChart size={18} /></span><small>25-year view</small><b>£{Math.round(scenario.net25YearGbp).toLocaleString()}</b></article>
-      </div>
-    </div>
-  </section>;
-}
-
-function ResultsPage({ study, preferredBatteryMode, onNavigate, language }: { study: ProjectCalculation; preferredBatteryMode: HomeEnergySettings["batteryMode"]; onNavigate: (route: GatewayRoute) => void; language: StudioLanguage }) {
-  const text = outerCopy(language);
-  const recommended = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh)[0];
-  const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
-  const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
-  const demandLabel = study.energy.source === "bill" ? "Calibrated to your energy bill" : "Customer building energy model";
-  const sim = study.simulation;
-  const solar = study.googleSolar;
-  return (
-    <section className="results-page gateway-page">
-      <div className="results-topline"><div><button className="back-link" type="button" onClick={() => onNavigate("energy")}><ArrowLeft size={15} /> {text.resultsBack}</button><p className="eyebrow"><Sparkles size={14} /> {text.resultsEyebrow}</p><h1>{text.resultsTitle}</h1><p>{text.resultsIntro}</p></div><div className="result-case"><span>{text.studyReference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</small></div></div>
-      <div className="results-layout"><main className="results-report">
-        <GenerationRangeCard study={study} scenario={scenario} />
-        <div className="result-main-grid">
-          <section className="result-section energy-demand-card"><div><p className="mini-label">Household energy context</p><h2>{Math.round(study.energy.annualDemandKwh).toLocaleString()} kWh/year</h2><p>{demandLabel} · {study.energy.note}</p></div><button type="button" onClick={() => onNavigate("energy")}>Update household energy <ArrowRight size={14} /></button></section>
-          <section className="result-section result-capacity-tile"><span><BarChart3 size={20} /></span><p className="mini-label">Configured capacity</p><h2>{study.result.totalCapacityKwp.toFixed(2)} kWp</h2><p>{study.result.surfaces.length} active solar surfaces.</p></section>
-        </div>
-        <EnergyAppliedChain study={study} scenario={scenario} onNavigate={onNavigate} />
-        <EnergyFlowPanel study={study} scenario={scenario} />
-        <MonthlyProfileChart study={study} />
-        <ScenarioComparisonPanel scenarios={study.result.scenarios} scenario={scenario} onSelect={setScenarioId} />
-        <CashPositionChart scenarios={study.result.scenarios} scenario={scenario} />
-        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Calculation basis</p><h2>{study.weather.kind === "nasa-power" ? "Customer V31 hourly model · NASA POWER weather" : study.weather.kind === "pvgis-tmy" ? "Customer V31 hourly model · PVGIS weather" : "Customer V31 hourly model · synthetic climate"}</h2></div><span className={`validation-status ${study.validation.status}`}>{study.weather.kind === "customer-synthetic" ? "Indicative" : "Site weather"}</span></div><div className="validation-grid"><div><span>Annual generation</span><strong>{study.validation.empiricalAnnualKwh.toLocaleString()} kWh/year</strong></div><div><span>Hourly weather</span><strong>{study.weather.source}</strong></div><div><span>Horizontal irradiation</span><strong>GHI {study.weather.annualGhiKwhM2} · DNI {study.weather.annualDniKwhM2} · DHI {study.weather.annualDhiKwhM2} kWh/m²</strong></div><div><span>Solar used on site</span><strong>{Math.round(sim.selfConsumption * 100)}% self-consumption · {Math.round(sim.selfSufficiency * 100)}% self-sufficiency</strong></div><div><span>With {sim.battery.nominalKwh} kWh battery</span><strong>{Math.round(sim.battery.selfConsumedKwh).toLocaleString()} kWh used on site</strong></div><div><span>Inverter (≤1% clipping)</span><strong>{sim.inverterKw} kW · recommended battery {sim.recommendedBatteryKwh} kWh</strong></div></div><p className="result-note">{study.validation.note}</p></section>
-        {solar && <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">External reference</p><h2>Google Solar roof model</h2></div><span className={`validation-status ${solar.status}`}>{solar.status === "ok" ? `${solar.imageryQuality ?? ""} imagery` : "Unavailable"}</span></div>{solar.status === "ok" ? <><div className="validation-grid"><div><span>Roof segments</span><strong>{solar.roofSegments?.length ?? 0}</strong></div><div><span>Usable panel area</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div><div><span>Peak sunshine</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} h/year</strong></div></div><div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>Segment {index + 1}</strong><span>{segment.pitchDeg}° pitch · {segment.azimuthDeg}° azimuth</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} h/year</b></article>)}</div></> : null}<p className="result-note">{solar.note}{solar.distanceM !== undefined ? ` Nearest modelled building is ${solar.distanceM} m from the pin.` : ""}</p></section>}
-        <section className="result-section"><div className="result-section-heading"><div><p className="mini-label">Configured surfaces</p><h2>Generation by surface</h2></div></div><div className="surface-list">{study.result.surfaces.map((surface: SurfaceResult) => <article className="surface-row" key={surface.surfaceId}><div><strong>{surface.surfaceLabel}</strong><span>{surface.productName}{surface.finishName ? ` · ${surface.finishName}` : ""}</span></div><span>{surface.areaM2.toFixed(1)} m²</span><b>{Math.round(surface.annualKwh).toLocaleString()} kWh/year</b></article>)}</div>{recommended && <p className="result-note"><CircleHelp size={14} /> The largest configured contribution is {recommended.surfaceLabel} ({Math.round(recommended.annualKwh).toLocaleString()} kWh/year).</p>}</section>
-        <section className="result-section source-ledger"><div className="result-section-heading"><div><p className="mini-label">Method ledger</p><h2>Inputs held in the study</h2></div></div><dl>{study.result.ledger.map((entry: LedgerEntry) => <div key={entry.id}><dt>{entry.label}</dt><dd>{entry.value}</dd></div>)}</dl></section>
-      </main><aside className="results-side-rail">
-        <section className="study-summary-card">
-          <span><Home size={20} /></span>
-          <p className="mini-label">Study summary</p>
-          <div className="selected-case-chip">
-            <small>Selected case</small>
-            <strong>{study.caseId}</strong>
-          </div>
-          <dl>
-            <div><dt>Location</dt><dd>UK01 · Detached house<small>United Kingdom</small></dd></div>
-            <div><dt>Building type</dt><dd>Residential<small>House with 4 active surfaces</small></dd></div>
-            <div><dt>Active solar surfaces</dt><dd>{study.result.surfaces.length} configured surfaces</dd></div>
-            <div><dt>Selected scenario</dt><dd>{scenario.title}<small>{scenario.available ? "Maximise self-use · 25-year view" : "Planning scenario"}</small></dd></div>
-          </dl>
-          <button type="button" className="button-primary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> Download Studio PDF</button>
-          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> Save configuration</button>
-        </section>
-        <section className="study-summary-card advisor-card">
-          <span><MessageCircle size={20} /></span>
-          <p className="mini-label">Modernité Design Guide</p>
-          <p>Get a clear explanation of these results, compare scenarios, or ask a question about your design.</p>
-          <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:open-assistant"))}>Open Design Guide <ArrowRight size={14} /></button>
-        </section>
-      </aside></div>
-    </section>
-  );
-}
-
 export default function App() {
   const [route, setRoute] = useState<GatewayRoute>(() => routeFromPath(window.location.pathname));
   const [context, setContext] = useState<ProjectContext>(loadContext);
   const [studioLanguage, setStudioLanguage] = useState<StudioLanguage>(loadStudioLanguage);
   const [studioMounted, setStudioMounted] = useState(() => (["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route));
-  const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy());
+  const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy(loadContext()));
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
   const copy = GATEWAY_COPY[studioLanguage];
@@ -1793,6 +1898,10 @@ export default function App() {
       window.localStorage.setItem(SAVED_STUDY_STORAGE_KEY, JSON.stringify(study));
     }
   }, [study]);
+
+  useEffect(() => {
+    setStudy((current) => (current && !current.caseId.startsWith("MOD-DEMO") ? current : createDemoStudy(context)));
+  }, [context.marketKey, context.location, context.building]);
 
   useEffect(() => {
     document.documentElement.lang = studioLanguage;
@@ -1868,7 +1977,7 @@ export default function App() {
 
   const startCalculation = useCallback(async (studioSnapshot: StudioCalculationSnapshot, extras: StudyRequestExtras = {}) => {
     if (!context.location) {
-      setCalculationError("Choose a project location before preparing a project study.");
+      setCalculationError(MISC_COPY[studioLanguage].noLocation);
       navigate("calculation");
       return;
     }
@@ -1888,9 +1997,9 @@ export default function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (/aborted|aborterror/i.test(message)) {
-        setCalculationError("The project-study request ended before it completed. Your Design Studio choices remain unchanged; wait a moment and try again.");
+        setCalculationError(MISC_COPY[studioLanguage].aborted);
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
-        setCalculationError("Add at least one supported solar product in the supplied Products step before calculating the project study.");
+        setCalculationError(MISC_COPY[studioLanguage].addProduct);
       } else {
         const demoStudy = createDemoStudy(context, studioSnapshot, extras);
         setStudy(demoStudy);
@@ -1898,7 +2007,7 @@ export default function App() {
         navigate("results");
       }
     }
-  }, [context, navigate, runCalculation]);
+  }, [context, navigate, runCalculation, studioLanguage]);
 
   const showGateway = route !== "studio";
   return (
@@ -1914,7 +2023,7 @@ export default function App() {
           onChange={updateEnergySettings}
           onPrepare={() => {
             if (!context.location) {
-              setCalculationError("Set a project location before calculating results.");
+              setCalculationError(MISC_COPY[studioLanguage].noLocation);
               navigate("location");
               return;
             }
@@ -1922,13 +2031,13 @@ export default function App() {
           }}
           onNavigate={navigate}
           language={studioLanguage}
+          marketKey={context.marketKey}
         />}
         {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} language={studioLanguage} />}
-        {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} />}
-        {route === "results" && !study && <CalculationLoadingPage error="No active project study is available. Return to Design Studio and prepare a new study." onBack={() => navigate("studio")} language={studioLanguage} />}
+        {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} />}
+        {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
-      {(["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route) && <PersistentStudyAssistant route={route} study={study} />}
     </>
   );
 }

@@ -50,7 +50,7 @@ export const appRouter = router({
       .mutation(({ input }) => runProjectCalculation(input)),
     ask: publicProcedure
       .input(projectAssistantInputSchema)
-      .mutation(({ input }) => askProjectAssistant(input.caseId, input.question)),
+      .mutation(({ input }) => askProjectAssistant(input.caseId, input.question, input.language)),
     designHelp: publicProcedure
       .input(designAssistantInputSchema)
       .mutation(({ input }) => askDesignAssistant(input.question, input.stage)),

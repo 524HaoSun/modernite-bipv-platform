@@ -6,6 +6,8 @@ const root = path.resolve(import.meta.dirname, "..");
 const app = fs.readFileSync(path.join(root, "client/src/App.tsx"), "utf8");
 const styles = fs.readFileSync(path.join(root, "client/src/index.css"), "utf8");
 const map = fs.readFileSync(path.join(root, "client/src/components/ProjectLocationMap.tsx"), "utf8");
+const results = fs.readFileSync(path.join(root, "client/src/components/ResultsReport.tsx"), "utf8");
+const resultsText = fs.readFileSync(path.join(root, "client/src/lib/results-copy.ts"), "utf8");
 
 describe("V28-aligned entry gateway", () => {
   it("keeps the customer Studio runtime available behind the new entry flow", () => {
@@ -36,11 +38,11 @@ describe("V28-aligned entry gateway", () => {
 
   it("includes a restrained local-model calculation transition and optional AI study control", () => {
     expect(app).toContain("Preparing your personalised project outlook.");
-    expect(app).toContain("Customer V31 hourly model · PVGIS weather");
-    expect(app).toContain("Hourly weather");
-    expect(app).toContain("Modernité Design Guide");
-    expect(app).toContain("PersistentStudyAssistant");
-    expect(styles).toContain(".persistent-study-assistant");
+    expect(resultsText).toContain("Customer V31 hourly model · PVGIS weather");
+    expect(resultsText).toContain("Hourly weather");
+    expect(resultsText).toContain("Modernité Design Guide");
+    expect(results).toContain("trpc.projectStudy.ask.useMutation");
+    expect(results).toContain("ResultAdvisor");
     expect(styles).toContain(".calculation-page");
   });
 
@@ -128,10 +130,9 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain("EnergyPage");
     expect(app).toContain('energy: "/energy"');
     expect(app).toContain("Calculate project results");
-    expect(app).toContain("MonthlyProfileChart");
-    expect(app).toContain("CashPositionChart");
+    expect(results).toContain("MonthlyProfileChart");
+    expect(results).toContain("CashPositionChart");
     expect(app).toContain("energySettings");
-    expect(app).toContain("designHelp");
     expect(app).toContain("mapStudioSnapshotToSurfaces(snapshot)");
     expect(app).toContain("Configuration required");
     expect(app).toContain("Add at least one solar product in the supplied Products step before calculating the project study.");
@@ -140,8 +141,9 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain('(["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route)');
     expect(app).toContain("modernite:study-request");
     expect(app).toContain("modernite:finalize-request");
-    expect(app).toContain("Save configuration");
-    expect(app).toContain("Download Studio PDF");
+    expect(results).toContain('detail: "configuration"');
+    expect(resultsText).toContain("Save configuration");
+    expect(resultsText).toContain("Download Studio PDF");
     expect(app).toContain("style[data-host-workflow]");
     expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select { display: none !important; }"');
     for (const customerFeature of [".mi-toolbar", "#modernite-arrange-panel", ".en-system-card", ".energy-launch-row", ".customer-buttons", "studioTabs[4].hidden"]) {
