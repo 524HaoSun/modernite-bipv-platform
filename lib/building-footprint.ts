@@ -133,6 +133,39 @@ function parseMetres(value: string | undefined) {
   return Number.isFinite(metres) && metres > 0 ? metres : undefined;
 }
 
+export type BuildingCandidate = {
+  id: number;
+  path: LatLng[];
+  center: LatLng;
+  areaM2: number;
+  distanceM: number;
+  /** House number and street from OSM `addr:*` tags, or the building name. */
+  address?: string;
+  buildingTag?: string;
+};
+
+const ANCILLARY_TAGS = /^(garage|garages|shed|carport|roof|hut|container|kiosk|toilets|bunker|greenhouse|construction|ruins)$/;
+
+/** Buildings around a geocoded point (postcode or street) that the user can pick from on the map. */
+export function candidatesFromOverpass(elements: OverpassElement[], site: LatLng, limit = 40): BuildingCandidate[] {
+  const project = projector(site);
+  return elements
+    .filter((e) => e.type === "way" && e.tags?.building && !ANCILLARY_TAGS.test(e.tags.building) && (e.geometry?.length ?? 0) >= 4)
+    .map((e) => {
+      const ring = ringOf(e);
+      const xy = ring.map(project);
+      const area = polygonArea(xy);
+      const center = ring.reduce((sum, p) => ({ lat: sum.lat + p.lat / ring.length, lng: sum.lng + p.lng / ring.length }), { lat: 0, lng: 0 });
+      const c = project(center);
+      const tags = e.tags ?? {};
+      const address = tags["addr:housenumber"] ? [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" ") : tags.name;
+      return { id: e.id, path: ring, center, areaM2: Math.round(area * 10) / 10, distanceM: Math.round(Math.hypot(c.x, c.y)), address, buildingTag: tags.building };
+    })
+    .filter((b) => b.path.length >= 3 && b.areaM2 >= 30)
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, limit);
+}
+
 const ROAD_TYPES = /^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|pedestrian)(_link)?$/;
 
 export function footprintFromOverpass(elements: OverpassElement[], site: LatLng, maxDistanceM = 35): BuildingFootprint {

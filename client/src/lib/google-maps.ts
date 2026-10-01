@@ -115,12 +115,31 @@ export async function googleViewportInfo(apiKey: string, session: string, zoom: 
   return { copyright: data.copyright ?? "", maxZoom: covering.length ? Math.max(...covering.map((rect) => rect.maxZoom)) : null };
 }
 
+export type GeocodeMatch = { coordinates: { lat: number; lng: number }; label: string; precise: boolean };
+
+const PRECISE_TYPES = ["premise", "subpremise", "street_address", "establishment"];
+
 /** Maps JS Geocoder (the key is referrer-restricted, so the REST geocoding endpoint is not usable). */
-export async function googleGeocode(apiKey: string, address: string, language: string, country?: string) {
+export async function googleGeocodeAll(apiKey: string, address: string, language: string, country?: string): Promise<GeocodeMatch[]> {
   await loadGoogleMaps(apiKey);
   const { Geocoder } = (await google.maps.importLibrary("geocoding")) as google.maps.GeocodingLibrary;
   const { results } = await new Geocoder().geocode({ address, language, ...(country ? { componentRestrictions: { country } } : {}) });
-  const result = results.find((item) => !item.types.includes("country")) ?? results[0];
-  if (!result) return null;
-  return { coordinates: { lat: result.geometry.location.lat(), lng: result.geometry.location.lng() }, label: result.formatted_address };
+  return results
+    .filter((item) => !item.types.includes("country"))
+    .slice(0, 6)
+    .map((item) => ({ coordinates: { lat: item.geometry.location.lat(), lng: item.geometry.location.lng() }, label: item.formatted_address, precise: item.types.some((type) => PRECISE_TYPES.includes(type)) }));
+}
+
+export async function googleGeocode(apiKey: string, address: string, language: string, country?: string) {
+  return (await googleGeocodeAll(apiKey, address, language, country))[0] ?? null;
+}
+
+/** House-level addresses around a point (one reverse-geocode request), used to label nearby buildings. */
+export async function googleNearbyAddresses(apiKey: string, coordinates: { lat: number; lng: number }, language: string): Promise<GeocodeMatch[]> {
+  await loadGoogleMaps(apiKey);
+  const { Geocoder } = (await google.maps.importLibrary("geocoding")) as google.maps.GeocodingLibrary;
+  const { results } = await new Geocoder().geocode({ location: coordinates, language });
+  return results
+    .filter((item) => item.types.some((type) => type === "premise" || type === "street_address" || type === "subpremise"))
+    .map((item) => ({ coordinates: { lat: item.geometry.location.lat(), lng: item.geometry.location.lng() }, label: item.formatted_address, precise: true }));
 }

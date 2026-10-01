@@ -43,7 +43,11 @@ import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
 import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
-import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection } from "@/components/ProjectLocationMap";
+import { ProjectLocationMap, cleanAddressLabel, geocodeLanguage, pointInPath, useMapsKey, usePrewarmLocationMap, type AddressMatch, type BuildingPicker, type MapBuildingCandidate, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection } from "@/components/ProjectLocationMap";
+import { AddressGate } from "@/components/AddressGate";
+import { StudioTour } from "@/components/StudioTour";
+import { STUDIO_GUIDE_COPY } from "@/lib/studio-guide-copy";
+import { googleNearbyAddresses } from "@/lib/google-maps";
 import type { MarketAtlasCopy } from "@/components/MarketAtlas";
 import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
 
@@ -165,6 +169,15 @@ const DEFAULT_PROJECT_LOCATION: ProjectLocationSelection = {
   label: "30 St James's Street, London SW1A 1HF, United Kingdom",
   coordinates: { lat: 51.5079, lng: -0.1378 },
 };
+const STUDIO_TOUR_STORAGE_KEY = "modernite-studio-tour-v1";
+const DETECTED_SOURCES = new Set(["osm", "google-solar", "google-elevation", "estimated"]);
+function isDetectedBuilding(building: AppliedBuilding) {
+  return Object.values(building.sources).some((source) => DETECTED_SOURCES.has(source));
+}
+/** The sample address only seeds demo studies; the location step asks for a real address instead. */
+function isSampleLocation(location: ProjectLocationSelection | null | undefined) {
+  return !location || (Math.abs(location.coordinates.lat - DEFAULT_PROJECT_LOCATION.coordinates.lat) < 1e-6 && Math.abs(location.coordinates.lng - DEFAULT_PROJECT_LOCATION.coordinates.lng) < 1e-6);
+}
 /** Drops a stored outline that does not belong to the stored pin (older builds kept a sample outline). */
 function siteAreaNear(area: SiteAreaSelection | null | undefined, location: ProjectLocationSelection | null | undefined): SiteAreaSelection | null {
   if (!area?.path?.length || !location) return null;
@@ -220,13 +233,13 @@ const GATEWAY_COPY: Record<StudioLanguage, GatewayCopy> = {
 };
 
 const LOCATION_PAGE_TEXT: Record<StudioLanguage, { title: string; intro: string; selectedMarket: string; siteBrief: string; market: string; area: string; boundary: string; notTraced: string; awaiting: string; confirmed: string; pinpoint: string; trace: string; continue: string; retain: string; continueStudio: string }> = {
-  en: { title: "Find the building, outline the site.", intro: "Put the pin on the building: its outline and dimensions are detected from map data. Trace the outline by hand only where nothing is found.", selectedMarket: "Selected market", siteBrief: "Site brief", market: "Market", area: "Site area", boundary: "Boundary", notTraced: "Not set", awaiting: "Waiting", confirmed: "Market confirmed", pinpoint: "Pin the exact site", trace: "Detect or trace the site outline", continue: "Continue to Design Studio", retain: "Address, coordinates, and your traced site area remain available when you return to update the brief.", continueStudio: "Continue to Design Studio" },
-  zh: { title: "定位建筑，确定场地范围。", intro: "把图钉放到建筑上，系统会从地图数据自动识别建筑轮廓和尺寸；识别不到时再手动勾画。", selectedMarket: "已选市场", siteBrief: "场地摘要", market: "市场", area: "场地面积", boundary: "边界", notTraced: "尚未确定", awaiting: "等待识别", confirmed: "已确认市场", pinpoint: "标记精确场地", trace: "识别或勾画场地范围", continue: "进入设计工作室", retain: "地址、坐标和已勾画的场地面积会在返回更新摘要时保留。", continueStudio: "进入设计工作室" },
-  "zh-Hant": { title: "定位建築，確定場地範圍。", intro: "把圖釘放到建築上，系統會從地圖資料自動識別建築輪廓和尺寸；識別不到時再手動勾畫。", selectedMarket: "已選市場", siteBrief: "場地摘要", market: "市場", area: "場地面積", boundary: "邊界", notTraced: "尚未確定", awaiting: "等待識別", confirmed: "已確認市場", pinpoint: "標記精確場地", trace: "識別或勾畫場地範圍", continue: "進入設計工作室", retain: "地址、座標和已勾畫的場地面積會在返回更新摘要時保留。", continueStudio: "進入設計工作室" },
-  fr: { title: "Repérez le bâtiment, délimitez le site.", intro: "Placez l’épingle sur le bâtiment : son contour et ses dimensions sont détectés à partir des données cartographiques. Ne tracez à la main que si rien n’est trouvé.", selectedMarket: "Marché sélectionné", siteBrief: "Brief du site", market: "Marché", area: "Surface du site", boundary: "Limite", notTraced: "Non défini", awaiting: "En attente", confirmed: "Marché confirmé", pinpoint: "Repérer le site exact", trace: "Détecter ou tracer l’emprise du site", continue: "Continuer vers le Studio de conception", retain: "L’adresse, les coordonnées et la zone du site tracée restent disponibles lorsque vous revenez mettre à jour le brief.", continueStudio: "Continuer vers le Studio de conception" },
-  ja: { title: "建物を特定し、敷地範囲を決める。", intro: "ピンを建物の上に置くと、地図データから建物の輪郭と寸法を自動検出します。見つからない場合だけ手動でトレースしてください。", selectedMarket: "選択した市場", siteBrief: "敷地概要", market: "市場", area: "敷地面積", boundary: "境界", notTraced: "未設定", awaiting: "検出待ち", confirmed: "市場を確認済み", pinpoint: "正確な敷地を指定", trace: "敷地範囲を検出またはトレース", continue: "デザインスタジオへ進む", retain: "住所、座標、描画した敷地面積は、概要を更新するために戻った際も保持されます。", continueStudio: "デザインスタジオへ進む" },
-  es: { title: "Localiza el edificio y delimita el sitio.", intro: "Coloca el pin sobre el edificio: su contorno y medidas se detectan con datos cartográficos. Traza a mano solo si no se encuentra nada.", selectedMarket: "Mercado seleccionado", siteBrief: "Resumen del sitio", market: "Mercado", area: "Superficie del sitio", boundary: "Límite", notTraced: "Sin definir", awaiting: "En espera", confirmed: "Mercado confirmado", pinpoint: "Ubicar el sitio exacto", trace: "Detectar o trazar el contorno del sitio", continue: "Continuar al Estudio de diseño", retain: "La dirección, las coordenadas y el área trazada seguirán disponibles al volver para actualizar el resumen.", continueStudio: "Continuar al Estudio de diseño" },
-  it: { title: "Individua l’edificio, delimita il sito.", intro: "Posiziona il segnaposto sull’edificio: contorno e misure vengono rilevati dai dati cartografici. Traccia a mano solo se non viene trovato nulla.", selectedMarket: "Mercato selezionato", siteBrief: "Sintesi del sito", market: "Mercato", area: "Superficie del sito", boundary: "Perimetro", notTraced: "Non definito", awaiting: "In attesa", confirmed: "Mercato confermato", pinpoint: "Individua il sito esatto", trace: "Rileva o traccia il perimetro del sito", continue: "Continua allo Studio di progettazione", retain: "Indirizzo, coordinate e area tracciata restano disponibili quando torni per aggiornare la sintesi.", continueStudio: "Continua allo Studio di progettazione" },
+  en: { title: "Find the building, outline the site.", intro: "Enter a postcode or address, then tap your building on the satellite view. Its outline and dimensions are detected automatically; trace by hand only where nothing is found.", selectedMarket: "Selected market", siteBrief: "Site brief", market: "Market", area: "Site area", boundary: "Boundary", notTraced: "Not set", awaiting: "Waiting", confirmed: "Market confirmed", pinpoint: "Pin the exact site", trace: "Detect or trace the site outline", continue: "Continue to Design Studio", retain: "Address, coordinates, and your traced site area remain available when you return to update the brief.", continueStudio: "Continue to Design Studio" },
+  zh: { title: "定位建筑，确定场地范围。", intro: "输入邮编或地址，再在卫星图上点选你的建筑；轮廓和尺寸会自动识别，识别不到时再手动勾画。", selectedMarket: "已选市场", siteBrief: "场地摘要", market: "市场", area: "场地面积", boundary: "边界", notTraced: "尚未确定", awaiting: "等待识别", confirmed: "已确认市场", pinpoint: "标记精确场地", trace: "识别或勾画场地范围", continue: "进入设计工作室", retain: "地址、坐标和已勾画的场地面积会在返回更新摘要时保留。", continueStudio: "进入设计工作室" },
+  "zh-Hant": { title: "定位建築，確定場地範圍。", intro: "輸入郵遞區號或地址，再在衛星圖上點選你的建築；輪廓和尺寸會自動識別，識別不到時再手動勾畫。", selectedMarket: "已選市場", siteBrief: "場地摘要", market: "市場", area: "場地面積", boundary: "邊界", notTraced: "尚未確定", awaiting: "等待識別", confirmed: "已確認市場", pinpoint: "標記精確場地", trace: "識別或勾畫場地範圍", continue: "進入設計工作室", retain: "地址、座標和已勾畫的場地面積會在返回更新摘要時保留。", continueStudio: "進入設計工作室" },
+  fr: { title: "Repérez le bâtiment, délimitez le site.", intro: "Saisissez un code postal ou une adresse, puis touchez votre bâtiment sur la vue satellite. Contour et dimensions sont détectés automatiquement ; ne tracez à la main que si rien n’est trouvé.", selectedMarket: "Marché sélectionné", siteBrief: "Brief du site", market: "Marché", area: "Surface du site", boundary: "Limite", notTraced: "Non défini", awaiting: "En attente", confirmed: "Marché confirmé", pinpoint: "Repérer le site exact", trace: "Détecter ou tracer l’emprise du site", continue: "Continuer vers le Studio de conception", retain: "L’adresse, les coordonnées et la zone du site tracée restent disponibles lorsque vous revenez mettre à jour le brief.", continueStudio: "Continuer vers le Studio de conception" },
+  ja: { title: "建物を特定し、敷地範囲を決める。", intro: "郵便番号または住所を入力し、衛星画像で建物をタップします。輪郭と寸法は自動検出され、見つからない場合だけ手動でトレースします。", selectedMarket: "選択した市場", siteBrief: "敷地概要", market: "市場", area: "敷地面積", boundary: "境界", notTraced: "未設定", awaiting: "検出待ち", confirmed: "市場を確認済み", pinpoint: "正確な敷地を指定", trace: "敷地範囲を検出またはトレース", continue: "デザインスタジオへ進む", retain: "住所、座標、描画した敷地面積は、概要を更新するために戻った際も保持されます。", continueStudio: "デザインスタジオへ進む" },
+  es: { title: "Localiza el edificio y delimita el sitio.", intro: "Introduce un código postal o una dirección y toca tu edificio en la vista satélite. El contorno y las medidas se detectan solos; traza a mano solo si no se encuentra nada.", selectedMarket: "Mercado seleccionado", siteBrief: "Resumen del sitio", market: "Mercado", area: "Superficie del sitio", boundary: "Límite", notTraced: "Sin definir", awaiting: "En espera", confirmed: "Mercado confirmado", pinpoint: "Ubicar el sitio exacto", trace: "Detectar o trazar el contorno del sitio", continue: "Continuar al Estudio de diseño", retain: "La dirección, las coordenadas y el área trazada seguirán disponibles al volver para actualizar el resumen.", continueStudio: "Continuar al Estudio de diseño" },
+  it: { title: "Individua l’edificio, delimita il sito.", intro: "Inserisci un CAP o un indirizzo, poi tocca il tuo edificio nella vista satellitare. Contorno e misure vengono rilevati automaticamente; traccia a mano solo se non viene trovato nulla.", selectedMarket: "Mercato selezionato", siteBrief: "Sintesi del sito", market: "Mercato", area: "Superficie del sito", boundary: "Perimetro", notTraced: "Non definito", awaiting: "In attesa", confirmed: "Mercato confermato", pinpoint: "Individua il sito esatto", trace: "Rileva o traccia il perimetro del sito", continue: "Continua allo Studio di progettazione", retain: "Indirizzo, coordinate e area tracciata restano disponibili quando torni per aggiornare la sintesi.", continueStudio: "Continua allo Studio di progettazione" },
 };
 
 const OUTER_UI_COPY = {
@@ -1243,11 +1256,55 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   onNavigate: (route: GatewayRoute) => void;
 }) {
   const [viewerMode, setViewerMode] = useState<"street" | "earth" | null>(null);
-  const coordinates = context.location?.coordinates ?? null;
-  const locationKey = coordinates ? `${coordinates.lat.toFixed(5)}:${coordinates.lng.toFixed(5)}:${context.marketKey}` : "";
+  const location = isSampleLocation(context.location) ? null : context.location;
+  const coordinates = location?.coordinates ?? null;
+  const keyFor = (point: { lat: number; lng: number }) => `${point.lat.toFixed(5)}:${point.lng.toFixed(5)}:${context.marketKey}`;
+  const locationKey = coordinates ? keyFor(coordinates) : "";
   const profileInput = { lat: coordinates?.lat ?? 0, lng: coordinates?.lng ?? 0, market: context.marketKey };
   const utils = trpc.useUtils();
   const [detectKey, setDetectKey] = useState("");
+  const [addressSearch, setAddressSearch] = useState(!location);
+  const [anchor, setAnchor] = useState<{ point: { lat: number; lng: number }; label: string } | null>(() => (location ? { point: location.coordinates, label: location.label } : null));
+  const { key: mapsKey } = useMapsKey();
+  const nearbyQuery = trpc.site.nearbyBuildings.useQuery({ lat: anchor?.point.lat ?? 0, lng: anchor?.point.lng ?? 0 }, { enabled: Boolean(anchor) && !addressSearch, staleTime: Infinity, retry: 1 });
+  const [nearbyAddresses, setNearbyAddresses] = useState<AddressMatch[]>([]);
+  useEffect(() => {
+    if (!anchor || !mapsKey || addressSearch) return;
+    let cancelled = false;
+    setNearbyAddresses([]);
+    googleNearbyAddresses(mapsKey, anchor.point, geocodeLanguage(language, market))
+      .then((matches) => !cancelled && setNearbyAddresses(matches))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [anchor, mapsKey, addressSearch, language, market]);
+  const candidates = useMemo<MapBuildingCandidate[]>(() => (nearbyQuery.data ?? []).map((building) => ({
+    id: building.id,
+    path: building.path,
+    center: building.center,
+    areaM2: building.areaM2,
+    label: nearbyAddresses.find((match) => pointInPath(match.coordinates, building.path))?.label ?? building.address,
+  })), [nearbyQuery.data, nearbyAddresses]);
+  const selectedCandidate = coordinates && context.siteArea ? candidates.find((candidate) => pointInPath(coordinates, candidate.path)) ?? null : null;
+  const pickBuilding = (candidate: MapBuildingCandidate, exactLabel?: string) => {
+    const label = exactLabel ?? (candidate.label?.includes(",") ? candidate.label : candidate.label ? `${candidate.label}, ${anchor?.label ?? ""}` : anchor?.label ?? "");
+    onLocationChange({ label, coordinates: candidate.center });
+    onAreaChange({ path: candidate.path, areaM2: candidate.areaM2, source: "detected" });
+    setDetectKey(keyFor(candidate.center));
+  };
+  const chooseAddress = (match: AddressMatch) => {
+    setAddressSearch(false);
+    setAnchor({ point: match.coordinates, label: match.label });
+    onLocationChange({ label: match.label, coordinates: match.coordinates });
+    if (match.precise) setDetectKey(keyFor(match.coordinates));
+  };
+  const buildingPicker: BuildingPicker = {
+    loading: Boolean(anchor) && nearbyQuery.isLoading,
+    candidates,
+    selectedId: selectedCandidate?.id ?? null,
+    onPick: (candidate) => pickBuilding(candidate),
+  };
   const detectRequested = Boolean(coordinates) && (detectKey === locationKey || Boolean(utils.site.buildingProfile.getData(profileInput)));
   const profileQuery = trpc.site.buildingProfile.useQuery(profileInput, { enabled: detectRequested, staleTime: Infinity, retry: 1 });
   const profile = detectRequested ? profileQuery.data : undefined;
@@ -1258,6 +1315,9 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   useEffect(() => {
     if (detectedOutline && !context.siteArea) onAreaChange(detectedOutline);
   }, [detectedOutline]);
+  useEffect(() => {
+    if (location && !anchor) setAnchor({ point: location.coordinates, label: location.label });
+  }, [location, anchor]);
   const siteDetection: SiteDetection = {
     state: !detectRequested ? "idle" : profileQuery.isError ? "error" : !profile ? "loading" : detectedOutline ? "found" : "missing",
     onDetect: () => {
@@ -1268,28 +1328,36 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   };
   const outlinedArea = context.siteArea ? new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(context.siteArea.areaM2) : null;
   const locationText = LOCATION_PAGE_TEXT[language];
-  const locationLabel = context.location ? cleanAddressLabel(context.location.label, language) : "";
+  const locationLabel = location ? cleanAddressLabel(location.label, language) : "";
   return (
     <section className="location-page gateway-page">
       <PageIntro chapter={3} eyebrow={WORKFLOW_LABELS[language].location} icon={<MapPinned size={14} />} title={locationText.title} lede={locationText.intro} />
-      <div className="location-workbench">
+      {addressSearch ? <AddressGate
+        language={language}
+        market={market}
+        placeholder={`${copy.addressSearch} ${regionName(market.shortName, language, market.name)}`}
+        onSelect={chooseAddress}
+        onBrowseMap={() => setAddressSearch(false)}
+      /> : <div className="location-workbench">
         <ProjectLocationMap
           language={language}
           market={market}
           placeholder={`${copy.addressSearch} ${regionName(market.shortName, language, market.name)}`}
           searchLabel={copy.addressSearch}
           locateLabel={copy.locate}
-          initialLocation={context.location}
+          initialLocation={location}
           initialArea={context.siteArea}
           onLocationChange={onLocationChange}
           onAreaChange={onAreaChange}
           onOpenStreetView={() => setViewerMode("street")}
           siteDetection={siteDetection}
+          buildingPicker={buildingPicker}
+          onChangeAddress={() => setAddressSearch(true)}
         />
         <aside className="location-panel location-panel--site">
           <div className="location-panel-heading"><span>03</span><div><p className="mini-label">{copy.projectContext}</p><h2>{locationText.siteBrief}</h2></div></div>
           <div className="location-market-name"><small>{locationText.market}</small><strong>{regionName(market.shortName, language, market.name)}</strong></div>
-          <div className={`location-readout ${context.location ? "is-ready" : ""}`}>
+          <div className={`location-readout ${location ? "is-ready" : ""}`}>
             <MapPinned size={17} />
             <span>{locationLabel || copy.locationEmpty}</span>
           </div>
@@ -1299,14 +1367,14 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           </div>
           <div className="location-steps location-steps--site">
             <span><b>1</b><i className="is-complete" /> {locationText.confirmed}</span>
-            <span><b>2</b><i className={context.location ? "is-complete" : ""} /> {locationText.pinpoint}</span>
+            <span><b>2</b><i className={location ? "is-complete" : ""} /> {locationText.pinpoint}</span>
             <span><b>3</b><i className={context.siteArea ? "is-complete" : ""} /> {locationText.trace}</span>
             <span><b>4</b><i /> {locationText.continue}</span>
           </div>
-          {context.location && <BuildingProfileCard
-            key={`${context.location.coordinates.lat.toFixed(5)}:${context.location.coordinates.lng.toFixed(5)}:${context.marketKey}`}
+          {location && <BuildingProfileCard
+            key={`${location.coordinates.lat.toFixed(5)}:${location.coordinates.lng.toFixed(5)}:${context.marketKey}`}
             language={language}
-            coordinates={context.location.coordinates}
+            coordinates={location.coordinates}
             marketKey={context.marketKey}
             applied={context.building}
             requested={detectRequested}
@@ -1314,12 +1382,12 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
             onOpenViewer={setViewerMode}
           />}
           <p className="location-help">{locationText.retain}</p>
-          <button type="button" className="button-primary wide" onClick={() => onNavigate("studio")} disabled={!context.location}>
+          <button type="button" className="button-primary wide" onClick={() => onNavigate("studio")} disabled={!location}>
             {locationText.continueStudio} <ArrowRight size={16} />
           </button>
         </aside>
-      </div>
-      {viewerMode && context.location && <Suspense fallback={null}><GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} language={language} initialMode={viewerMode} onClose={() => setViewerMode(null)} /></Suspense>}
+      </div>}
+      {viewerMode && location && <Suspense fallback={null}><GoogleSiteViewer coordinates={location.coordinates} label={locationLabel} language={language} initialMode={viewerMode} onClose={() => setViewerMode(null)} /></Suspense>}
     </section>
   );
 }
@@ -1547,6 +1615,11 @@ function StudioPage({
   const [studyReady, setStudyReady] = useState(false);
   const [configuredSurfaceCount, setConfiguredSurfaceCount] = useState(0);
   const [configurationNotice, setConfigurationNotice] = useState<string | null>(null);
+  const [studioTab, setStudioTab] = useState(0);
+  const [realSurfaceCount, setRealSurfaceCount] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
+  const guideRef = useRef<HTMLOListElement | null>(null);
+  const guide = STUDIO_GUIDE_COPY[language];
   const studioRegion = STUDIO_REGION_BY_MARKET[market.key];
   const workflow = WORKFLOW_LABELS[language];
   const bridgeCopy = STUDIO_BRIDGE_COPY[language];
@@ -1587,7 +1660,7 @@ function StudioPage({
     if (!marketLock) {
       marketLock = studioDocument.createElement("style");
       marketLock.dataset.marketLock = "true";
-      marketLock.textContent = ".region-tabs, #open-catalog, #catalog-dialog { display: none !important; }";
+      marketLock.textContent = ".region-tabs, #open-catalog, #catalog-dialog, #modernite-building-controls .mb-block:has(#mb-query) { display: none !important; }";
       studioDocument.head.append(marketLock);
     }
     root.dataset.marketLocked = studioRegion;
@@ -1686,10 +1759,27 @@ function StudioPage({
           studioWindow.ModerniteEnergyApp?.setOrientation?.(building.frontAzimuthDeg % 360);
           studioWindow.dispatchEvent(new Event("modernite-model-change"));
           root.dataset.hostBuilding = buildingKey;
+          if (isDetectedBuilding(building) && root.dataset.hostGuideAdvanced !== building.locationKey) {
+            root.dataset.hostGuideAdvanced = building.locationKey;
+            studioDocument.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab")[1]?.click();
+          }
         } catch (error) {
           console.warn("[studio] building parameters not applied", error);
         }
       }
+    }
+    const firstSection = studioDocument.querySelector("section.section");
+    let banner = studioDocument.querySelector<HTMLParagraphElement>("#host-detected-banner");
+    if (building && isDetectedBuilding(building) && firstSection) {
+      if (!banner) {
+        banner = studioDocument.createElement("p");
+        banner.id = "host-detected-banner";
+        banner.style.cssText = "margin:4px 0 14px;padding:10px 12px;border:1px solid #cfe3cf;border-radius:10px;color:#24523c;background:#eef6ee;font-size:12px;line-height:1.55";
+        (firstSection.querySelector(".section-title") ?? firstSection.firstElementChild)?.after(banner);
+      }
+      banner.textContent = `✓ ${STUDIO_GUIDE_COPY[language].detectedBanner}`;
+    } else {
+      banner?.remove();
     }
   }, [context.building, context.location, context.siteArea, language, studioRegion, weatherSource]);
 
@@ -1783,6 +1873,10 @@ function StudioPage({
       setStudyReady(Boolean(snapshot) || frameReady);
       const nextCount = mapStudioSnapshotToSurfaces(activeSnapshot).length;
       setConfiguredSurfaceCount(nextCount);
+      setRealSurfaceCount(snapshot ? mapStudioSnapshotToSurfaces(snapshot).length : 0);
+      const tabs = Array.from(frame?.contentDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab") ?? []);
+      const current = tabs.findIndex((tab) => tab.getAttribute("aria-pressed") === "true");
+      if (current >= 0) setStudioTab(current);
       if (nextCount > 0) setConfigurationNotice(null);
     };
     refreshStudyReadiness();
@@ -1804,6 +1898,42 @@ function StudioPage({
       window.removeEventListener("modernite:finalize-request", handleFinalizeRequest);
     };
   }, [requestCalculation]);
+
+  useEffect(() => {
+    if (!active || !frameReady) return;
+    try {
+      if (window.localStorage.getItem(STUDIO_TOUR_STORAGE_KEY)) return;
+    } catch {
+      return;
+    }
+    const timer = window.setTimeout(() => setTourOpen(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [active, frameReady]);
+
+  const closeTour = useCallback(() => {
+    setTourOpen(false);
+    try {
+      window.localStorage.setItem(STUDIO_TOUR_STORAGE_KEY, "1");
+    } catch {
+      // Private browsing: the guide simply shows again next time.
+    }
+  }, []);
+
+  const openStudioTab = (index: number) => {
+    frameRef.current?.contentDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab")[index]?.click();
+    setStudioTab(index);
+    frameRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+  const appliedBuilding = context.building;
+  const buildingSummary = appliedBuilding ? `${appliedBuilding.typeId} · ${appliedBuilding.widthM} × ${appliedBuilding.depthM} m` : "";
+  const guideSteps = [
+    { title: guide.steps[0], status: appliedBuilding ? (isDetectedBuilding(appliedBuilding) ? guide.building.detected(buildingSummary) : buildingSummary) : guide.building.manual, done: Boolean(appliedBuilding), current: studioTab === 0, onClick: () => openStudioTab(0) },
+    { title: guide.steps[1], status: realSurfaceCount ? guide.products.done(realSurfaceCount) : guide.products.todo, done: realSurfaceCount > 0, current: studioTab === 1, onClick: () => openStudioTab(1) },
+    { title: guide.steps[2], status: guide.finishes, done: false, optional: true, current: studioTab === 2 || studioTab === 3, onClick: () => openStudioTab(2) },
+    { title: guide.steps[3], status: guide.energy, done: false, current: false, onClick: continueToEnergy, next: true },
+  ];
+  const guideStep = (index: number) => () => guideRef.current?.children[index] ?? null;
+  const tourTargets = [() => guideRef.current, guideStep(0), guideStep(1), () => frameRef.current, guideStep(3)];
 
   return (
     <main className={`customer-studio-shell ${active ? "is-active" : ""}`} aria-hidden={!active}>
@@ -1837,12 +1967,19 @@ function StudioPage({
         </div>
       </header>
       <PageIntro chapter={4} eyebrow={WORKFLOW_LABELS[language].studio} icon={<Layers3 size={14} />} title={text.studioTitle} lede={text.studioIntro} className="studio-page-intro" />
-      <section className="studio-host-context">
+      <section className="studio-host-context studio-guide">
         <span className="studio-site-context"><MapPinned size={22} /><small>{text.currentSite}</small><b>{context.location ? cleanAddressLabel(context.location.label, language) : text.fallbackAddress}</b>{context.location && <span className="studio-weather-row"><label className="studio-weather-select"><SunMedium size={11} aria-hidden="true" /><span className="sr-only">{MISC_COPY[language].weatherSource}</span><select value={weatherSource} onChange={(event) => changeWeatherSource(event.target.value as WeatherSourceKey)} aria-label={MISC_COPY[language].weatherSource}>{(Object.keys(WEATHER_SOURCE_LABELS) as WeatherSourceKey[]).map((key) => <option key={key} value={key}>{WEATHER_SOURCE_LABELS[key].short}</option>)}</select></label>{weatherState.status !== "idle" && <em className={`studio-weather-chip is-${weatherState.status}`} title={weatherState.label}>{weatherState.status === "ready" ? weatherState.label : weatherState.status === "loading" ? MISC_COPY[language].weatherLoading(WEATHER_SOURCE_LABELS[weatherSource].short) : MISC_COPY[language].weatherUnavailable(WEATHER_SOURCE_LABELS[weatherSource].short)}</em>}</span>}</span>
-        <span><Globe2 size={22} /><small>{text.market}</small><b>{regionName(market.shortName, language, market.name)}</b></span>
-        <span><Home size={22} /><small>{text.studioProgress}</small><b>{text.activeSurfacesConfigured(configuredSurfaceCount || 4)}</b><i /></span>
-        <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
-        <button type="button" className="studio-calculate" onClick={continueToEnergy}>{bridgeCopy.prepareStudy} <ArrowRight size={14} /></button>
+        <ol className="studio-guide-steps" ref={guideRef} aria-label={text.studioProgressLabel}>
+          {guideSteps.map((step, index) => <li key={step.title}>
+            <button type="button" className={`${step.done ? "is-done" : ""} ${step.current ? "is-current" : ""} ${step.next ? "is-next" : ""}`} onClick={step.onClick}>
+              <em>{step.done ? <Check size={12} /> : index + 1}</em>
+              <strong>{step.title}{step.optional && <u>{guide.optional}</u>}</strong>
+              <small>{step.status}</small>
+              {step.next && <ArrowRight size={15} className="studio-guide-arrow" />}
+            </button>
+          </li>)}
+        </ol>
+        <button type="button" className="studio-tour-button" onClick={() => setTourOpen(true)}><CircleHelp size={15} /> {guide.tutorial}</button>
       </section>
       <div className="customer-studio-stage">
         {!frameReady && <div className="studio-opening-notice" aria-live="polite"><LoaderCircle size={15} /><span><b>{bridgeCopy.openingStudio}</b><small>{bridgeCopy.runtimeNotice}</small></span></div>}
@@ -1863,6 +2000,7 @@ function StudioPage({
         <button type="button" className="studio-aftercare-action" onClick={continueToEnergy}><span><small>{text.step05}</small><b>{text.homeEnergyCta}</b></span><ArrowRight size={17} /></button>
       </div>
       {studyReady && configuredSurfaceCount === 0 && <div className="studio-configuration-notice" role="status"><CircleHelp size={15} /><span><b>{text.configurationRequired}</b><small>{text.configurationRequiredBody}</small></span></div>}
+      {tourOpen && active && <StudioTour copy={guide.tour} targets={tourTargets} onClose={closeTour} />}
       {configurationNotice && <div className="studio-configuration-notice is-alert" role="alert"><CircleHelp size={15} /><span><b>{text.calculationNotStarted}</b><small>{configurationNotice}</small></span></div>}
     </main>
   );
@@ -1939,15 +2077,19 @@ export default function App() {
   }, []);
 
   const updateMarket = useCallback((next: Market) => {
-    setContext((current) => ({
-      version: 3,
-      siteArea: current.siteArea ?? null,
-      marketKey: next.key,
-      europeanCountry: next.key === "EU" ? current.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : null,
-      location: current.location ?? DEFAULT_PROJECT_LOCATION,
-      energySettings: current.energySettings,
-      updatedAt: Date.now(),
-    }));
+    setContext((current) => {
+      const changed = current.marketKey !== next.key;
+      return {
+        version: 3,
+        siteArea: changed ? null : current.siteArea ?? null,
+        building: changed ? null : current.building ?? null,
+        marketKey: next.key,
+        europeanCountry: next.key === "EU" ? current.europeanCountry ?? DEFAULT_EUROPEAN_COUNTRY : null,
+        location: changed ? DEFAULT_PROJECT_LOCATION : current.location ?? DEFAULT_PROJECT_LOCATION,
+        energySettings: current.energySettings,
+        updatedAt: Date.now(),
+      };
+    });
   }, []);
 
   const updateLocation = useCallback((location: ProjectLocationSelection) => {
@@ -1971,14 +2113,18 @@ export default function App() {
   }, []);
 
   const updateEuropeanCountry = useCallback((europeanCountry: EuropeanMarket | null) => {
-    setContext((current) => ({
-      ...current,
-      marketKey: europeanCountry ? "EU" : current.marketKey,
-      europeanCountry,
-      location: current.location ?? DEFAULT_PROJECT_LOCATION,
-      siteArea: current.siteArea ?? null,
-      updatedAt: Date.now(),
-    }));
+    setContext((current) => {
+      const changed = Boolean(europeanCountry) && (current.marketKey !== "EU" || current.europeanCountry?.shortName !== europeanCountry?.shortName);
+      return {
+        ...current,
+        marketKey: europeanCountry ? "EU" : current.marketKey,
+        europeanCountry,
+        location: changed ? DEFAULT_PROJECT_LOCATION : current.location ?? DEFAULT_PROJECT_LOCATION,
+        siteArea: changed ? null : current.siteArea ?? null,
+        building: changed ? null : current.building ?? null,
+        updatedAt: Date.now(),
+      };
+    });
   }, []);
 
   const beginProject = useCallback(() => {

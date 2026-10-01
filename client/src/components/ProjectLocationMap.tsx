@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, Eye, EyeOff, Loader2, MapPin, Navigation, Pencil, Ruler, ScanSearch, Search, Undo2 } from "lucide-react";
-import { googleGeocode, googleTileSession, googleTileUrl, googleViewportInfo } from "@/lib/google-maps";
+import { Crosshair, Eye, EyeOff, Loader2, MapPin, MousePointerClick, Navigation, Pencil, Ruler, ScanSearch, Search, Undo2 } from "lucide-react";
+import { googleGeocodeAll, googleTileSession, googleTileUrl, googleViewportInfo, type GeocodeMatch } from "@/lib/google-maps";
 import { trpc } from "@/lib/trpc";
 
 export type MarketKey = "GB" | "EU" | "CA" | "JP";
@@ -30,6 +30,16 @@ export type SiteDetection = {
   state: "idle" | "loading" | "found" | "missing" | "error";
   onDetect: () => void;
   onUseDetected?: () => void;
+};
+
+/** A mapped building near the searched address that the user can pick by tapping it. */
+export type MapBuildingCandidate = { id: number; path: google.maps.LatLngLiteral[]; center: google.maps.LatLngLiteral; areaM2: number; label?: string };
+
+export type BuildingPicker = {
+  loading: boolean;
+  candidates: MapBuildingCandidate[];
+  selectedId: number | null;
+  onPick: (candidate: MapBuildingCandidate) => void;
 };
 
 type GatewayLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -90,6 +100,11 @@ type MapText = {
   useDetected: string;
   detectedArea: string;
   retry: string;
+  findingBuildings: string;
+  pickHint: (count: number) => string;
+  pickOther: string;
+  detectAtPin: string;
+  changeAddress: string;
 };
 
 const EN_TEXT: MapText = {
@@ -140,6 +155,11 @@ const EN_TEXT: MapText = {
   useDetected: "Use detected outline",
   detectedArea: "Detected building outline",
   retry: "Retry",
+  findingBuildings: "Finding the buildings at this address…",
+  pickHint: (count) => `Tap your building on the map (${count} nearby).`,
+  pickOther: "Tap another outline to switch building",
+  detectAtPin: "Detect at pin",
+  changeAddress: "Change address",
 };
 
 const ZH_TEXT: MapText = {
@@ -190,6 +210,11 @@ const ZH_TEXT: MapText = {
   useDetected: "改用识别轮廓",
   detectedArea: "识别的建筑轮廓",
   retry: "重试",
+  findingBuildings: "正在查找这个地址附近的建筑…",
+  pickHint: (count) => `在地图上点选你的建筑（附近共 ${count} 栋）。`,
+  pickOther: "点其他轮廓可切换建筑",
+  detectAtPin: "识别图钉处",
+  changeAddress: "更换地址",
 };
 
 const ZH_HANT_TEXT: MapText = {
@@ -240,6 +265,11 @@ const ZH_HANT_TEXT: MapText = {
   useDetected: "改用識別輪廓",
   detectedArea: "識別的建築輪廓",
   retry: "重試",
+  findingBuildings: "正在查找此地址附近的建築…",
+  pickHint: (count) => `在地圖上點選你的建築（附近共 ${count} 棟）。`,
+  pickOther: "點其他輪廓可切換建築",
+  detectAtPin: "識別圖釘處",
+  changeAddress: "更換地址",
 };
 
 const FR_TEXT: MapText = {
@@ -290,6 +320,11 @@ const FR_TEXT: MapText = {
   useDetected: "Utiliser le contour détecté",
   detectedArea: "Contour du bâtiment détecté",
   retry: "Réessayer",
+  findingBuildings: "Recherche des bâtiments à cette adresse…",
+  pickHint: (count) => `Touchez votre bâtiment sur la carte (${count} à proximité).`,
+  pickOther: "Touchez un autre contour pour changer de bâtiment",
+  detectAtPin: "Détecter au repère",
+  changeAddress: "Changer d’adresse",
 };
 
 const JA_TEXT: MapText = {
@@ -340,6 +375,11 @@ const JA_TEXT: MapText = {
   useDetected: "検出した輪郭を使う",
   detectedArea: "検出した建物の輪郭",
   retry: "再試行",
+  findingBuildings: "この住所の周辺の建物を探しています…",
+  pickHint: (count) => `地図上で対象の建物をタップしてください（周辺 ${count} 棟）。`,
+  pickOther: "別の輪郭をタップすると建物を切り替えます",
+  detectAtPin: "ピン位置で検出",
+  changeAddress: "住所を変更",
 };
 
 const ES_TEXT: MapText = {
@@ -390,6 +430,11 @@ const ES_TEXT: MapText = {
   useDetected: "Usar contorno detectado",
   detectedArea: "Contorno detectado del edificio",
   retry: "Reintentar",
+  findingBuildings: "Buscando los edificios de esta dirección…",
+  pickHint: (count) => `Toca tu edificio en el mapa (${count} cerca).`,
+  pickOther: "Toca otro contorno para cambiar de edificio",
+  detectAtPin: "Detectar en el pin",
+  changeAddress: "Cambiar dirección",
 };
 
 const IT_TEXT: MapText = {
@@ -440,6 +485,11 @@ const IT_TEXT: MapText = {
   useDetected: "Usa il contorno rilevato",
   detectedArea: "Contorno rilevato dell’edificio",
   retry: "Riprova",
+  findingBuildings: "Ricerca degli edifici a questo indirizzo…",
+  pickHint: (count) => `Tocca il tuo edificio sulla mappa (${count} nelle vicinanze).`,
+  pickOther: "Tocca un altro contorno per cambiare edificio",
+  detectAtPin: "Rileva al segnaposto",
+  changeAddress: "Cambia indirizzo",
 };
 
 const MAP_TEXT: Record<GatewayLanguage, MapText> = {
@@ -477,6 +527,9 @@ type ProjectLocationMapProps = {
   onAreaChange: (selection: SiteAreaSelection | null) => void;
   onOpenStreetView?: () => void;
   siteDetection?: SiteDetection;
+  buildingPicker?: BuildingPicker;
+  /** When set, the in-map search is replaced by the chosen address and a button back to address search. */
+  onChangeAddress?: () => void;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -548,7 +601,7 @@ function stripToLocalisedAddress(value: string) {
 }
 
 export function cleanAddressLabel(value: string, language: GatewayLanguage) {
-  if (isCjkLanguage(language)) return stripToLocalisedAddress(value) || stripLocalisedAliases(value) || value;
+  if (isCjkLanguage(language)) return hasCjk(value) ? stripToLocalisedAddress(value) || stripLocalisedAliases(value) || value : value;
   if (language === "en") return stripLocalisedAliases(value) || value;
   return value;
 }
@@ -607,6 +660,54 @@ function countryRestriction(market: Market) {
   if (market.key === "CA") return "ca";
   if (market.key === "JP") return "jp";
   return market.shortName !== "EU" ? market.shortName.toLowerCase() : undefined;
+}
+
+export type AddressMatch = GeocodeMatch;
+
+/** Addresses outside Japan stay in their local Latin script; CJK transliterations of street names are unusable. */
+export function geocodeLanguage(language: GatewayLanguage, market: Market) {
+  return isCjkLanguage(language) && market.key !== "JP" ? "en-GB" : nominatimLanguage(language);
+}
+
+/** Google geocoding (several matches for ambiguous input), with Nominatim when Google is unavailable. */
+export async function searchAddresses(address: string, market: Market, language: GatewayLanguage, googleKey: string | null): Promise<AddressMatch[] | "other-country"> {
+  const trimmed = address.trim();
+  if (!trimmed) return [];
+  const country = countryRestriction(market);
+  const statedCountry = Object.entries(COUNTRY_NAME_TERMS).find(([term]) => trimmed.toLowerCase().includes(term))?.[1];
+  if (country && statedCountry && statedCountry !== country) return "other-country";
+  const requestLanguage = geocodeLanguage(language, market);
+  if (googleKey) {
+    const found = await googleGeocodeAll(googleKey, trimmed, requestLanguage, country).catch(() => null);
+    const usable = (found ?? []).filter((item) => Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng));
+    if (usable.length) return usable.map((item) => ({ ...item, label: cleanAddressLabel(item.label, language) }));
+  }
+  const params = new URLSearchParams({ format: "jsonv2", addressdetails: "1", limit: "5", q: trimmed, "accept-language": requestLanguage });
+  if (country) params.set("countrycodes", country);
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, { headers: { Accept: "application/json", "Accept-Language": requestLanguage } });
+    const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string; type?: string; addresstype?: string; address?: NominatimAddress & { house_number?: string } }>;
+    return results
+      .filter((item) => item.type !== "country")
+      .map((item) => ({ coordinates: { lat: Number(item.lat), lng: Number(item.lon) }, label: formatNominatimAddress(item, language, trimmed), precise: Boolean(item.address?.house_number) || item.addresstype === "building" }))
+      .filter((item) => Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng));
+  } catch {
+    return [];
+  }
+}
+
+export function useMapsKey() {
+  const config = trpc.site.publicConfig.useQuery(undefined, { staleTime: Infinity, retry: 1, initialData: readCachedPublicConfig() ?? undefined, initialDataUpdatedAt: 0 });
+  return { key: config.data?.googleMapsApiKey ?? null, loading: config.isLoading };
+}
+
+export function pointInPath(point: LatLng, path: LatLng[]) {
+  let inside = false;
+  for (let i = 0, j = path.length - 1; i < path.length; j = i++) {
+    const a = path[i]!, b = path[j]!;
+    if (a.lat > point.lat !== b.lat > point.lat && point.lng < ((b.lng - a.lng) * (point.lat - a.lat)) / (b.lat - a.lat) + a.lng) inside = !inside;
+  }
+  return inside;
 }
 
 function latLngToPoint(coordinates: LatLng, zoom: number): Point {
@@ -743,6 +844,8 @@ export function ProjectLocationMap({
   onAreaChange,
   onOpenStreetView,
   siteDetection,
+  buildingPicker,
+  onChangeAddress,
 }: ProjectLocationMapProps) {
   const text = MAP_TEXT[language] ?? MAP_TEXT.en;
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -797,7 +900,7 @@ export function ProjectLocationMap({
     if (locationKey && locationKey === emittedLocationKeyRef.current) return;
     stopAnimation();
     setCenter(initialLocation?.coordinates ?? market.coordinates);
-    setZoom(clamp(Math.max(market.zoom, initialLocation ? 18 : 16), MIN_ZOOM, MAX_ZOOM));
+    setZoom(clamp(Math.max(market.zoom, initialLocation ? 19 : 16), MIN_ZOOM, MAX_ZOOM));
     setQuery("");
     setStatus(text.ready);
   }, [initialLocation, market]);
@@ -937,16 +1040,26 @@ export function ProjectLocationMap({
   const areaSegments = useMemo(() => buildSegments(screenAreaPoints, Boolean(area)), [area, screenAreaPoints]);
   const draftSegments = useMemo(() => buildSegments(screenDraftPoints, false), [screenDraftPoints]);
   const detecting = siteDetection?.state === "loading";
+  const candidates = !drawingActive ? buildingPicker?.candidates ?? [] : [];
   const toolStage = drawingActive ? "drawing"
     : area ? "area"
     : !siteDetection || !marker ? "plain"
+    : buildingPicker?.loading ? "finding"
+    : candidates.length && siteDetection.state === "idle" ? "pick"
     : siteDetection.state === "idle" || siteDetection.state === "loading" ? "detect"
     : siteDetection.state === "found" ? "restore"
     : "fallback";
-  const toolHint = toolStage === "area" ? (area?.source === "detected" ? text.detectedHint : text.tracedHint)
+  const toolHint = toolStage === "area" ? (area?.source === "detected" ? (candidates.length > 1 ? `${text.detectedHint} · ${text.pickOther}` : text.detectedHint) : text.tracedHint)
+    : toolStage === "finding" ? text.findingBuildings
+    : toolStage === "pick" ? text.pickHint(candidates.length)
     : toolStage === "detect" ? (detecting ? text.detecting : text.detectHint)
     : toolStage === "fallback" ? (siteDetection?.state === "error" ? text.detectError : text.detectMissing)
     : text.drawZone;
+  const candidateShapes = useMemo(() => candidates.map((candidate) => {
+    const points = candidate.path.map(projectToScreen);
+    const label = projectToScreen(candidate.center);
+    return { candidate, points: points.map((point) => `${point.x},${point.y}`).join(" "), label };
+  }), [candidates, projectToScreen]);
 
   const publishArea = useCallback((path: LatLng[]) => {
     if (!isUsablePath(path)) {
@@ -986,42 +1099,14 @@ export function ProjectLocationMap({
   }, [language, onLocationChange, text.selected]);
 
   const locate = useCallback(async (address: string) => {
-    const trimmed = address.trim();
-    if (!trimmed) return;
-    const country = countryRestriction(market);
-    const statedCountry = Object.entries(COUNTRY_NAME_TERMS).find(([term]) => trimmed.toLowerCase().includes(term))?.[1];
-    if (country && statedCountry && statedCountry !== country) {
+    if (!address.trim()) return;
+    setStatus(text.locating);
+    const matches = await searchAddresses(address, market, language, googleKey);
+    if (matches === "other-country" || !matches.length) {
       setStatus(text.unavailable);
       return;
     }
-    setStatus(text.locating);
-    if (googleKey) {
-      const found = await googleGeocode(googleKey, trimmed, nominatimLanguage(language), country).catch(() => null);
-      if (found && Number.isFinite(found.coordinates.lat) && Number.isFinite(found.coordinates.lng)) {
-        selectLocation(found.coordinates, cleanAddressLabel(found.label, language));
-        return;
-      }
-    }
-    const requestLanguage = nominatimLanguage(language);
-    const params = new URLSearchParams({ format: "jsonv2", addressdetails: "1", limit: "1", q: trimmed, "accept-language": requestLanguage });
-    if (country) params.set("countrycodes", country);
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, { headers: { Accept: "application/json", "Accept-Language": requestLanguage } });
-      const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string; type?: string; address?: NominatimAddress }>;
-      const result = results.find((item) => item.type !== "country") ?? results[0];
-      if (!result) {
-        setStatus(text.unavailable);
-        return;
-      }
-      const coordinates = { lat: Number(result.lat), lng: Number(result.lon) };
-      if (!Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) {
-        setStatus(text.unavailable);
-        return;
-      }
-      selectLocation(coordinates, formatNominatimAddress(result, language, trimmed));
-    } catch {
-      setStatus(text.unavailable);
-    }
+    selectLocation(matches[0]!.coordinates, matches[0]!.label);
   }, [googleKey, language, market, selectLocation, text.locating, text.unavailable]);
 
   const startDrawing = useCallback(() => {
@@ -1293,7 +1378,13 @@ export function ProjectLocationMap({
         zoomTo(Math.round(viewRef.current.zoom) + 1, { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) });
       } else {
         lastTapRef.current = { ...tap, time: now, x: event.clientX, y: event.clientY };
-        selectLocation(screenToLatLng(event.clientX, event.clientY));
+        const tapped = screenToLatLng(event.clientX, event.clientY);
+        const hit = candidates.filter((candidate) => pointInPath(tapped, candidate.path)).sort((a, b) => a.areaM2 - b.areaM2)[0];
+        if (hit && buildingPicker) {
+          if (hit.id !== buildingPicker.selectedId) buildingPicker.onPick(hit);
+        } else if (!(area && pointInPath(tapped, area.path))) {
+          selectLocation(tapped);
+        }
       }
     }
     dragRef.current = null;
@@ -1347,6 +1438,7 @@ export function ProjectLocationMap({
           {tiles.map((tile) => <img key={tile.key} className={tile.layer === "under" ? "is-underlay" : undefined} src={tile.url} alt="" draggable={false} decoding="async" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} style={{ left: tile.left, top: tile.top, width: tile.size, height: tile.size }} />)}
         </div>
         <svg className="osm-vector-layer" aria-hidden="true">
+          {candidateShapes.map(({ candidate, points }) => candidate.id === buildingPicker?.selectedId && area ? null : <polygon key={candidate.id} className={`osm-candidate-polygon ${toolStage === "pick" ? "is-inviting" : ""}`} points={points} />)}
           {area && <polygon className="osm-area-polygon" points={polygonPoints} />}
           {area?.path.map((point, index) => {
             const screen = projectToScreen(point);
@@ -1410,6 +1502,12 @@ export function ProjectLocationMap({
             ))}
           </div>
         )}
+        {zoom >= 18.5 && candidateShapes.some(({ candidate }) => candidate.label) && <div className="osm-candidate-labels" aria-hidden="true">
+          {candidateShapes.map(({ candidate, label }) => {
+            const houseNumber = candidate.label?.match(/^\s*(\d+[a-z]?)\b/i)?.[1];
+            return houseNumber && candidate.id !== buildingPicker?.selectedId ? <span key={candidate.id} style={{ left: label.x, top: label.y }}>{houseNumber}</span> : null;
+          })}
+        </div>}
         {marker && <div className="osm-site-marker" key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
           <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true"><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
           <span>{cleanAddressLabel(marker.label, language)}</span>
@@ -1425,11 +1523,15 @@ export function ProjectLocationMap({
         </div>
       </div>
 
-      <div className="site-map-search">
+      {onChangeAddress ? <div className="site-map-search site-map-address">
+        <MapPin size={17} aria-hidden="true" />
+        <span title={marker?.label}>{marker ? cleanAddressLabel(marker.label, language) : placeholder}</span>
+        <button type="button" onClick={onChangeAddress}><Search size={14} /> {text.changeAddress}</button>
+      </div> : <div className="site-map-search">
         <Search size={17} aria-hidden="true" />
         <input aria-label={searchLabel} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void locate(query); }} placeholder={placeholder} />
         <button type="button" onClick={() => void locate(query)} disabled={!query.trim()}>{locateLabel}</button>
-      </div>
+      </div>}
 
       <div className="site-map-mode-control" aria-label={text.mapLayers}>
         <button type="button" className={mapMode === "aerial" ? "is-active" : ""} onClick={() => setMapMode("aerial")}><Navigation size={14} /> {text.aerial}</button>
@@ -1440,9 +1542,14 @@ export function ProjectLocationMap({
 
       <div className="site-map-tools">
         <div className={`site-map-tool-card ${drawingActive ? "is-drawing" : ""} ${toolStage === "fallback" ? "is-fallback" : ""}`}>
-          <div className="site-map-tool-heading"><span>{detecting ? <Loader2 size={15} className="spin" /> : toolStage === "detect" ? <ScanSearch size={15} /> : <Ruler size={15} />}</span><div><b>{text.siteArea}</b><small>{toolHint}</small></div></div>
+          <div className="site-map-tool-heading"><span>{detecting || toolStage === "finding" ? <Loader2 size={15} className="spin" /> : toolStage === "detect" ? <ScanSearch size={15} /> : toolStage === "pick" ? <MousePointerClick size={15} /> : <Ruler size={15} />}</span><div><b>{text.siteArea}</b><small>{toolHint}</small></div></div>
           <div className={`site-map-tool-actions ${drawingActive ? "is-drawing" : ""}`}>
-            {drawingActive ? <>
+            {toolStage === "finding" ? <>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={13} /> {text.manualTrace}</button>
+            </> : toolStage === "pick" && siteDetection ? <>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, siteDetection.onDetect)}><ScanSearch size={13} /> {text.detectAtPin}</button>
+              <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, startDrawing)}><Pencil size={13} /> {text.manualTrace}</button>
+            </> : drawingActive ? <>
               <button type="button" className="is-active" onClick={(event) => runToolClickAction(event, finishDrawing)}><Pencil size={14} /> {text.finish}</button>
               <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, undoDraftPoint)} disabled={draftPath.length === 0}><Undo2 size={13} /> {text.undo}</button>
               <button type="button" className="is-quiet" onClick={(event) => runToolClickAction(event, clearArea)}>{text.clear}</button>
