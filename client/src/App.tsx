@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
+  Cpu,
   Compass,
   Database,
   Download,
@@ -41,6 +42,7 @@ import { resultsCopy } from "@/lib/results-copy";
 import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
+import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
 import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
 import type { MarketAtlasCopy } from "@/components/MarketAtlas";
 import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
@@ -57,7 +59,7 @@ import { expandWeather, type CompactWeather } from "../../lib/pvgis-tmy";
 import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
-const CUSTOMER_STUDIO_URL = publicPath("studio.html");
+const CUSTOMER_STUDIO_URL = publicPath("studio.html?embed=modernite");
 const STUDIO_ADVISOR_PATH = publicPath("api/studio-advisor");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
 const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-clean-bg.png");
@@ -299,6 +301,7 @@ const OUTER_UI_COPY = {
     quoteNote: "A price enables an indicative 25-year cash-position line. It is not a quotation.",
     waitingStudio: "Waiting for Design Studio",
     calculateResults: "Calculate project results",
+    sizingAtEnd: "Inverter and battery sizes are matched once, when you confirm the calculation, using your final design and demand.",
     planningProfile: "Your planning profile",
     livePreview: "Live preview",
     estimatedAnnualUse: "Estimated annual household use",
@@ -396,6 +399,7 @@ const OUTER_UI_COPY = {
     quoteNote: "价格用于生成 25 年现金流参考线，并非安装报价。",
     waitingStudio: "等待设计工作室",
     calculateResults: "计算项目结果",
+    sizingAtEnd: "逆变器和电池容量会在你确认计算时，按最终设计和用电情况一次性匹配。",
     planningProfile: "规划概览",
     livePreview: "实时预览",
     estimatedAnnualUse: "预估年度家庭用电",
@@ -493,6 +497,7 @@ const OUTER_UI_COPY = {
     quoteNote: "價格用於生成 25 年現金流參考線，並非安裝報價。",
     waitingStudio: "等待設計工作室",
     calculateResults: "計算專案結果",
+    sizingAtEnd: "逆變器與電池容量會在你確認計算時，依最終設計與用電情況一次匹配。",
     planningProfile: "規劃概覽",
     livePreview: "即時預覽",
     estimatedAnnualUse: "預估年度家庭用電",
@@ -590,6 +595,7 @@ const OUTER_UI_COPY = {
     quoteNote: "Un prix permet d'afficher une trésorerie indicative sur 25 ans. Ce n'est pas un devis.",
     waitingStudio: "En attente du Design Studio",
     calculateResults: "Calculer les résultats",
+    sizingAtEnd: "L’onduleur et la batterie sont dimensionnés une seule fois, lors de la confirmation du calcul, d’après la conception et la demande définitives.",
     planningProfile: "Votre profil de planification",
     livePreview: "Aperçu en direct",
     estimatedAnnualUse: "Consommation annuelle estimée",
@@ -687,6 +693,7 @@ const OUTER_UI_COPY = {
     quoteNote: "価格を入力すると 25 年の参考収支を表示します。見積りではありません。",
     waitingStudio: "デザインスタジオを待機中",
     calculateResults: "検討結果を計算",
+    sizingAtEnd: "インバーターと蓄電池の容量は、計算を確定したときに最終設計と需要から一度だけ選定します。",
     planningProfile: "計画プロファイル",
     livePreview: "ライブプレビュー",
     estimatedAnnualUse: "推定年間使用量",
@@ -784,6 +791,7 @@ const OUTER_UI_COPY = {
     quoteNote: "Un precio permite mostrar una línea de caja orientativa a 25 años. No es un presupuesto.",
     waitingStudio: "Esperando a Design Studio",
     calculateResults: "Calcular resultados",
+    sizingAtEnd: "El inversor y la batería se dimensionan una sola vez, al confirmar el cálculo, con el diseño y la demanda definitivos.",
     planningProfile: "Su perfil de planificación",
     livePreview: "Vista previa",
     estimatedAnnualUse: "Consumo anual estimado",
@@ -881,6 +889,7 @@ const OUTER_UI_COPY = {
     quoteNote: "Un prezzo abilita una linea di cassa indicativa a 25 anni. Non è un preventivo.",
     waitingStudio: "In attesa del Design Studio",
     calculateResults: "Calcola i risultati",
+    sizingAtEnd: "Inverter e batteria vengono dimensionati una sola volta, alla conferma del calcolo, in base a progetto e consumi definitivi.",
     planningProfile: "Il tuo profilo di pianificazione",
     livePreview: "Anteprima",
     estimatedAnnualUse: "Consumo annuo stimato",
@@ -1084,7 +1093,7 @@ function GatewayHeader({
           </select>
           <ChevronDown size={12} aria-hidden="true" />
         </label>
-        <span className="gateway-status"><i /> {copy.workspace}</span>
+        <AdvisorHeaderButton language={language} />
       </div>
     </header>
   );
@@ -1407,6 +1416,7 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language }: 
             <button type="button" className={settings.batteryMode === "solar-only" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-only" })}><b>{text.solarOnly}</b><small>{text.exportSurplus}</small></button>
             <button type="button" className={settings.batteryMode === "solar-battery" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-battery" })}><BatteryCharging size={15} /><b>{text.addBattery}</b><small>{text.increaseOnSite}</small></button>
           </div>
+          <p className="energy-sizing-note"><Cpu size={13} /> {text.sizingAtEnd}</p>
           {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>{text.usableBattery}</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label></div>}
         </section>
         <details className="cash-position-options"><summary>{text.cashInputs}</summary><label className="energy-number"><span>{text.installedSolarPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label><small>{text.quoteNote}</small></details>
@@ -1506,6 +1516,8 @@ function StudioPage({
 }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const weatherAbortRef = useRef<AbortController | null>(null);
+  const pendingWeatherRef = useRef<{ key: string; site: { lat: number; lon: number; tz: number; zone: string; year: number }; addressLabel: string } | null>(null);
+  const weatherLoadingKeyRef = useRef<string | null>(null);
   const [weatherState, setWeatherState] = useState<{ status: "idle" | "loading" | "ready" | "error"; label: string }>({ status: "idle", label: "" });
   const [weatherSource, setWeatherSource] = useState<WeatherSourceKey>(readWeatherSource);
   const [frameReady, setFrameReady] = useState(false);
@@ -1569,7 +1581,7 @@ function StudioPage({
       workflowStyle.dataset.hostWorkflow = "results-finalised";
       studioDocument.head.append(workflowStyle);
     }
-    workflowStyle.textContent = ".language-switch, #language-select { display: none !important; }";
+    workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2) { display: none !important; }";
 
     const advisorEndpoint = studioDocument.querySelector<HTMLInputElement>("#advisor-endpoint");
     if (advisorEndpoint && root.dataset.hostAdvisor !== "online") {
@@ -1610,23 +1622,8 @@ function StudioPage({
         studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
         root.dataset.hostLocation = key;
         weatherAbortRef.current?.abort();
-        const controller = new AbortController();
-        weatherAbortRef.current = controller;
-        const sourceLabel = WEATHER_SOURCE_LABELS[weatherSource];
-        setWeatherState({ status: "loading", label: MISC_COPY[language].weatherLoading(sourceLabel.short) });
-        const weatherQuery = new URLSearchParams({ lat: String(site.lat), lon: String(site.lon), tz: String(site.tz), zone: site.zone, year: String(year), address: addressLabel });
-        fetch(`${APP_BASE_PATH}/api/weather/${weatherSource}?${weatherQuery}`, { signal: controller.signal })
-          .then(async (response) => {
-            const body = await response.json() as CompactWeather & { error?: string };
-            if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
-            studioWindow.ModerniteEnergyApp?.acceptWeather?.(expandWeather(body));
-            studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
-            setWeatherState({ status: "ready", label: String(body.source ?? sourceLabel.short) });
-          })
-          .catch((error: unknown) => {
-            if (controller.signal.aborted) return;
-            setWeatherState({ status: "error", label: `${sourceLabel.short} unavailable — Studio uses its synthetic climate (${error instanceof Error ? error.message : "error"})` });
-          });
+        pendingWeatherRef.current = { key, site, addressLabel };
+        setWeatherState({ status: "idle", label: "" });
       }
     }
 
@@ -1673,9 +1670,43 @@ function StudioPage({
     }
   }, [context.building, context.location, context.siteArea, language, studioRegion, weatherSource]);
 
+  const loadStudioWeather = useCallback(() => {
+    const pending = pendingWeatherRef.current;
+    const studioWindow = frameRef.current?.contentWindow as StudioWindow | null;
+    if (!pending || !studioWindow || weatherLoadingKeyRef.current === pending.key) return;
+    weatherLoadingKeyRef.current = pending.key;
+    weatherAbortRef.current?.abort();
+    const controller = new AbortController();
+    weatherAbortRef.current = controller;
+    const { site, addressLabel } = pending;
+    const sourceLabel = WEATHER_SOURCE_LABELS[weatherSource];
+    setWeatherState({ status: "loading", label: MISC_COPY[language].weatherLoading(sourceLabel.short) });
+    const weatherQuery = new URLSearchParams({ lat: String(site.lat), lon: String(site.lon), tz: String(site.tz), zone: site.zone, year: String(site.year), address: addressLabel });
+    fetch(`${APP_BASE_PATH}/api/weather/${weatherSource}?${weatherQuery}`, { signal: controller.signal })
+      .then(async (response) => {
+        const body = await response.json() as CompactWeather & { error?: string };
+        if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+        studioWindow.ModerniteEnergyApp?.acceptWeather?.(expandWeather(body));
+        studioWindow.dispatchEvent(new Event("modernite-energy-site-change"));
+        setWeatherState({ status: "ready", label: String(body.source ?? sourceLabel.short) });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        weatherLoadingKeyRef.current = null;
+        setWeatherState({ status: "error", label: `${sourceLabel.short} unavailable — Studio uses its synthetic climate (${error instanceof Error ? error.message : "error"})` });
+      });
+  }, [language, weatherSource]);
+
   useEffect(() => {
     if (frameReady) applyStudioContext();
   }, [applyStudioContext, frameReady]);
+
+  useEffect(() => {
+    const studioWindow = frameReady ? frameRef.current?.contentWindow : null;
+    if (!studioWindow) return;
+    studioWindow.addEventListener("modernite-weather-needed", loadStudioWeather);
+    return () => studioWindow.removeEventListener("modernite-weather-needed", loadStudioWeather);
+  }, [frameReady, loadStudioWeather]);
 
   const continueToEnergy = () => {
     const snapshot = getWorkflowSnapshot();
@@ -1778,7 +1809,7 @@ function StudioPage({
             </select>
             <ChevronDown size={12} aria-hidden="true" />
           </label>
-          <span className="gateway-status"><i /> {text.workspace}</span>
+          <AdvisorHeaderButton language={language} />
           <button type="button" className="studio-return" onClick={() => onNavigate("location")}><ArrowLeft size={14} /> {bridgeCopy.returnToSite}</button>
           <button type="button" className="studio-calculate" onClick={continueToEnergy}><ArrowRight size={14} /> {bridgeCopy.prepareStudy}</button>
         </div>
@@ -1974,6 +2005,28 @@ export default function App() {
     }
   }, [context, navigate, runCalculation, studioLanguage]);
 
+  const advisorCaseId = study && !study.caseId.startsWith("MOD-DEMO") ? study.caseId : undefined;
+  const getAdvisorContext = useCallback(() => {
+    const lines = [`Current step: ${route}`, `Market: ${market.name} (${context.marketKey})`];
+    if (context.location) lines.push(`Site: ${cleanAddressLabel(context.location.label, "en")} (${context.location.coordinates.lat.toFixed(5)}, ${context.location.coordinates.lng.toFixed(5)})`);
+    else lines.push("Site: not chosen yet");
+    if (context.siteArea) lines.push(`Traced site area: ${context.siteArea.areaM2.toFixed(1)} m²`);
+    const building = context.building;
+    lines.push(building
+      ? `Building applied from the site step: ${building.typeId}, ${building.widthM.toFixed(1)} × ${building.depthM.toFixed(1)} m, ${building.floors} storeys of ${building.storeyHeightM} m, ${building.roofForm} roof ${building.roofPitchDeg}°, front faces ${building.frontAzimuthDeg}°`
+      : "Building: not read from map data; the Design Studio uses its own building settings");
+    lines.push(`Home energy inputs: ${JSON.stringify(context.energySettings)}`);
+    try {
+      const studio = (document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame")?.contentWindow as (Window & { ModerniteAdvisorCore?: { context: () => string } }) | null)?.ModerniteAdvisorCore?.context();
+      if (studio) lines.push("", "Design Studio configuration:", studio);
+    } catch {
+      /* Studio not loaded */
+    }
+    if (study && advisorCaseId) lines.push("", `A project study has been calculated (reference ${study.caseId}); annual generation ≈ ${Math.round(study.result.range.representative)} kWh from ${study.result.totalCapacityKwp.toFixed(2)} kWp.`);
+    else lines.push("", "No project study has been calculated yet; inverter and battery sizing happens when the customer confirms the calculation.");
+    return lines.join("\n");
+  }, [advisorCaseId, context, market.name, route, study]);
+
   const showGateway = route !== "studio";
   return (
     <>
@@ -2002,6 +2055,7 @@ export default function App() {
         {route === "results" && study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} /></Suspense>}
         {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
+      <ModerniteAdvisor language={studioLanguage} route={route} getContext={getAdvisorContext} caseId={advisorCaseId} />
       {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
     </>
   );

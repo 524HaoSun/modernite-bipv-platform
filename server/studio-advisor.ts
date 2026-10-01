@@ -1,10 +1,11 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
+import { studyFactsFor } from "./estimate-service";
 
 /**
- * Online mode of the customer Studio's "Modernite advisor".
- * The Studio POSTs {message, language, history, context} and expects {answer} (≤16 000 chars).
+ * The platform-wide Modernite AI advisor (also the online mode of the customer Studio's advisor).
+ * Clients POST {message, language, history, context, caseId?} and receive {answer} (≤16 000 chars).
  */
 export const STUDIO_ADVISOR_PATH = "/api/studio-advisor";
 
@@ -23,6 +24,7 @@ export const studioAdvisorInputSchema = z.object({
   language: z.string().max(12).optional(),
   history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(16_000) })).max(8).optional(),
   context: z.string().max(20_000).optional(),
+  caseId: z.string().regex(/^MOD-[A-Z0-9-]{4,24}$/).optional(),
 });
 export type StudioAdvisorInput = z.infer<typeof studioAdvisorInputSchema>;
 
@@ -35,20 +37,21 @@ function textContent(content: unknown): string {
     .join("\n");
 }
 
-export function studioAdvisorMessages(input: StudioAdvisorInput) {
+export function studioAdvisorMessages(input: StudioAdvisorInput, studyFacts?: string | null) {
   const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
   return [
     {
       role: "system" as const,
       content: [
-        "You are the Modernite product advisor inside the Modernite Solar Studio, a building-integrated photovoltaic (BIPV) configurator.",
-        "Answer questions about Modernite products (solar roof tiles, solar facade, canopies, pergolas, carports, shading), the customer's current configuration, and how to use the Studio (Building, Products, Finishes, Lighting, Save, Arrange in 3D, energy and inverter/battery sizing, PDF report).",
+        "You are the Modernite AI advisor for the Modernite building-integrated photovoltaic (BIPV) planning platform. The customer moves through: Project, Market, Site location (map pin, building detection from Google Solar / OpenStreetMap), Design Studio, Home energy, Calculation and Results.",
+        "Answer questions about Modernite products (solar roof tiles, solar facade, canopies, pergolas, carports, shading), the customer's current step and configuration, and how to use the platform and the Studio (Building, Products, Finishes, Lighting, Save, Arrange in 3D, energy model, PDF report). Inverter and battery sizing is calculated when the customer confirms the final calculation.",
         "Use only figures that appear in the configuration context below or in the conversation. Never invent specifications, certifications, prices, warranties or performance guarantees; if a figure is not given, say it should be confirmed with Modernite.",
         "Energy figures in the context are planning estimates from the Studio's hourly model, not guarantees. Do not give structural, electrical or planning-permission advice beyond recommending a qualified professional.",
         `Reply in ${language}. Be concise and practical (normally under 180 words); use short lists when helpful.`,
         "",
-        "Current Studio configuration:",
+        "Current platform context:",
         input.context?.trim() || "(not provided)",
+        ...(studyFacts ? ["", "Calculated project study (authoritative figures):", studyFacts] : []),
       ].join("\n"),
     },
     ...(input.history ?? []).map((item) => ({ role: item.role, content: item.content })),
@@ -70,7 +73,7 @@ function rateLimited(key: string) {
 }
 
 export async function askStudioAdvisor(input: StudioAdvisorInput) {
-  const response = await invokeLLM({ model: "gpt-6-luna", messages: studioAdvisorMessages(input) });
+  const response = await invokeLLM({ model: "gpt-6-luna", messages: studioAdvisorMessages(input, input.caseId ? studyFactsFor(input.caseId) : null) });
   const answer = textContent(response.choices[0]?.message.content ?? "").trim();
   if (!answer) throw new Error("Empty advisor response");
   return answer.slice(0, 15_000);

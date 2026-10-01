@@ -11,7 +11,7 @@ const runtimeInventory = path.join(projectRoot, "docs/handoff/studio-runtime-inv
 describe("customer V31 Studio runtime", () => {
   it("uses the uploaded customer studio as the application runtime", () => {
     const app = fs.readFileSync(appPath, "utf8");
-    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html")');
+    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html?embed=modernite")');
     expect(app).toContain("customer-studio-frame");
     expect(fs.existsSync(publicRuntime)).toBe(true);
   });
@@ -41,5 +41,21 @@ describe("customer V31 Studio runtime", () => {
     expect(runtimeText).toContain("Inverter & battery sizing");
     expect(runtimeText).toContain("Gas boiler");
     expect(runtimeText).toContain('<meta name="modernite-render-patch" content="v3">');
+  });
+
+  it("defers the embedded energy, shadow and inverter/battery model and loads weather on demand", () => {
+    const runtimeText = fs.readFileSync(publicRuntime, "utf8");
+    const app = fs.readFileSync(path.join(projectRoot, "client/src/App.tsx"), "utf8");
+    expect(runtimeText).toContain("function auto(){if(new URLSearchParams(location.search).get('embed')!=='modernite'||dialog.open)return run();");
+    expect(runtimeText).toContain("timer=setTimeout(auto,150)");
+    expect(runtimeText).toContain(" syncOrientation();build();auto();");
+    expect(runtimeText).toContain("window.dispatchEvent(new Event('modernite-weather-needed'))");
+    expect(app).toContain('studioWindow.addEventListener("modernite-weather-needed", loadStudioWeather)');
+  });
+
+  it("reads building data only after the customer confirms the pin", () => {
+    const card = fs.readFileSync(path.join(projectRoot, "client/src/components/BuildingProfileCard.tsx"), "utf8");
+    expect(card).toContain("{ enabled: requested, staleTime: Infinity, retry: 1 }");
+    expect(card).toContain("onClick={() => setRequested(true)}");
   });
 });

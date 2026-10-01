@@ -12,7 +12,7 @@ const workflow = fs.readFileSync(path.join(root, "client/src/lib/workflow-labels
 
 describe("V28-aligned entry gateway", () => {
   it("keeps the customer Studio runtime available behind the new entry flow", () => {
-    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html")');
+    expect(app).toContain('CUSTOMER_STUDIO_URL = publicPath("studio.html?embed=modernite")');
     expect(app).toContain("customer-studio-frame");
     expect(app).toContain("ProjectLocationMap");
   });
@@ -42,8 +42,9 @@ describe("V28-aligned entry gateway", () => {
     expect(resultsText).toContain("Customer V31 hourly model · PVGIS weather");
     expect(resultsText).toContain("Hourly weather");
     expect(resultsText).toContain("Modernité Design Guide");
-    expect(results).toContain("trpc.projectStudy.ask.useMutation");
+    expect(results).toContain("ADVISOR_ASK_EVENT");
     expect(results).toContain("ResultAdvisor");
+    expect(results).toContain("ADVISOR_ASK_EVENT");
     expect(styles).toContain(".calculation-page");
   });
 
@@ -146,7 +147,7 @@ describe("V28-aligned entry gateway", () => {
     expect(resultsText).toContain("Save configuration");
     expect(resultsText).toContain("Download Studio PDF");
     expect(app).toContain("style[data-host-workflow]");
-    expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select { display: none !important; }"');
+    expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2) { display: none !important; }"');
     for (const customerFeature of [".mi-toolbar", "#modernite-arrange-panel", ".en-system-card", ".energy-launch-row", ".customer-buttons", "studioTabs[4].hidden"]) {
       expect(app).not.toContain(customerFeature);
     }

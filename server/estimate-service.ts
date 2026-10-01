@@ -106,6 +106,15 @@ function factPack(study: StoredStudy) {
   };
 }
 
+export function studyFactsFor(caseId: string) {
+  purgeExpiredStudies();
+  const study = studies.get(caseId);
+  if (!study) return null;
+  const { simulation, ...facts } = factPack(study);
+  const { hourly: _hourly, monthly: _monthly, ...simulationSummary } = simulation as typeof simulation & { hourly?: unknown; monthly?: unknown };
+  return JSON.stringify({ ...facts, simulation: simulationSummary, scenarios: study.result.scenarios.map((item) => ({ id: item.id, available: item.available, breakEvenYear: item.breakEvenYear, firstYearBenefit: item.firstYearBenefitGbp, net25Year: item.net25YearGbp })), recommendation: study.result.recommendation }).slice(0, 14_000);
+}
+
 export async function askProjectAssistant(caseId: string, question: string, language = "en") {
   purgeExpiredStudies();
   const study = studies.get(caseId);

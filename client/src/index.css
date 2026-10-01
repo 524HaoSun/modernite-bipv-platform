@@ -5272,3 +5272,49 @@ html:lang(ja) .eyebrow {
 .osm-tile-layer { overflow: hidden; }
 .osm-tile-layer img { max-width: none; max-height: none; image-rendering: auto; }
 .osm-control-stack button:disabled { opacity: .45; cursor: default; }
+
+/* Building detection on demand */
+.building-detect { display: grid; gap: 9px; }
+.building-detect .building-match-note { margin: 0; }
+.building-detect-button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 13px; border: 1px solid var(--m-accent); border-radius: 999px; color: #fff; background: var(--m-accent); font-size: 11px; font-weight: 700; cursor: pointer; transition: background .18s var(--m-ease); }
+.building-detect-button:hover { background: var(--m-accent-deep); }
+
+/* Platform-wide AI advisor */
+.modernite-advisor-trigger { display: inline-flex; flex: none; align-items: center; gap: 7px; height: 36px; padding: 0 15px 0 12px; border: 1px solid var(--m-accent); border-radius: 999px; color: #fff; background: linear-gradient(135deg, var(--m-accent), var(--m-accent-deep)); box-shadow: 0 8px 20px rgba(7,69,47,.2); font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: transform .2s var(--m-ease), box-shadow .2s var(--m-ease), background .2s; }
+.modernite-advisor-trigger:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(7,69,47,.26); }
+.modernite-advisor-trigger.is-open { border-color: var(--m-ink); background: var(--m-ink); }
+.modernite-advisor-panel { position: fixed; top: 80px; right: 20px; z-index: 81; display: flex; flex-direction: column; width: min(392px, calc(100vw - 32px)); height: min(640px, calc(100vh - 100px)); overflow: hidden; border: 1px solid var(--m-line-strong); border-radius: var(--m-radius-lg); background: rgba(251,253,250,.98); box-shadow: 0 28px 70px rgba(14,45,52,.22); backdrop-filter: blur(14px); animation: advisor-in .22s var(--m-ease); }
+.modernite-advisor-panel[hidden] { display: none; }
+@keyframes advisor-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+.modernite-advisor-head { display: grid; grid-template-columns: 34px 1fr auto auto; align-items: center; gap: 9px; padding: 13px 13px 12px 15px; border-bottom: 1px solid var(--m-line); background: linear-gradient(180deg, #f3f8f2, rgba(243,248,242,0)); }
+.modernite-advisor-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #fff; background: var(--m-accent); }
+.modernite-advisor-head strong { display: block; color: var(--m-ink); font-size: 14px; font-weight: 700; }
+.modernite-advisor-head small { display: block; margin-top: 2px; color: var(--m-faint); font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: .4px; }
+.modernite-advisor-head button { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid transparent; border-radius: 50%; color: var(--m-muted); background: transparent; cursor: pointer; }
+.modernite-advisor-head button:hover:not(:disabled) { border-color: var(--m-line); background: #fff; color: var(--m-ink); }
+.modernite-advisor-head button:disabled { opacity: .35; cursor: default; }
+.modernite-advisor-transcript { flex: 1; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; padding: 14px 15px; overscroll-behavior: contain; }
+.modernite-advisor-bubble { max-width: 88%; padding: 10px 12px; border-radius: 14px; color: var(--m-ink-soft); font-size: 12.5px; line-height: 1.6; word-break: break-word; }
+.modernite-advisor-bubble p { margin: 0; }
+.modernite-advisor-bubble p + p, .modernite-advisor-bubble p + ul, .modernite-advisor-bubble p + ol, .modernite-advisor-bubble ul + p, .modernite-advisor-bubble ol + p { margin-top: 6px; }
+.modernite-advisor-bubble ul, .modernite-advisor-bubble ol { margin: 0; padding-left: 18px; }
+.modernite-advisor-bubble li + li { margin-top: 3px; }
+.modernite-advisor-bubble.is-assistant { align-self: flex-start; border: 1px solid var(--m-line); border-bottom-left-radius: 5px; background: #fff; }
+.modernite-advisor-bubble.is-intro { background: var(--m-accent-tint); border-color: transparent; }
+.modernite-advisor-bubble.is-user { align-self: flex-end; border-bottom-right-radius: 5px; color: #fff; background: var(--m-accent); }
+.modernite-advisor-bubble.is-error { border-color: #ecd0c4; color: #8a4b32; background: #fdf4ef; }
+.modernite-advisor-bubble.is-pending { display: inline-flex; align-items: center; gap: 7px; color: var(--m-muted); }
+.modernite-advisor-bubble em { display: inline-flex; align-items: center; gap: 3px; margin-bottom: 4px; color: var(--m-accent); font-family: "JetBrains Mono", monospace; font-size: 8.5px; font-style: normal; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+.modernite-advisor-presets { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 15px 0; border-top: 1px solid var(--m-line); }
+.modernite-advisor-presets button { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 6px 10px; border: 1px solid #c9dcc8; border-radius: 999px; color: #2f5a41; background: #f6faf5; font-size: 11px; font-weight: 600; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.modernite-advisor-presets button:hover { border-color: #7da78a; background: #ecf5eb; }
+.modernite-advisor-presets svg { flex: none; color: var(--m-accent); }
+.modernite-advisor-composer { display: grid; grid-template-columns: 1fr 38px; align-items: end; gap: 8px; margin: 10px 15px 0; padding: 6px 6px 6px 12px; border: 1px solid var(--m-line-strong); border-radius: 14px; background: #fff; }
+.modernite-advisor-composer:focus-within { border-color: var(--m-accent); box-shadow: 0 0 0 3px rgba(14,100,74,.1); }
+.modernite-advisor-composer textarea { min-height: 36px; max-height: 110px; padding: 8px 0; border: 0; outline: 0; resize: none; color: var(--m-ink); background: transparent; font: inherit; font-size: 12.5px; line-height: 1.45; field-sizing: content; }
+.modernite-advisor-composer button { display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: 11px; color: #fff; background: var(--m-accent); cursor: pointer; }
+.modernite-advisor-composer button:disabled { background: #b9cbbd; cursor: default; }
+.modernite-advisor-note { margin: 7px 15px 11px; color: var(--m-faint); font-size: 9.5px; line-height: 1.4; }
+@media print { .modernite-advisor-trigger, .modernite-advisor-panel { display: none !important; } }
+.energy-sizing-note { display: flex; align-items: flex-start; gap: 6px; margin: 9px 0 0; color: var(--m-muted); font-size: 10.5px; line-height: 1.5; }
+.energy-sizing-note svg { flex: none; margin-top: 2px; color: var(--m-accent); }

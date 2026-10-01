@@ -27,6 +27,26 @@ describe("studio advisor online mode", () => {
     expect(studioAdvisorInputSchema.safeParse({ message: "ok", history: [{ role: "system", content: "a" }] }).success).toBe(false);
   });
 
+  it("serves the platform-wide advisor with an optional study reference", () => {
+    const parsed = studioAdvisorInputSchema.parse({ message: "Is the payback realistic?", language: "en", context: "Current step: results", caseId: "MOD-1A2B3C4D" });
+    const messages = studioAdvisorMessages(parsed, '{"capacityKwp":4.2}');
+    expect(messages[0].content).toContain("Current step: results");
+    expect(messages[0].content).toContain('Calculated project study (authoritative figures):\n{"capacityKwp":4.2}');
+    expect(studioAdvisorMessages(parsed)[0].content).not.toContain("Calculated project study");
+    expect(studioAdvisorInputSchema.safeParse({ message: "ok", caseId: "../../etc" }).success).toBe(false);
+  });
+
+  it("keeps one floating advisor for every step, with instant answers for preset questions", () => {
+    const app = fs.readFileSync(path.join(projectRoot, "client/src/App.tsx"), "utf8");
+    const advisor = fs.readFileSync(path.join(projectRoot, "client/src/components/ModerniteAdvisor.tsx"), "utf8");
+    const runtime = fs.readFileSync(path.join(projectRoot, "client/public/studio.html"), "utf8");
+    expect(app).toContain("<ModerniteAdvisor language={studioLanguage} route={route}");
+    expect(app.match(/<AdvisorHeaderButton language=\{language\} \/>/g)).toHaveLength(2);
+    expect(advisor).toContain('push("assistant", preset.answer, "instant")');
+    expect(runtime).toContain("window.ModerniteAdvisorCore={context:()=>dl(hi.snapshot())");
+    expect(runtime).toContain("html.embed-modernite body #install-help");
+  });
+
   it("lets the patched studio call the same-origin endpoint", () => {
     const runtime = fs.readFileSync(path.join(projectRoot, "client/public/studio.html"), "utf8");
     expect(runtime).toContain('R.protocol!=="https:"&&R.origin!==location.origin');

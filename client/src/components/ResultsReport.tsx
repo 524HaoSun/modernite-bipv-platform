@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, LineChart, MessageCircle,
-  Pencil, Printer, Send, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
+  Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
@@ -275,38 +275,14 @@ function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; regi
   </div>;
 }
 
-function ResultAdvisor({ study, language, isDemo, t }: { study: ProjectCalculation; language: string; isDemo: boolean; t: ResultsCopy }) {
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ question: string; answer: string; evidence: string[] }>>([]);
-  const ask = trpc.projectStudy.ask.useMutation();
-  const submit = async (text = question) => {
-    const prompt = text.trim();
-    if (!prompt || ask.isPending || isDemo) return;
-    setQuestion("");
-    try {
-      const response = await ask.mutateAsync({ caseId: study.caseId, question: prompt, language });
-      setMessages((current) => [{ question: prompt, answer: response.answer, evidence: response.evidence }, ...current]);
-    } catch {
-      setMessages((current) => [{ question: prompt, answer: t.advisorError, evidence: [] }, ...current]);
-    }
-  };
+function ResultAdvisor({ isDemo, t }: { isDemo: boolean; t: ResultsCopy }) {
+  const ask = (question?: string) => window.dispatchEvent(new CustomEvent(ADVISOR_ASK_EVENT, { detail: { question } }));
   return <section className="study-summary-card advisor-card results-advisor">
     <span><MessageCircle size={20} /></span>
     <p className="mini-label">{t.advisorLabel}</p>
     <p>{isDemo ? t.advisorDemo : t.advisorBody}</p>
-    {!isDemo && <>
-      <div className="assistant-prompts">{t.prompts.map((prompt) => <button key={prompt} type="button" disabled={ask.isPending} onClick={() => void submit(prompt)}>{prompt}</button>)}</div>
-      <div className="assistant-composer">
-        <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder={t.placeholder} aria-label={t.placeholder} />
-        <button type="button" onClick={() => void submit()} disabled={!question.trim() || ask.isPending} aria-label={t.send}><Send size={15} /></button>
-      </div>
-      {ask.isPending && <p className="assistant-pending"><Sparkles size={13} className="spin" /> …</p>}
-      {messages.map((message, index) => <article className="assistant-answer" key={`${message.question}-${index}`}>
-        <small>{message.question}</small>
-        <p>{message.answer}</p>
-        {message.evidence.length > 0 && <ul>{message.evidence.map((item) => <li key={item}>{item}</li>)}</ul>}
-      </article>)}
-    </>}
+    <div className="assistant-prompts">{t.prompts.map((prompt) => <button key={prompt} type="button" onClick={() => ask(prompt)}>{prompt}</button>)}</div>
+    <button type="button" className="button-secondary wide" onClick={() => ask()}><Sparkles size={15} /> {t.advisorLabel}</button>
   </section>;
 }
 
@@ -425,7 +401,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
           <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
           <button type="button" className="button-secondary wide" onClick={() => window.print()}><Printer size={15} /> {t.print}</button>
         </section>
-        <ResultAdvisor study={study} language={language} isDemo={isDemo} t={t} />
+        <ResultAdvisor isDemo={isDemo} t={t} />
       </aside></div>
     </section>
   );

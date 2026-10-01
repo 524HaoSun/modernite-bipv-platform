@@ -88,6 +88,66 @@ const PATCHES = [
     find: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr};",
     replace: "moderniteDimensionCache[Gt.id]={width:d.width,depth:d.depth,floors:d.floors,storeyHeight:d.storeyHeight,wwr:d.wwr,...(Number.isFinite(d.pitch)?{pitch:Math.min(55,Math.max(5,d.pitch))}:{}),...(['hip','gable','flat','mono'].includes(d.roofForm)?{roofForm:d.roofForm}:{})};",
   },
+  {
+    // Embedded in the Modernité platform (studio.html?embed=modernite): the host owns the AI advisor and
+    // sizes the inverter/battery at the final calculation, so hide the duplicates before first paint.
+    id: "embed-host-chrome",
+    find: '<meta charset="utf-8">',
+    replace: `<meta charset="utf-8"><script>if(new URLSearchParams(location.search).get('embed')==='modernite')document.documentElement.classList.add('embed-modernite');</script><style>html.embed-modernite body #install-help,html.embed-modernite body>.advisor-launcher,html.embed-modernite .stage-actions>.advisor-launcher,html.embed-modernite body #open-advisor,html.embed-modernite body #advisor-top,html.embed-modernite body #advisor-dialog,html.embed-modernite body .en-system-card{display:none!important}html.embed-modernite body.advisor-open>.app{margin:0!important}</style>`,
+  },
+  {
+    // Embedded: automatic re-runs of the hourly shadow/energy model wait until the energy dialog is open.
+    id: "embed-deferred-energy",
+    find: "function queue(){runId++;",
+    replace: "function auto(){if(new URLSearchParams(location.search).get('embed')!=='modernite'||dialog.open)return run();runId++;clearTimeout(timer);window.ModerniteShadows.cancel();shadowProgress=null;dirty=true;result=null;renderResult();}\nfunction queue(){runId++;",
+  },
+  {
+    id: "embed-deferred-orientation",
+    find: ";state.p.north=value;syncOrientation();dirty=true;result=null;persist();build();run();}",
+    replace: ";state.p.north=value;syncOrientation();dirty=true;result=null;persist();build();auto();}",
+  },
+  {
+    id: "embed-deferred-restore",
+    find: "syncOrientation();dirty=true;build();run();window.dispatchEvent(new Event('modernite-energy-site-change'));}},getResult",
+    replace: "syncOrientation();dirty=true;build();auto();window.dispatchEvent(new Event('modernite-energy-site-change'));}},getResult",
+  },
+  {
+    id: "embed-deferred-site",
+    find: "state.weather=null;dirty=true;result=null;persist();build();run();},",
+    replace: "state.weather=null;dirty=true;result=null;persist();build();auto();},",
+  },
+  {
+    id: "embed-deferred-weather",
+    find: "state.weather=weather;dirty=true;build();run();},",
+    replace: "state.weather=weather;dirty=true;build();auto();},",
+  },
+  {
+    id: "embed-deferred-model",
+    find: "dirty=true;result=null;build();if(dialog.open){run();}else{clearTimeout(timer);timer=setTimeout(run,150);}});",
+    replace: "dirty=true;result=null;build();if(dialog.open){run();}else{clearTimeout(timer);timer=setTimeout(auto,150);}});",
+  },
+  {
+    id: "embed-deferred-initial",
+    find: " syncOrientation();build();run();\n})();",
+    replace: " syncOrientation();build();auto();\n})();",
+  },
+  {
+    // The host loads site weather only when the Studio's energy model actually needs it.
+    id: "weather-on-demand",
+    find: "if(state.site&&!state.weather)throw Error(lang()===0?'此地址的气象尚未就绪",
+    replace: "if(state.site&&!state.weather){window.dispatchEvent(new Event('modernite-weather-needed'));throw Error(lang()===0?'此地址的气象尚未就绪",
+  },
+  {
+    id: "weather-on-demand-close",
+    find: "'Weather for the confirmed location is not ready. Load it in 01 Building.');const weather=currentWeather()",
+    replace: "'Weather for the confirmed location is not ready. Load it in 01 Building.');}const weather=currentWeather()",
+  },
+  {
+    // Lets the platform advisor reuse the Studio's instant answers and configuration summary.
+    id: "advisor-core-bridge",
+    find: "document.body.append(r);let a=[],s=!1,o=null,c=0;",
+    replace: "document.body.append(r);window.ModerniteAdvisorCore={context:()=>dl(hi.snapshot()),answer:(q,intent)=>Wf(q,hi.snapshot(),intent),label:key=>kt(key,$e())};let a=[],s=!1,o=null,c=0;",
+  },
 ];
 
 const [input, output = "client/public/studio.html"] = process.argv.slice(2);
