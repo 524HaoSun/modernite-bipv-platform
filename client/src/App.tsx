@@ -65,7 +65,8 @@ import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
 import { expandWeather, type CompactWeather } from "../../lib/pvgis-tmy";
-import { mapStudioSnapshotToSurfaces, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
+import { estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
+import { REGION_CONFIG } from "../../data/constants";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
 const CUSTOMER_STUDIO_URL = publicPath("studio.html?embed=modernite");
@@ -127,9 +128,14 @@ const DEFAULT_ENERGY_SETTINGS: HomeEnergySettings = {
   evCharger: true,
   batteryMode: "solar-battery",
   batteryCapacityKwh: 7.5,
-  projectPriceGbp: 16000,
-  batteryPriceGbp: 5800,
+  projectPriceGbp: null,
+  batteryPriceGbp: null,
 };
+
+function withoutLegacyPriceDefaults(settings: Partial<HomeEnergySettings> | undefined): Partial<HomeEnergySettings> {
+  if (!settings || settings.projectPriceGbp !== 16000 || settings.batteryPriceGbp !== 5800) return settings ?? {};
+  return { ...settings, projectPriceGbp: null, batteryPriceGbp: null };
+}
 
 const ROUTES: Record<GatewayRoute, string> = {
   entry: "/",
@@ -977,7 +983,7 @@ function loadContext(): ProjectContext {
         location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
         siteArea: siteAreaNear(parsed.siteArea, parsed.location ?? DEFAULT_PROJECT_LOCATION),
         building: parsed.building ?? null,
-        energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...parsed.energySettings },
+        energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...withoutLegacyPriceDefaults(parsed.energySettings) },
         updatedAt: parsed.updatedAt ?? Date.now(),
       };
     }
@@ -1409,7 +1415,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   );
 }
 
-function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage) {
+function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage, marketKey: MarketKey, solarAreaM2: number) {
   const text = outerCopy(language);
   const services = [
     settings.electricHeating ? text.services.electricHeating : null,
@@ -1417,24 +1423,17 @@ function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLan
     settings.electricHotWater ? text.services.electricHotWater : null,
     settings.evCharger ? text.services.evCharger : null,
   ].filter(Boolean) as string[];
-  const estimatedDemand = Math.max(
-    1600,
-    Math.round(
-      1450
-      + settings.householdSize * 900
-      + (settings.daytimeOccupancy === "usually" ? 500 : settings.daytimeOccupancy === "rarely" ? -250 : 0)
-      + (settings.electricHeating ? 7000 : settings.heatPump ? 3800 : 0)
-      + (settings.electricHotWater ? 1300 : 0)
-      + (settings.evCharger ? 2100 : 0),
-    ),
-  );
+  const estimatedDemand = estimateAnnualDemandKwh(settings);
   const annualDemand = settings.demandMode === "bill" && settings.annualDemandKwh ? Math.round(settings.annualDemandKwh) : estimatedDemand;
   const directUse = settings.daytimeOccupancy === "usually" ? 46 : settings.daytimeOccupancy === "rarely" ? 30 : 38;
-  const projectPrice = settings.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : 23800;
+  const region = regionForMarket(marketKey);
+  const costs = planningCosts(region, solarAreaM2, settings);
+  const money = new Intl.NumberFormat(language, { style: "currency", currency: REGION_CONFIG[region].currency, maximumFractionDigits: 0 });
   return {
     annualDemand,
     directUse,
-    projectPrice,
+    cost: `${money.format(costs.projectPrice)}${costs.batteryPrice !== null ? ` + ${money.format(costs.batteryPrice)}` : ""}`,
+    costEstimated: costs.projectPriceSource === "estimate" || costs.batteryPriceSource === "estimate",
     source: settings.demandMode === "bill" ? text.energyBill : text.moderniteEstimate,
     profile: `${settings.householdSize} ${settings.householdSize === 1 ? text.person : text.people} · ${text.occupancy[settings.daytimeOccupancy]} ${text.daytimePresence}`,
     services: services.length ? services.join(" · ") : text.noMajorLoads,
@@ -1442,9 +1441,9 @@ function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLan
   };
 }
 
-function EnergyPlanningPreview({ settings, language }: { settings: HomeEnergySettings; language: StudioLanguage }) {
+function EnergyPlanningPreview({ settings, language, marketKey, solarAreaM2 }: { settings: HomeEnergySettings; language: StudioLanguage; marketKey: MarketKey; solarAreaM2: number }) {
   const text = outerCopy(language);
-  const preview = estimateEnergyPreview(settings, language);
+  const preview = estimateEnergyPreview(settings, language, marketKey, solarAreaM2);
   return (
     <aside className="energy-planning-preview" aria-label={MISC_COPY[language].planningAria}>
       <div className="energy-preview-heading">
@@ -1462,7 +1461,7 @@ function EnergyPlanningPreview({ settings, language }: { settings: HomeEnergySet
         <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}</dd></div>
         <div><dt><Zap size={14} /> {text.electricLoads}</dt><dd>{preview.services}</dd></div>
         <div><dt><BatteryCharging size={14} /> {text.storageScenario}</dt><dd>{preview.battery}</dd></div>
-        <div><dt><TrendingUp size={14} /> {text.planningCostUsed}</dt><dd>£{Math.round(preview.projectPrice).toLocaleString()} {text.estimateLabel}</dd></div>
+        <div><dt><TrendingUp size={14} /> {text.planningCostUsed}</dt><dd>{preview.cost}{preview.costEstimated ? ` ${text.estimateLabel}` : ""}</dd></div>
       </dl>
       <div className="energy-preview-connectors">
         <p className="mini-label">{text.connectsTo}</p>
@@ -1472,7 +1471,8 @@ function EnergyPlanningPreview({ settings, language }: { settings: HomeEnergySet
   );
 }
 
-function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language }: {
+function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, currency }: {
+  currency: string;
   settings: HomeEnergySettings;
   disabled: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
@@ -1525,9 +1525,9 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language }: 
             <button type="button" className={settings.batteryMode === "solar-battery" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-battery" })}><BatteryCharging size={15} /><b>{text.addBattery}</b><small>{text.increaseOnSite}</small></button>
           </div>
           <p className="energy-sizing-note"><Cpu size={13} /> {text.sizingAtEnd}</p>
-          {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>{text.usableBattery}</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label></div>}
+          {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>{text.usableBattery}</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label></div>}
         </section>
-        <details className="cash-position-options"><summary>{text.cashInputs}</summary><label className="energy-number"><span>{text.installedSolarPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>GBP</em></label><small>{text.quoteNote}</small></details>
+        <details className="cash-position-options"><summary>{text.cashInputs}</summary><label className="energy-number"><span>{text.installedSolarPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label><small>{text.quoteNote}</small></details>
         <button type="button" className="energy-prepare-study" onClick={onPrepare} disabled={disabled}><Sparkles size={15} /> {disabled ? text.waitingStudio : text.calculateResults}<ArrowRight size={15} /></button>
       </div>}
     </aside>
@@ -1598,8 +1598,8 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, l
           </div>
           <div className="energy-note-card"><Lightbulb size={24} /><p><b>{text.energyNoteTitle}</b><small>{text.energyNoteBody}</small></p></div>
         </aside>
-        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} />
-        <EnergyPlanningPreview settings={settings} language={language} />
+        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} currency={REGION_CONFIG[regionForMarket(marketKey)].currency} />
+        <EnergyPlanningPreview settings={settings} language={language} marketKey={marketKey} solarAreaM2={facts?.solarAreaM2 ?? 0} />
       </div>
     </section>
   );

@@ -62,6 +62,7 @@ function ledgerValue(entry: LedgerEntry, f: Fmt) {
     case "demand": return `${num("kwh")} kWh`;
     case "inverter": return lt.inverter(num("kw", 1), num("ratio", 2), num("clipping", 2));
     case "battery": return lt.battery(num("kwh", 1), num("kw", 2), num("recommended", 1));
+    case "costs": return lt.costs(f.money(Number(p.solar)), typeof p.battery === "number" ? f.money(p.battery) : null, p.estimated === 1);
     case "google-solar": return [
       lt.google(Number(p.segments), num("area")),
       p.topArea != null ? lt.googleTop(num("topArea"), num("topPitch"), num("topAz")) : "",
@@ -121,7 +122,7 @@ function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: Project
   return <section className="result-section energy-applied-chain">
     <div className="result-section-heading"><div><p className="mini-label">{t.chainLabel}</p><h2>{t.chainTitle}</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> {t.editEnergy}</button></div>
     <div className="applied-chain-grid">
-      <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(study.energy.annualDemandKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : t.demandNoteModel}</small></article>
+      <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(study.energy.annualDemandKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</small></article>
       <i><ArrowRight size={18} /></i>
       <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(directUse), f.n(exported))}</strong><small>{t.chainDetail(directPercent, keptPercent)}</small></article>
       <i><ArrowRight size={18} /></i>
@@ -445,7 +446,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
         <GenerationRangeCard study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
-          <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
+          <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
           <section className="result-section result-capacity-tile"><span><BarChart3 size={20} /></span><p className="mini-label">{t.capacity}</p><h2>{f.n(study.result.totalCapacityKwp, 2)} kWp</h2><p>{t.activeSurfaces(study.result.surfaces.length)}</p></section>
         </div>
         <EnergyAppliedChain study={study} scenario={scenario} onNavigate={onNavigate} f={f} />

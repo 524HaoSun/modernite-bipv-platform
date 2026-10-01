@@ -4,7 +4,7 @@ import * as core from "./customer-energy-core";
 import { calculateFinancialScenarios } from "./financial";
 import { compassName } from "./geometry";
 import type { GoogleSolarReference } from "./google-solar";
-import { buildPlanningInput, productForSnapshot, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "./studio-calculation";
+import { activeSolarAreaM2, buildPlanningInput, estimateAnnualDemandKwh, planningCosts, productForSnapshot, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "./studio-calculation";
 
 export type Market = "GB" | "EU" | "CA" | "JP";
 
@@ -46,13 +46,13 @@ export type SimulationSummary = {
   recommendedBatteryKwh: number;
   battery: { nominalKwh: number; powerKw: number; selfConsumedKwh: number; exportKwh: number; gridImportKwh: number };
   buildingNorthDeg: number;
-  demandCalibration: "bill" | "model";
+  demandCalibration: "bill" | "household" | "model";
   irradiationWarnings: number;
 };
 
 export type ProjectEnergy = {
   annualDemandKwh: number;
-  source: "bill" | "customer-model";
+  source: "bill" | "household" | "customer-model";
   note: string;
 };
 
@@ -177,15 +177,18 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
 
   let sim = core.simulate(p, surfaces, input.weather, location);
   const bill = settings?.demandMode === "bill" && settings.annualDemandKwh && settings.annualDemandKwh > 0 ? settings.annualDemandKwh : null;
+  const household = bill === null && settings ? estimateAnnualDemandKwh(settings) : null;
+  const target = bill ?? household;
   let calibrationNote = "Annual demand is the customer building model result: hourly base load, heating and cooling (one-node RC), hot water and EV charging.";
-  if (bill !== null && sim.totals.base > 0) {
+  if (target !== null && sim.totals.base > 0) {
     const nonBase = sim.totals.load - sim.totals.base;
-    const scale = Math.max(0, bill - nonBase) / sim.totals.base;
+    const scale = Math.max(0, target - nonBase) / sim.totals.base;
     p.base = p.base * scale;
     sim = core.simulate(p, surfaces, input.weather, location);
-    calibrationNote = bill < nonBase
-      ? `The bill (${Math.round(bill).toLocaleString("en")} kWh) is below the modelled heating/EV load; base appliance load was set to zero.`
-      : `Base appliance load calibrated so the modelled annual demand matches the ${Math.round(bill).toLocaleString("en")} kWh bill.`;
+    const label = bill !== null ? "bill" : "household estimate";
+    calibrationNote = target < nonBase
+      ? `The ${label} (${Math.round(target).toLocaleString("en")} kWh) is below the modelled heating/EV load; base appliance load was set to zero.`
+      : `Base appliance load calibrated so the modelled annual demand matches the ${Math.round(target).toLocaleString("en")} kWh ${label}${household !== null ? ` (${settings!.householdSize} people, daytime occupancy: ${settings!.daytimeOccupancy})` : ""}.`;
   }
 
   const t = sim.totals, sizing = sim.systemSizing!;
@@ -206,6 +209,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   });
   planning.energy.annualDemandKwh = Math.round(annualDemand);
   const currency = REGION_CONFIG[region];
+  const prices = planningCosts(region, activeSolarAreaM2(input.snapshot), settings);
   const scenarios = calculateFinancialScenarios({
     annualGenerationKwh: annualGeneration,
     energy: planning.energy,
@@ -275,9 +279,10 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     { id: "capacity", label: "Product capacity", value: `${sim.kwp.toFixed(2)} kWp across ${surfaceResults.length} surfaces`, provenance: "manufacturer", stepNumber: 3, fieldKey: "capacity", params: { kwp: Math.round(sim.kwp * 100) / 100, surfaces: surfaceResults.length } },
     { id: "orientation", label: "Building orientation", value: `Studio model rotated ${north}° (front façade azimuth)`, provenance: "user", stepNumber: 3, fieldKey: "orientation", params: { deg: north } },
     { id: "building", label: "Building energy model", value: `${building.width} × ${building.depth} m, ${building.floors} storeys · one-node hourly RC model · ${heatingLabel}`, provenance: "assumed", stepNumber: 4, fieldKey: "building", params: { width: building.width, depth: building.depth, floors: building.floors, heat: p.heatMode } },
-    { id: "demand", label: "Annual electricity demand", value: `${Math.round(annualDemand).toLocaleString("en")} kWh`, provenance: bill !== null ? "user" : "assumed", stepNumber: 4, fieldKey: "demand", params: { kwh: Math.round(annualDemand) }, note: calibrationNote },
+    { id: "demand", label: "Annual electricity demand", value: `${Math.round(annualDemand).toLocaleString("en")} kWh`, provenance: target !== null ? "user" : "assumed", stepNumber: 4, fieldKey: "demand", params: { kwh: Math.round(annualDemand) }, note: calibrationNote },
     { id: "inverter", label: "Inverter sizing", value: `${sizing.inverterKW} kW AC · DC/AC ${sizing.dcAcRatio.toFixed(2)} · clipping ${(sizing.clippingFraction * 100).toFixed(2)}%`, provenance: "assumed", stepNumber: 5, fieldKey: "inverter", params: { kw: sizing.inverterKW, ratio: Math.round(sizing.dcAcRatio * 100) / 100, clipping: Math.round(sizing.clippingFraction * 10000) / 100 } },
     { id: "battery", label: "Battery comparison", value: `${batteryNominal} kWh / ${batteryPower.toFixed(2)} kW AC-coupled (90% usable, 90% round trip) · recommended ${sizing.recommendedBatteryKWh} kWh`, provenance: "assumed", stepNumber: 5, fieldKey: "battery", params: { kwh: batteryNominal, kw: Math.round(batteryPower * 100) / 100, recommended: sizing.recommendedBatteryKWh } },
+    { id: "costs", label: "Planning cost", value: `${currency.currency} ${Math.round(prices.projectPrice).toLocaleString("en")} solar${prices.batteryPrice !== null ? ` + ${Math.round(prices.batteryPrice).toLocaleString("en")} battery` : ""}`, provenance: prices.projectPriceSource === "user" ? "user" : "assumed", stepNumber: 5, fieldKey: "costs", params: { currency: currency.currency, solar: Math.round(prices.projectPrice), battery: prices.batteryPrice !== null ? Math.round(prices.batteryPrice) : null, estimated: prices.projectPriceSource === "estimate" || prices.batteryPriceSource === "estimate" ? 1 : 0 }, note: prices.projectPriceSource === "estimate" ? "Indicative installed price from the active product area; enter a quote on the energy page to replace it." : undefined },
   ];
   if (input.googleSolar?.status === "ok") {
     const top = input.googleSolar.roofSegments?.[0];
@@ -341,7 +346,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     },
     energy: {
       annualDemandKwh: Math.round(annualDemand),
-      source: bill !== null ? "bill" : "customer-model",
+      source: bill !== null ? "bill" : household !== null ? "household" : "customer-model",
       note: calibrationNote,
     },
     simulation: {
@@ -361,7 +366,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       recommendedBatteryKwh: sizing.recommendedBatteryKWh,
       battery: { nominalKwh: batteryNominal, powerKw: batteryPower, selfConsumedKwh: batterySums.self, exportKwh: batterySums.export, gridImportKwh: batterySums.grid },
       buildingNorthDeg: north,
-      demandCalibration: bill !== null ? "bill" : "model",
+      demandCalibration: bill !== null ? "bill" : household !== null ? "household" : "model",
       irradiationWarnings: sim.irradiationWarnings,
     },
     weather,

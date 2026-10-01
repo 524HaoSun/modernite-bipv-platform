@@ -5,6 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { synthetic } from "../lib/customer-energy-core";
 import { NASA_POWER_PARAMS, type NasaPowerPayload } from "../lib/nasa-power";
 import type { PvgisTmyPayload } from "../lib/pvgis-tmy";
+import { estimateAnnualDemandKwh } from "../lib/studio-calculation";
 
 process.env.WEATHER_CACHE_DIR = mkdtempSync(path.join(os.tmpdir(), "modernite-weather-"));
 delete process.env.GOOGLE_SOLAR_API_KEY;
@@ -112,6 +113,16 @@ describe("project study calculation service", () => {
     expect(study.simulation.selfConsumption).toBeGreaterThan(0);
     expect(study.googleSolar).toBeNull();
     expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.annualCashFlows).toHaveLength(25);
+  });
+
+  it("calibrates demand to the household estimate and prices the design when no bill or quote is entered", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const settings = { ...energySettings, demandMode: "estimate" as const, annualDemandKwh: null, householdSize: 5, projectPriceGbp: null };
+    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings: settings });
+    expect(study.energy.source).toBe("household");
+    expect(study.energy.annualDemandKwh).toBeCloseTo(estimateAnnualDemandKwh(settings), -1);
+    expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.upfrontGbp).toBe(7700);
+    expect(study.result.ledger.find((entry) => entry.id === "costs")?.params).toMatchObject({ currency: "GBP", estimated: 1 });
   });
 
   it("falls back to the customer synthetic climate when no site weather is reachable", async () => {

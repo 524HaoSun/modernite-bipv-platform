@@ -49,6 +49,49 @@ export type HomeEnergySettings = {
   batteryPriceGbp?: number | null;
 };
 
+/** Indicative installed BIPV price per m² of active product and battery price per usable kWh, in local currency. */
+export const PLANNING_COST_RATES: Record<Region, { perM2: number; batteryPerKwh: number }> = {
+  UK: { perM2: 320, batteryPerKwh: 770 },
+  EU: { perM2: 340, batteryPerKwh: 800 },
+  CA: { perM2: 480, batteryPerKwh: 1150 },
+  JP: { perM2: 52000, batteryPerKwh: 160000 },
+};
+
+export function activeSolarAreaM2(snapshot: Pick<StudioCalculationSnapshot, "surfaces">): number {
+  return snapshot.surfaces.filter((surface) => surface.enabled !== false && surface.area > 0).reduce((sum, surface) => sum + surface.area, 0);
+}
+
+export type PlanningCosts = { projectPrice: number; projectPriceSource: "user" | "estimate"; batteryPrice: number | null; batteryPriceSource: "user" | "estimate" | null };
+
+export function planningCosts(region: Region, solarAreaM2: number, settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">): PlanningCosts {
+  const rates = PLANNING_COST_RATES[region];
+  const round = (value: number) => Math.round(value / (region === "JP" ? 10000 : 100)) * (region === "JP" ? 10000 : 100);
+  const userProject = settings?.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : null;
+  const battery = settings?.batteryMode === "solar-battery";
+  const userBattery = battery && settings?.batteryPriceGbp && settings.batteryPriceGbp > 0 ? settings.batteryPriceGbp : null;
+  return {
+    projectPrice: userProject ?? round(Math.max(0, solarAreaM2) * rates.perM2),
+    projectPriceSource: userProject ? "user" : "estimate",
+    batteryPrice: battery ? userBattery ?? round(Math.max(1, settings?.batteryCapacityKwh ?? 0) * rates.batteryPerKwh) : null,
+    batteryPriceSource: battery ? (userBattery ? "user" : "estimate") : null,
+  };
+}
+
+/** Household electricity estimate used when no bill is entered; the hourly model is calibrated to it. */
+export function estimateAnnualDemandKwh(settings: Pick<HomeEnergySettings, "householdSize" | "daytimeOccupancy" | "electricHeating" | "heatPump" | "electricHotWater" | "evCharger">): number {
+  return Math.max(
+    1600,
+    Math.round(
+      1450
+      + settings.householdSize * 900
+      + (settings.daytimeOccupancy === "usually" ? 500 : settings.daytimeOccupancy === "rarely" ? -250 : 0)
+      + (settings.electricHeating ? 7000 : settings.heatPump ? 3800 : 0)
+      + (settings.electricHotWater ? 1300 : 0)
+      + (settings.evCharger ? 2100 : 0),
+    ),
+  );
+}
+
 export type ProductMapping = {
   productId: string;
   kind: SurfaceKind;
@@ -129,6 +172,7 @@ export function buildPlanningInput(input: {
   const settings = input.energySettings;
   const householdSize = Math.max(1, Math.min(12, Math.round(settings?.householdSize ?? 2)));
   const annualDemandKwh = settings?.annualDemandKwh && settings.annualDemandKwh > 0 ? Math.round(settings.annualDemandKwh) : null;
+  const prices = planningCosts(input.region, activeSolarAreaM2(input.snapshot), settings);
 
   return {
     location: {
@@ -170,12 +214,12 @@ export function buildPlanningInput(input: {
       peakHours: 3,
     },
     costs: {
-      schemePriceGbp: settings?.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : null,
+      schemePriceGbp: prices.projectPrice > 0 ? prices.projectPrice : null,
       conventionalMaterialGbp: null,
       conventionalLabourGbp: null,
       batteryInterest: settings?.batteryMode === "solar-battery" ? "yes" : "no",
       batteryCapacityKwh: settings?.batteryMode === "solar-battery" ? Math.max(1, settings.batteryCapacityKwh) : 0,
-      batteryPriceGbp: settings?.batteryMode === "solar-battery" && settings.batteryPriceGbp && settings.batteryPriceGbp > 0 ? settings.batteryPriceGbp : null,
+      batteryPriceGbp: prices.batteryPrice,
       batteryUsablePercent: 90,
       batteryEfficiencyPercent: 90,
       importGrowthPercent: 0,

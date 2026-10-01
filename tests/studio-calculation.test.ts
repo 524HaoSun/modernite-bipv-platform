@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPlanningInput, mapStudioSnapshotToSurfaces } from "../lib/studio-calculation";
+import { buildPlanningInput, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts } from "../lib/studio-calculation";
 
 describe("Studio snapshot calculation mapping", () => {
   const snapshot = {
@@ -29,5 +29,22 @@ describe("Studio snapshot calculation mapping", () => {
     expect(input.location).toMatchObject({ lat: 51.5034, lng: -0.1276, label: "10 Downing Street, London SW1A 2AA, UK" });
     expect(input.building).toMatchObject({ archetypeId: "UK01", widthM: 10.8, depthM: 8.4, storeys: 2 });
     expect(input.surfaces).toHaveLength(2);
+  });
+
+  it("prices the design from its product area in the market currency when no quote is entered", () => {
+    const area = 26.5 + 9.2 + 4;
+    expect(planningCosts("UK", area).projectPrice).toBe(12700);
+    expect(planningCosts("JP", area).projectPrice).toBe(2060000);
+    const battery = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 7.5, projectPriceGbp: 18000, batteryPriceGbp: null });
+    expect(battery).toEqual({ projectPrice: 18000, projectPriceSource: "user", batteryPrice: 5800, batteryPriceSource: "estimate" });
+    const input = buildPlanningInput({ region: "UK", label: "London", coordinates: { lat: 51.5, lng: -0.12 }, snapshot });
+    expect(input.costs.schemePriceGbp).toBe(12700);
+  });
+
+  it("estimates household demand from people, daytime occupancy and electric loads", () => {
+    const base = { householdSize: 3, daytimeOccupancy: "sometimes" as const, electricHeating: false, heatPump: false, electricHotWater: false, evCharger: false };
+    expect(estimateAnnualDemandKwh(base)).toBe(4150);
+    expect(estimateAnnualDemandKwh({ ...base, householdSize: 5, daytimeOccupancy: "usually" })).toBe(6450);
+    expect(estimateAnnualDemandKwh({ ...base, heatPump: true, evCharger: true })).toBe(10050);
   });
 });
