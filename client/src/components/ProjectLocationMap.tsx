@@ -600,6 +600,8 @@ function tilesForView(mode: MapMode, tileZoom: number, center: LatLng, zoom: num
 }
 
 function readCachedPublicConfig() {
+  const inline = (window as { __MODERNITE_PUBLIC_CONFIG__?: { googleMapsApiKey: string | null } }).__MODERNITE_PUBLIC_CONFIG__;
+  if (inline) return inline;
   try {
     return JSON.parse(window.localStorage.getItem(PUBLIC_CONFIG_CACHE) ?? "null") as { googleMapsApiKey: string | null } | null;
   } catch {

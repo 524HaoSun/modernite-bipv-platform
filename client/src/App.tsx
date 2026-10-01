@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,14 +37,17 @@ import {
 import { BuildingProfileCard, buildingTypeLabel, type AppliedBuilding } from "@/components/BuildingProfileCard";
 import { studioDimensions } from "../../lib/building-profile";
 import { MARKET_TO_STUDIO_REGION, studioTypeById } from "../../lib/studio-catalog";
-import { GoogleSiteViewer } from "@/components/GoogleSiteViewer";
-import { ResultsPage } from "@/components/ResultsReport";
 import { resultsCopy } from "@/lib/results-copy";
 import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
 import { ProjectLocationMap, cleanAddressLabel, usePrewarmLocationMap, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection } from "@/components/ProjectLocationMap";
-import { EUROPEAN_MARKETS, MarketAtlas, type EuropeanMarket, type MarketAtlasCopy } from "@/components/MarketAtlas";
+import type { MarketAtlasCopy } from "@/components/MarketAtlas";
+import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
+
+const MarketAtlas = lazy(() => import("@/components/MarketAtlas").then((module) => ({ default: module.MarketAtlas })));
+const GoogleSiteViewer = lazy(() => import("@/components/GoogleSiteViewer").then((module) => ({ default: module.GoogleSiteViewer })));
+const ResultsPage = lazy(() => import("@/components/ResultsReport").then((module) => ({ default: module.ResultsPage })));
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
@@ -1216,7 +1219,7 @@ function MarketPage({ language, market, europeanCountry, copy, onMarketChange, o
   return (
     <section className="market-page gateway-page">
       <PageIntro chapter={2} eyebrow={WORKFLOW_LABELS[language].market} icon={<Globe2 size={14} />} title={copy.marketTitle} lede={copy.marketIntro} />
-      <MarketAtlas language={language} market={market} europeanCountry={europeanCountry} copy={copy} onMarketChange={onMarketChange} onEuropeanCountryChange={onEuropeanCountryChange} onContinue={() => onNavigate("location")} />
+      <Suspense fallback={<div className="market-globe-workbench is-loading" />}><MarketAtlas language={language} market={market} europeanCountry={europeanCountry} copy={copy} onMarketChange={onMarketChange} onEuropeanCountryChange={onEuropeanCountryChange} onContinue={() => onNavigate("location")} /></Suspense>
     </section>
   );
 }
@@ -1284,7 +1287,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
           </button>
         </aside>
       </div>
-      {viewerMode && context.location && <GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} language={language} initialMode={viewerMode} onClose={() => setViewerMode(null)} />}
+      {viewerMode && context.location && <Suspense fallback={null}><GoogleSiteViewer coordinates={context.location.coordinates} label={locationLabel} language={language} initialMode={viewerMode} onClose={() => setViewerMode(null)} /></Suspense>}
     </section>
   );
 }
@@ -1996,7 +1999,7 @@ export default function App() {
           marketKey={context.marketKey}
         />}
         {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} language={studioLanguage} />}
-        {route === "results" && study && <ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} />}
+        {route === "results" && study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} /></Suspense>}
         {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}

@@ -5,13 +5,9 @@ import worldTopology from "world-atlas/countries-110m.json";
 import { ArrowLeft, ArrowRight, Compass, Globe2, Minus, Plus, RotateCcw, Search } from "lucide-react";
 import type { Market, MarketKey } from "@/components/ProjectLocationMap";
 import { europeName, regionName } from "@/lib/region-names";
+import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
 
-export type EuropeanMarket = {
-  id: number;
-  name: string;
-  shortName: string;
-  coordinates: { lat: number; lng: number };
-};
+export { EUROPEAN_MARKETS, type EuropeanMarket };
 
 export type MarketAtlasCopy = {
   coverage: string;
@@ -47,52 +43,6 @@ type Rotation = [number, number, number];
 const WORLD_TOPOLOGY = worldTopology as unknown as WorldTopology;
 const WORLD_FEATURES = feature(WORLD_TOPOLOGY as never, WORLD_TOPOLOGY.objects.countries as never) as unknown as { features: WorldFeature[] };
 
-export const EUROPEAN_MARKETS: EuropeanMarket[] = [
-  { id: 20, name: "Andorra", shortName: "AD", coordinates: { lat: 42.51, lng: 1.52 } },
-  { id: 40, name: "Austria", shortName: "AT", coordinates: { lat: 47.52, lng: 14.55 } },
-  { id: 56, name: "Belgium", shortName: "BE", coordinates: { lat: 50.5, lng: 4.47 } },
-  { id: 70, name: "Bosnia and Herzegovina", shortName: "BA", coordinates: { lat: 43.91, lng: 17.67 } },
-  { id: 100, name: "Bulgaria", shortName: "BG", coordinates: { lat: 42.73, lng: 25.48 } },
-  { id: 112, name: "Belarus", shortName: "BY", coordinates: { lat: 53.71, lng: 27.95 } },
-  { id: 191, name: "Croatia", shortName: "HR", coordinates: { lat: 45.1, lng: 15.2 } },
-  { id: 196, name: "Cyprus", shortName: "CY", coordinates: { lat: 35.13, lng: 33.43 } },
-  { id: 203, name: "Czechia", shortName: "CZ", coordinates: { lat: 49.82, lng: 15.47 } },
-  { id: 208, name: "Denmark", shortName: "DK", coordinates: { lat: 56.26, lng: 9.5 } },
-  { id: 233, name: "Estonia", shortName: "EE", coordinates: { lat: 58.6, lng: 25 } },
-  { id: 246, name: "Finland", shortName: "FI", coordinates: { lat: 61.92, lng: 25.75 } },
-  { id: 250, name: "France", shortName: "FR", coordinates: { lat: 46.23, lng: 2.21 } },
-  { id: 276, name: "Germany", shortName: "DE", coordinates: { lat: 51.16, lng: 10.45 } },
-  { id: 300, name: "Greece", shortName: "GR", coordinates: { lat: 39.07, lng: 21.82 } },
-  { id: 336, name: "Vatican City", shortName: "VA", coordinates: { lat: 41.9, lng: 12.45 } },
-  { id: 348, name: "Hungary", shortName: "HU", coordinates: { lat: 47.16, lng: 19.5 } },
-  { id: 352, name: "Iceland", shortName: "IS", coordinates: { lat: 64.96, lng: -19.02 } },
-  { id: 372, name: "Ireland", shortName: "IE", coordinates: { lat: 53.14, lng: -7.69 } },
-  { id: 380, name: "Italy", shortName: "IT", coordinates: { lat: 41.87, lng: 12.57 } },
-  { id: 383, name: "Kosovo", shortName: "XK", coordinates: { lat: 42.6, lng: 20.9 } },
-  { id: 428, name: "Latvia", shortName: "LV", coordinates: { lat: 56.88, lng: 24.6 } },
-  { id: 438, name: "Liechtenstein", shortName: "LI", coordinates: { lat: 47.17, lng: 9.56 } },
-  { id: 440, name: "Lithuania", shortName: "LT", coordinates: { lat: 55.17, lng: 23.88 } },
-  { id: 442, name: "Luxembourg", shortName: "LU", coordinates: { lat: 49.82, lng: 6.13 } },
-  { id: 470, name: "Malta", shortName: "MT", coordinates: { lat: 35.94, lng: 14.38 } },
-  { id: 492, name: "Monaco", shortName: "MC", coordinates: { lat: 43.74, lng: 7.42 } },
-  { id: 498, name: "Moldova", shortName: "MD", coordinates: { lat: 47.41, lng: 28.37 } },
-  { id: 499, name: "Montenegro", shortName: "ME", coordinates: { lat: 42.7, lng: 19.37 } },
-  { id: 528, name: "Netherlands", shortName: "NL", coordinates: { lat: 52.13, lng: 5.29 } },
-  { id: 578, name: "Norway", shortName: "NO", coordinates: { lat: 60.47, lng: 8.47 } },
-  { id: 616, name: "Poland", shortName: "PL", coordinates: { lat: 51.92, lng: 19.15 } },
-  { id: 620, name: "Portugal", shortName: "PT", coordinates: { lat: 39.4, lng: -8.22 } },
-  { id: 642, name: "Romania", shortName: "RO", coordinates: { lat: 45.94, lng: 24.97 } },
-  { id: 674, name: "San Marino", shortName: "SM", coordinates: { lat: 43.94, lng: 12.46 } },
-  { id: 688, name: "Serbia", shortName: "RS", coordinates: { lat: 44.01, lng: 21 } },
-  { id: 703, name: "Slovakia", shortName: "SK", coordinates: { lat: 48.67, lng: 19.7 } },
-  { id: 705, name: "Slovenia", shortName: "SI", coordinates: { lat: 46.15, lng: 14.99 } },
-  { id: 724, name: "Spain", shortName: "ES", coordinates: { lat: 40.46, lng: -3.75 } },
-  { id: 752, name: "Sweden", shortName: "SE", coordinates: { lat: 60.13, lng: 18.64 } },
-  { id: 756, name: "Switzerland", shortName: "CH", coordinates: { lat: 46.81, lng: 8.22 } },
-  { id: 792, name: "Turkey", shortName: "TR", coordinates: { lat: 39.93, lng: 32.86 } },
-  { id: 804, name: "Ukraine", shortName: "UA", coordinates: { lat: 48.38, lng: 31.17 } },
-  { id: 807, name: "North Macedonia", shortName: "MK", coordinates: { lat: 41.61, lng: 21.75 } },
-];
 
 const MARKET_NODES: Array<{ key: MarketKey; id?: number; code: string; name: string; coordinates: [number, number] }> = [
   { key: "GB", id: 826, code: "UK", name: "United Kingdom", coordinates: [-3.1, 54.5] },

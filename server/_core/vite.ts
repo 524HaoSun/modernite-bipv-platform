@@ -3,6 +3,7 @@ import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
+import { ENV } from "./env";
 
 export async function setupVite(app: Express, server: Server) {
   const { createServer: createViteServer } = await import("vite");
@@ -58,10 +59,23 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  app.use(
+    express.static(distPath, {
+      index: false,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        else if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
+      },
+    }),
+  );
 
-  // fall through to index.html if the file doesn't exist
+  // Public browser config is inlined so the map can start without a round trip.
+  const publicConfig = JSON.stringify({ googleMapsApiKey: ENV.googleMapsBrowserKey || null }).replace(/</g, "\\u003c");
+  let indexHtml: string | null = null;
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    indexHtml ??= fs
+      .readFileSync(path.resolve(distPath, "index.html"), "utf-8")
+      .replace("</head>", `<script>window.__MODERNITE_PUBLIC_CONFIG__=${publicConfig}</script></head>`);
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(indexHtml);
   });
 }
