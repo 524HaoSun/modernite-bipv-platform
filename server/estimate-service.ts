@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { runCustomerStudy, syntheticWeatherFor, type CustomerStudy } from "../lib/customer-study";
+import { runCustomerStudy, syntheticWeatherFor, type CustomerEconomicsPlan, type CustomerStudy } from "../lib/customer-study";
 import { PROFILES, type Weather } from "../lib/customer-energy-core";
 import type { HomeEnergySettings, StudioCalculationSnapshot } from "../lib/studio-calculation";
 import { invokeLLM } from "./_core/llm";
@@ -53,7 +53,7 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
   ]);
   if (weatherResult.error) console.warn(`[study] weather fallback (${weatherResult.weather.source}):`, weatherResult.error);
 
-  const study = runCustomerStudy({
+  const baseStudyInput = {
     market: input.market,
     address: input.address,
     coordinates: input.coordinates,
@@ -63,7 +63,13 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
     energySettings: input.energySettings,
     weather: weatherResult.weather,
     googleSolar,
+  };
+  const preliminaryStudy = runCustomerStudy(baseStudyInput);
+  const economicPlan = await estimateProjectEconomics(input, preliminaryStudy).catch((error: unknown) => {
+    console.warn("[study] economic guidance fallback:", error instanceof Error ? error.message : String(error));
+    return null;
   });
+  const study = economicPlan ? runCustomerStudy({ ...baseStudyInput, economicPlan }) : preliminaryStudy;
   const caseId = `MOD-${randomUUID().slice(0, 8).toUpperCase()}`;
   study.result.caseNumber = caseId;
   const stored: StoredStudy = { ...study, caseId, createdAt: new Date().toISOString(), expiresAt: Date.now() + STUDY_TTL_MS };
@@ -71,6 +77,112 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
   studies.set(caseId, stored);
   const { expiresAt: _expiresAt, ...response } = stored;
   return response;
+}
+
+const economicPlanSchema = z.object({
+  annualDemandKwh: z.number().finite().min(500).max(100_000).nullable(),
+  importPence: z.number().finite().min(1).max(150),
+  exportPence: z.number().finite().min(0).max(80),
+  importGrowthPercent: z.number().finite().min(0).max(8),
+  exportGrowthPercent: z.number().finite().min(0).max(8),
+  annualMaintenanceGbp: z.number().finite().min(0).max(50_000),
+  inverterReplacementGbp: z.number().finite().min(0).max(100_000),
+  batteryReplacementPercent: z.number().finite().min(0).max(120),
+});
+
+function clamp(value: number | null | undefined, min: number, max: number) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  return Math.max(min, Math.min(max, value));
+}
+
+async function estimateProjectEconomics(input: ProjectCalculationInput, study: CustomerStudy): Promise<CustomerEconomicsPlan | null> {
+  const settings = input.energySettings;
+  if (!settings) return null;
+  const factual = {
+    market: input.market,
+    address: input.address,
+    coordinates: input.coordinates,
+    building: study.project?.building,
+    household: {
+      demandMode: settings.demandMode,
+      annualDemandKwh: settings.annualDemandKwh ?? null,
+      householdSize: settings.householdSize,
+      daytimeOccupancy: settings.daytimeOccupancy,
+      electricHeating: settings.electricHeating,
+      heatPump: settings.heatPump,
+      electricHotWater: settings.electricHotWater,
+      evCharger: settings.evCharger,
+      batteryMode: settings.batteryMode,
+      batteryCapacityKwh: settings.batteryCapacityKwh,
+      projectPriceGbp: settings.projectPriceGbp ?? null,
+      batteryPriceGbp: settings.batteryPriceGbp ?? null,
+    },
+    studioOutput: {
+      configuredCapacityKwp: Number(study.result.totalCapacityKwp.toFixed(2)),
+      annualGenerationKwh: study.result.range.representative,
+      surfaces: study.result.surfaces.map((surface) => ({
+        kind: surface.kind,
+        orientation: surface.orientationName,
+        areaM2: Number(surface.areaM2.toFixed(1)),
+        annualKwh: Math.round(surface.annualKwh),
+      })),
+    },
+    currentModel: {
+      annualDemandKwh: study.energy.annualDemandKwh,
+      selfConsumedKwh: Math.round(study.simulation.selfConsumedKwh),
+      exportKwh: Math.round(study.simulation.exportKwh),
+      recommendedBatteryKwh: study.simulation.recommendedBatteryKwh,
+    },
+  };
+  const response = await invokeLLM({
+    model: "gpt-6-luna",
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You prepare bounded economic planning inputs for a Modernite BIPV project.",
+          "Use the supplied factual project record, household answers, market and configured Design Studio output.",
+          "Return only structured numeric inputs. Do not invent a final report, and do not change the Studio generation output.",
+          "If the user supplied an electricity bill, keep annualDemandKwh null so the bill remains authoritative.",
+          "Use realistic planning rates for the market and residential context.",
+        ].join(" "),
+      },
+      { role: "user", content: JSON.stringify(factual) },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "modernite_economic_plan",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            annualDemandKwh: { type: ["number", "null"] },
+            importPence: { type: "number" },
+            exportPence: { type: "number" },
+            importGrowthPercent: { type: "number" },
+            exportGrowthPercent: { type: "number" },
+            annualMaintenanceGbp: { type: "number" },
+            inverterReplacementGbp: { type: "number" },
+            batteryReplacementPercent: { type: "number" },
+          },
+          required: ["annualDemandKwh", "importPence", "exportPence", "importGrowthPercent", "exportGrowthPercent", "annualMaintenanceGbp", "inverterReplacementGbp", "batteryReplacementPercent"],
+          additionalProperties: false,
+        },
+      },
+    },
+  });
+  const parsed = economicPlanSchema.parse(JSON.parse(textContent(response.choices[0]?.message.content ?? "")));
+  return {
+    annualDemandKwh: settings.demandMode === "bill" ? null : clamp(parsed.annualDemandKwh, 500, 100_000),
+    importPence: clamp(parsed.importPence, 1, 150),
+    exportPence: clamp(parsed.exportPence, 0, 80),
+    importGrowthPercent: clamp(parsed.importGrowthPercent, 0, 8),
+    exportGrowthPercent: clamp(parsed.exportGrowthPercent, 0, 8),
+    annualMaintenanceGbp: clamp(parsed.annualMaintenanceGbp, 0, 50_000),
+    inverterReplacementGbp: clamp(parsed.inverterReplacementGbp, 0, 100_000),
+    batteryReplacementPercent: clamp(parsed.batteryReplacementPercent, 0, 120),
+  };
 }
 
 const insightSchema = z.object({

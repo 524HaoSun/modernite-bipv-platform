@@ -111,6 +111,32 @@ function GenerationRangeCard({ study, scenario, f }: { study: ProjectCalculation
   </section>;
 }
 
+function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
+  const { t } = f;
+  const firstYear = scenario.annualCashFlows[0];
+  const selfUse = firstYear?.directUseKwh ?? study.simulation.selfConsumedKwh;
+  const exportKwh = firstYear?.exportKwh ?? study.simulation.exportKwh;
+  const annualValue = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.arbitrageIncomeGbp ?? 0);
+  const selfUseShare = Math.round((selfUse / Math.max(1, study.result.range.representative)) * 100);
+  const exportShare = Math.max(0, 100 - selfUseShare);
+  return <section className="result-section executive-outcome-panel">
+    <div className="executive-outcome-main">
+      <p className="mini-label">{t.estimatedValue}</p>
+      <h2>{f.money(annualValue)} <small>{t.perYearMoney}</small></h2>
+      <p>{scenario.breakEvenYear ? t.breakEvenSimple(scenario.breakEvenYear) : t.longTerm} · {t.byYear25(f.money(scenario.net25YearGbp))}</p>
+    </div>
+    <div className="executive-kpis">
+      <article><span>{t.annualGeneration}</span><strong>{f.n(study.result.range.representative)}</strong><small>{t.perYear}</small></article>
+      <article><span>{t.demandLabel}</span><strong>{f.n(study.energy.annualDemandKwh)}</strong><small>{t.perYear}</small></article>
+      <article><span>{t.scenario}</span><strong>{t.scenarioTitles[scenario.id]}</strong><small>{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.planningComparison}</small></article>
+    </div>
+    <div className="executive-flow-strip" aria-label={t.flowTitle}>
+      <span style={{ ["--w" as string]: `${Math.max(8, selfUseShare)}%` }}><b>{t.usedHome}</b><i>{f.n(selfUse)} kWh</i></span>
+      <span style={{ ["--w" as string]: `${Math.max(8, exportShare)}%` }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
+    </div>
+  </section>;
+}
+
 function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: Route) => void; f: Fmt }) {
   const { t } = f;
   const firstYear = scenario.annualCashFlows[0];
@@ -445,6 +471,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
         <GenerationRangeCard study={study} scenario={scenario} f={f} />
+        <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
           <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
           <section className="result-section result-capacity-tile"><span><BarChart3 size={20} /></span><p className="mini-label">{t.capacity}</p><h2>{f.n(study.result.totalCapacityKwp, 2)} kWp</h2><p>{t.activeSurfaces(study.result.surfaces.length)}</p></section>

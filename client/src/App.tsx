@@ -80,6 +80,7 @@ const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
 
 type GatewayRoute = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
 type StudioLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
+type NearbyBuildingResult = MapBuildingCandidate & { address?: string };
 
 type GatewayCopy = MarketAtlasCopy & {
   project: string; market: string; location: string; workspace: string; back: string;
@@ -118,8 +119,8 @@ type StudioWindow = Window & {
 };
 
 const DEFAULT_ENERGY_SETTINGS: HomeEnergySettings = {
-  demandMode: "bill",
-  annualDemandKwh: 5400,
+  demandMode: "estimate",
+  annualDemandKwh: null,
   householdSize: 3,
   daytimeOccupancy: "usually",
   electricHeating: false,
@@ -1292,7 +1293,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
       cancelled = true;
     };
   }, [anchor, mapsKey, addressSearch, language, market]);
-  const candidates = useMemo<MapBuildingCandidate[]>(() => (nearbyQuery.data ?? []).map((building) => ({
+  const candidates = useMemo<MapBuildingCandidate[]>(() => ((nearbyQuery.data ?? []) as NearbyBuildingResult[]).map((building) => ({
     id: building.id,
     path: building.path,
     center: building.center,
