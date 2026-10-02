@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, LineChart, MessageCircle,
-  Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp, Zap,
+  ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
+  Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp,
 } from "lucide-react";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
@@ -89,12 +89,19 @@ function useFormatters(language: string, currency: string): Fmt {
   }, [language, currency]);
 }
 
-function GenerationRangeCard({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
+function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }) {
   const { t } = f;
   const range = study.result.range;
   const position = ((range.representative - range.low) / Math.max(1, range.high - range.low)) * 100;
   return <section className="result-section generation-range-card generation-hero-card">
-    <div className="range-card-top"><div><p className="mini-label">{t.heroLabel}</p><strong>{f.n(range.representative)} <small>{t.perYear}</small></strong><p>{t.heroBody(study.result.surfaces.length)}</p></div><span><i /> {t.model} · {t.weather[study.weather.kind]}</span></div>
+    <div className="range-card-top">
+      <div>
+        <p className="mini-label">Design Studio · {t.heroLabel}</p>
+        <strong>{f.n(range.representative)} <small>{t.perYear}</small></strong>
+        <p>{t.heroBody(study.result.surfaces.length)} {t.basisSite(study.weather.source, study.weather.hours)}</p>
+      </div>
+      <span><i /> {t.model} · {t.weather[study.weather.kind]}</span>
+    </div>
     <div className="range-insight-grid">
       <div className="range-window">
         <div className="range-window-head"><span>{t.rangeTitle}</span><b>{f.n(range.low)} – {f.n(range.high)} {t.perYear}</b></div>
@@ -104,8 +111,8 @@ function GenerationRangeCard({ study, scenario, f }: { study: ProjectCalculation
       </div>
       <div className="hero-result-metrics">
         <article><span><BarChart3 size={18} /></span><small>{t.capacity}</small><b>{f.n(study.result.totalCapacityKwp, 2)} kWp</b></article>
-        <article><span><Zap size={18} /></span><small>{t.firstYearValue}</small><b>{f.money(scenario.firstYearBenefitGbp)}</b></article>
-        <article><span><LineChart size={18} /></span><small>{t.view25}</small><b>{f.money(scenario.net25YearGbp)}</b></article>
+        <article><span><Building2 size={18} /></span><small>{t.surfacesLabel}</small><b>{t.activeSurfaces(study.result.surfaces.length)}</b></article>
+        <article><span><ShieldCheck size={18} /></span><small>{t.hourlyWeather}</small><b>{t.weather[study.weather.kind]}</b></article>
       </div>
     </div>
   </section>;
@@ -470,7 +477,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
-        <GenerationRangeCard study={study} scenario={scenario} f={f} />
+        <GenerationRangeCard study={study} f={f} />
         <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
           <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
