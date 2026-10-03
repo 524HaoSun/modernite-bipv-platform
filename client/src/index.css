@@ -6186,3 +6186,370 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Cinematic calculation transition: this is an interstitial, not a workflow step. */
+.gateway-shell--calculation .journey-rail__segment:nth-last-child(1) button {
+  pointer-events: none;
+}
+
+.calculation-page.calculation-page--cinematic {
+  position: relative;
+  display: grid;
+  min-height: calc(100dvh - 72px);
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(24px, 4vw, 56px);
+  background:
+    radial-gradient(circle at 50% 39%, rgba(229, 248, 238, .88) 0 11%, rgba(162, 201, 181, .27) 29%, transparent 54%),
+    linear-gradient(180deg, rgba(247, 252, 248, .64), rgba(223, 237, 227, .18)),
+    url("/assets/modernite-entry-hero-a_aa79dbb7.png") center bottom / cover no-repeat;
+}
+
+.calculation-page.calculation-page--cinematic::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(247, 252, 248, .82) 0%, rgba(247, 252, 248, .42) 28%, rgba(247, 252, 248, .24) 60%, rgba(247, 252, 248, .66) 100%),
+    radial-gradient(circle at 50% 46%, transparent 0 14%, rgba(255, 255, 255, .27) 15%, transparent 42%);
+  backdrop-filter: blur(3px) saturate(1.02);
+}
+
+.calculation-page.calculation-page--cinematic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(12, 91, 69, .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(12, 91, 69, .1) 1px, transparent 1px);
+  background-size: 86px 86px;
+  mask-image: radial-gradient(circle at 50% 39%, black 0 31%, transparent 59%);
+  opacity: .14;
+  transform: perspective(900px) rotateX(62deg) translateY(-8%);
+}
+
+.calculation-ambient {
+  display: none;
+}
+
+.calculation-orb {
+  position: absolute;
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 28%, #fff, #dff8e6 30%, #0d6048 72%);
+  box-shadow: 0 0 22px rgba(126, 226, 172, .9), 0 0 62px rgba(255, 255, 255, .8);
+  opacity: .78;
+}
+
+.calculation-orb--one {
+  top: 20%;
+  left: 34%;
+  animation: calculationDriftOne 9s ease-in-out infinite;
+}
+
+.calculation-orb--two {
+  right: 30%;
+  bottom: 29%;
+  width: 18px;
+  height: 18px;
+  animation: calculationDriftTwo 11s ease-in-out infinite;
+}
+
+.calculation-orb--three {
+  top: 49%;
+  left: 25%;
+  width: 20px;
+  height: 20px;
+  animation: calculationDriftThree 12s ease-in-out infinite;
+}
+
+.calculation-page--cinematic .calculation-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  width: min(760px, 94vw);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+.calculation-page--cinematic .calculation-card::before,
+.calculation-page--cinematic .calculation-card::after {
+  content: none;
+}
+
+.calculation-page--cinematic .calculation-card::before {
+  top: 31%;
+  left: 1%;
+  transform: rotate(-5deg);
+}
+
+.calculation-page--cinematic .calculation-card::after {
+  right: 2%;
+  bottom: 27%;
+  transform: rotate(4deg);
+}
+
+.calculation-radar {
+  position: relative;
+  display: grid;
+  width: clamp(280px, 30vw, 410px);
+  aspect-ratio: 1;
+  place-items: center;
+  margin: 0 auto;
+  border-radius: 999px;
+  filter:
+    drop-shadow(0 24px 70px rgba(42, 94, 70, .18))
+    drop-shadow(0 0 34px rgba(130, 232, 177, .26));
+}
+
+.calculation-radar::before,
+.calculation-radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.calculation-radar::before {
+  background:
+    conic-gradient(from 0deg, transparent 0 7%, rgba(255, 255, 255, .72) 9%, transparent 14% 33%, rgba(4, 94, 68, .62) 36% 43%, transparent 47% 72%, rgba(178, 247, 199, .48) 76%, transparent 84%),
+    repeating-conic-gradient(from 0deg, rgba(12, 91, 69, .17) 0 1.1deg, transparent 1.1deg 4.2deg);
+  mask-image: radial-gradient(circle, transparent 0 28%, black 29% 66%, transparent 67%);
+  animation: calculationSpin 11s linear infinite;
+}
+
+.calculation-radar::after {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .95) 0 17%, rgba(217, 245, 228, .6) 18% 27%, transparent 28%),
+    conic-gradient(from 210deg, transparent 0 73%, rgba(23, 116, 84, .26) 76%, rgba(181, 255, 208, .58) 82%, transparent 91%),
+    linear-gradient(90deg, transparent 49.8%, rgba(255, 255, 255, .72) 50%, transparent 50.2%),
+    linear-gradient(0deg, transparent 49.8%, rgba(255, 255, 255, .58) 50%, transparent 50.2%);
+  opacity: .86;
+  animation: calculationCounterSpin 16s linear infinite;
+}
+
+.calculation-radar__disc {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  width: clamp(70px, 6.6vw, 92px);
+  height: clamp(70px, 6.6vw, 92px);
+  place-items: center;
+  border: 1px solid rgba(9, 79, 59, .24);
+  border-radius: 999px;
+  color: #0b5c46;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 1), rgba(231, 248, 237, .96) 54%, rgba(183, 223, 198, .75));
+  box-shadow:
+    0 0 0 15px rgba(255, 255, 255, .86),
+    0 0 0 17px rgba(9, 79, 59, .13),
+    0 0 44px rgba(151, 231, 181, .86),
+    inset 0 0 20px rgba(132, 239, 175, .28);
+  animation: calculationCoreBreathe 2.6s ease-in-out infinite;
+}
+
+.calculation-radar__disc svg {
+  animation: calculationCounterSpin 7s linear infinite;
+  filter: drop-shadow(0 0 9px rgba(126, 209, 162, .58));
+  stroke-width: 1.85;
+}
+
+.calculation-radar__ring {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, .64);
+  border-radius: 999px;
+  box-shadow: inset 0 0 42px rgba(255, 255, 255, .32), 0 0 28px rgba(183, 239, 204, .24);
+}
+
+.calculation-radar__ring--one {
+  inset: 24%;
+  background: conic-gradient(from 0deg, rgba(20, 120, 85, .16), transparent 18% 48%, rgba(255, 255, 255, .44) 55%, transparent 68%);
+  animation: calculationSpin 9s linear infinite;
+}
+
+.calculation-radar__ring--two {
+  inset: 14%;
+  border-color: rgba(7, 87, 65, .2);
+  background: repeating-conic-gradient(from 0deg, rgba(7, 87, 65, .11) 0 1deg, transparent 1deg 11deg);
+  animation: calculationCounterSpin 18s linear infinite;
+}
+
+.calculation-radar__ring--three {
+  inset: 2%;
+  border-color: rgba(255, 255, 255, .62);
+  box-shadow:
+    inset 0 0 54px rgba(255, 255, 255, .38),
+    0 0 0 1px rgba(11, 91, 68, .08),
+    0 0 55px rgba(132, 237, 178, .22);
+}
+
+.calculation-radar__arc {
+  position: absolute;
+  inset: 6%;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  border-top-color: rgba(6, 94, 70, .9);
+  border-right-color: rgba(90, 210, 132, .34);
+  animation: calculationSpin 4.8s linear infinite;
+}
+
+.calculation-radar__arc--two {
+  inset: 20%;
+  border-width: 4px;
+  border-top-color: rgba(255, 255, 255, .82);
+  border-left-color: rgba(114, 242, 165, .24);
+  animation-duration: 7.5s;
+  animation-direction: reverse;
+}
+
+.calculation-radar__spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 15px #fff, 0 0 38px rgba(172, 255, 207, .9);
+}
+
+.calculation-radar__spark--one {
+  top: 7%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: calculationSpark 2.2s ease-in-out infinite;
+}
+
+.calculation-radar__spark--two {
+  right: 18%;
+  top: 26%;
+  animation: calculationSpark 2.8s ease-in-out .2s infinite;
+}
+
+.calculation-radar__spark--three {
+  left: 25%;
+  bottom: 18%;
+  animation: calculationSpark 3.2s ease-in-out .45s infinite;
+}
+
+.calculation-page--cinematic:not(.is-error) .eyebrow,
+.calculation-page--cinematic:not(.is-error) .calculation-card h1,
+.calculation-page--cinematic:not(.is-error) .calculation-card > p:not(.eyebrow) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.calculation-page--cinematic .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  color: #235b48;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.calculation-page--cinematic .calculation-card h1 {
+  max-width: 16ch;
+  margin: 0;
+  color: #073c32;
+  font-size: clamp(32px, 3.15vw, 46px);
+  font-weight: 500;
+  letter-spacing: -1px;
+  line-height: 1.05;
+}
+
+.calculation-page--cinematic .calculation-card > p:not(.eyebrow) {
+  max-width: 46ch;
+  margin: 17px auto 0;
+  color: #577063;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.calculation-page--cinematic.is-error .calculation-card {
+  padding: clamp(34px, 6vw, 64px);
+  border: 1px solid rgba(214, 225, 217, .8);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 24px 70px rgba(42, 72, 52, .14);
+}
+
+.calculation-page--cinematic.is-error .calculation-orbit {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  margin: 0 auto 24px;
+  border: 1px solid rgba(12, 91, 69, .25);
+  border-radius: 999px;
+  color: #075741;
+  background: rgba(238, 247, 240, .92);
+}
+
+@keyframes calculationSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes calculationCounterSpin {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes calculationCoreBreathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 15px rgba(255, 255, 255, .86), 0 0 0 17px rgba(9, 79, 59, .13), 0 0 44px rgba(151, 231, 181, .86), inset 0 0 20px rgba(132, 239, 175, .28); }
+  50% { transform: scale(1.045); box-shadow: 0 0 0 20px rgba(255, 255, 255, .72), 0 0 0 24px rgba(9, 79, 59, .08), 0 0 74px rgba(151, 231, 181, .96), inset 0 0 30px rgba(132, 239, 175, .38); }
+}
+
+@keyframes calculationSpark {
+  0%, 100% { opacity: .58; transform: scale(.82); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+@keyframes calculationDriftOne {
+  50% { transform: translate(28px, 18px) scale(1.25); }
+}
+
+@keyframes calculationDriftTwo {
+  50% { transform: translate(-22px, -34px) scale(.8); }
+}
+
+@keyframes calculationDriftThree {
+  50% { transform: translate(36px, -18px) scale(1.08); }
+}
+
+@media (max-width: 760px) {
+  .calculation-page.calculation-page--cinematic {
+    min-height: calc(100dvh - 68px);
+    padding: 18px;
+  }
+
+  .calculation-radar {
+    width: min(80vw, 340px);
+    margin-bottom: 0;
+  }
+
+  .calculation-page--cinematic .calculation-card h1 {
+    font-size: clamp(32px, 9vw, 42px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calculation-radar::before,
+  .calculation-radar__disc,
+  .calculation-radar__disc svg,
+  .calculation-radar__arc,
+  .calculation-radar__spark,
+  .calculation-orb {
+    animation: none !important;
+  }
+}

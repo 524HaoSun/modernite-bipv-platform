@@ -1077,10 +1077,9 @@ function GatewayHeader({
     { id: "location", route: "location", label: labels.location },
     { id: "studio", route: "studio", label: labels.studio },
     { id: "energy", route: "energy", label: labels.energy },
-    { id: "calculation", route: "calculation", label: labels.calculation },
     { id: "results", route: "results", label: labels.results },
   ];
-  const activeIndex = route === "entry" ? 0 : route === "market" ? 1 : route === "location" ? 2 : route === "studio" ? 3 : route === "energy" ? 4 : route === "calculation" ? 5 : 6;
+  const activeIndex = route === "entry" ? 0 : route === "market" ? 1 : route === "location" ? 2 : route === "studio" ? 3 : route === "energy" ? 4 : 5;
 
   return (
     <header className={`gateway-header gateway-header--${route}`}>
@@ -1093,7 +1092,7 @@ function GatewayHeader({
       </button>
       <nav className="journey-rail" aria-label={MISC_COPY[language].progressAria}>
         {steps.map((step, index) => {
-          const requiresSite = step.route === "studio" || step.route === "energy" || step.route === "calculation" || step.route === "results";
+          const requiresSite = step.route === "studio" || step.route === "energy" || step.route === "results";
           const blocked = requiresSite && !canOpenStudio && route !== "studio" && route !== "results";
           return <div className="journey-rail__segment" key={step.id}>
           <button
@@ -1681,7 +1680,6 @@ function StudioPage({
     { id: "site", label: workflow.location, complete: true },
     { id: "studio", label: workflow.studio, complete: false },
     { id: "energy", label: workflow.energy, complete: false },
-    { id: "calculation", label: workflow.calculation, complete: false },
     { id: "results", label: workflow.results, complete: false },
   ];
 
@@ -2104,15 +2102,28 @@ function StudioPage({
 function CalculationLoadingPage({ error, onBack, language }: { error: string | null; onBack: () => void; language: StudioLanguage }) {
   const text = outerCopy(language);
   return (
-    <section className="calculation-page" aria-live="polite">
+    <section className={`calculation-page calculation-page--cinematic ${error ? "is-error" : ""}`} aria-live="polite">
+      <div className="calculation-ambient" aria-hidden="true">
+        <span className="calculation-orb calculation-orb--one" />
+        <span className="calculation-orb calculation-orb--two" />
+        <span className="calculation-orb calculation-orb--three" />
+      </div>
       <div className="calculation-card">
-        <div className="calculation-orbit" aria-hidden="true"><Orbit size={34} /></div>
+        {!error && <div className="calculation-radar" aria-hidden="true">
+          <span className="calculation-radar__disc"><Zap size={38} /></span>
+          <span className="calculation-radar__ring calculation-radar__ring--one" />
+          <span className="calculation-radar__ring calculation-radar__ring--two" />
+          <span className="calculation-radar__ring calculation-radar__ring--three" />
+          <span className="calculation-radar__arc calculation-radar__arc--one" />
+          <span className="calculation-radar__arc calculation-radar__arc--two" />
+          <span className="calculation-radar__spark calculation-radar__spark--one" />
+          <span className="calculation-radar__spark calculation-radar__spark--two" />
+          <span className="calculation-radar__spark calculation-radar__spark--three" />
+        </div>}
+        {error && <div className="calculation-orbit" aria-hidden="true"><Database size={34} /></div>}
         <p className="eyebrow"><Database size={14} /> {text.calculationEyebrow}</p>
         <h1>{error ? text.calculationErrorTitle : text.calculationTitle}</h1>
-        <p>{error || text.calculationBody}</p>
-        {!error && <div className="calculation-stages" aria-label={MISC_COPY[language].stagesAria}>
-          {text.calculationStages.map((stage, index) => <span key={stage} className={index === 0 ? "is-active" : ""}><i /> {stage}</span>)}
-        </div>}
+        {error && <p>{error}</p>}
         {error && <button type="button" className="button-primary" onClick={onBack}>{text.returnStudio} <ArrowLeft size={16} /></button>}
       </div>
     </section>
