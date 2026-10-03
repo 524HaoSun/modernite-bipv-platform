@@ -41,7 +41,7 @@ describe("V28-aligned entry gateway", () => {
     expect(app).toContain("Preparing your personalised project outlook.");
     expect(resultsText).toContain("Hourly model · PVGIS weather");
     expect(resultsText).toContain("Hourly weather");
-    expect(resultsText).toContain("Modernité Design Guide");
+    expect(resultsText).toContain("Modernité Advisor");
     expect(results).toContain("ADVISOR_ASK_EVENT");
     expect(results).toContain("ResultAdvisor");
     expect(results).toContain("ADVISOR_ASK_EVENT");

@@ -370,11 +370,15 @@ function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; regi
 
 function ResultAdvisor({ isDemo, t }: { isDemo: boolean; t: ResultsCopy }) {
   const ask = (question?: string) => window.dispatchEvent(new CustomEvent(ADVISOR_ASK_EVENT, { detail: { question } }));
-  return <section className="study-summary-card advisor-card results-advisor">
-    <span><MessageCircle size={20} /></span>
-    <p className="mini-label">{t.advisorLabel}</p>
-    <p>{isDemo ? t.advisorDemo : t.advisorBody}</p>
+  return <section className="study-summary-card advisor-card results-advisor" aria-label={t.advisorLabel}>
+    <div className="results-advisor-orbit" aria-hidden="true"><i /><i /><i /></div>
+    <span className="results-advisor-mark"><MessageCircle size={20} /></span>
+    <div>
+      <p className="mini-label">{t.advisorLabel}</p>
+      <p>{isDemo ? t.advisorDemo : t.advisorBody}</p>
+    </div>
     <div className="assistant-prompts">{t.prompts.map((prompt) => <button key={prompt} type="button" onClick={() => ask(prompt)}>{prompt}</button>)}</div>
+    <div className="results-advisor-status"><Sparkles size={13} /><span>{t.chainNote}</span></div>
     <button type="button" className="button-secondary wide" onClick={() => ask()}><Sparkles size={15} /> {t.advisorLabel}</button>
   </section>;
 }
