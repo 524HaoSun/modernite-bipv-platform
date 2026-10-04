@@ -21,7 +21,6 @@ import {
   Globe2,
   Home,
   Layers3,
-  Leaf,
   Lightbulb,
   LineChart,
   MapPinned,
@@ -1084,11 +1083,7 @@ function GatewayHeader({
   return (
     <header className={`gateway-header gateway-header--${route}`}>
       <button type="button" className="brand-lockup" onClick={() => onNavigate("entry")} aria-label={MISC_COPY[language].homeAria}>
-        <span className="brand-mark"><Leaf size={16} strokeWidth={2.2} /></span>
-        <span>
-          <strong>MODERNITÉ</strong>
-          <small>BUILDING INTEGRATED SOLAR</small>
-        </span>
+        <img className="brand-logo-image" src="/assets/modernite-carbonfuture-logo.png" alt="Modernité by CarbonFutureX Group" />
       </button>
       <nav className="journey-rail" aria-label={MISC_COPY[language].progressAria}>
         {steps.map((step, index) => {
@@ -2025,8 +2020,7 @@ function StudioPage({
     <main className={`customer-studio-shell is-workspace ${active ? "is-active" : ""} ${focusMode ? "is-focus" : ""}`} aria-hidden={!active}>
       <header className="studio-bridge-bar">
         <button type="button" className="studio-bridge-brand" onClick={() => onNavigate("location")} aria-label={bridgeCopy.returnToSite}>
-          <span className="brand-mark"><Leaf size={16} strokeWidth={2.2} /></span>
-          <span><strong>MODERNITÉ</strong><small>BUILDING INTEGRATED SOLAR</small></span>
+          <img className="brand-logo-image" src="/assets/modernite-carbonfuture-logo.png" alt="Modernité by CarbonFutureX Group" />
         </button>
         <div className="studio-bridge-journey" aria-label={text.studioProgressLabel}>
           {studioJourney.map((step, index) => <div className="studio-bridge-journey__segment" key={step.id}>

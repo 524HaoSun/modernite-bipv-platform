@@ -4712,6 +4712,45 @@ body {
   display: none;
 }
 
+.brand-lockup {
+  width: clamp(190px, 15.6vw, 248px) !important;
+  height: 62px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.studio-bridge-brand {
+  width: clamp(168px, 13vw, 216px) !important;
+  height: 56px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.brand-logo-image {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 56px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  background: transparent !important;
+  filter: none !important;
+}
+
+.studio-bridge-brand .brand-logo-image {
+  max-height: 50px !important;
+}
+
+@media (max-width: 980px) {
+  .brand-lockup {
+    width: 176px !important;
+  }
+
+  .studio-bridge-brand {
+    width: 152px !important;
+  }
+}
+
 .journey-rail__segment,
 .studio-bridge-journey__segment {
   flex: 0 0 auto;
@@ -5977,6 +6016,1291 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .cash-position-chart .cash-hover .cash-hover-title { fill: #6d8073; font-weight: 700; }
 @media print { .cash-position-chart .cash-hover { display: none; } }
 
+/* Results hero concept: Modernite outcome dashboard. */
+.gateway-shell .generation-hero-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(30px, 4vw, 56px) !important;
+  border-color: rgba(126, 171, 140, .7) !important;
+  background:
+    linear-gradient(112deg, rgba(255,255,255,.98) 0%, rgba(250,253,249,.94) 42%, rgba(231,243,234,.82) 100%),
+    radial-gradient(circle at 78% 18%, rgba(240, 196, 85, .16), transparent 25%) !important;
+  color: #073d33 !important;
+  box-shadow: 0 28px 80px rgba(23, 69, 49, .12) !important;
+}
+.gateway-shell .generation-hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.94), rgba(255,255,255,.58) 43%, rgba(255,255,255,.12)),
+    url("/assets/modernite-entry-hero-a_aa79dbb7.png") right center / 54% auto no-repeat;
+  opacity: .82;
+}
+.gateway-shell .generation-hero-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -10%;
+  bottom: -34%;
+  width: min(620px, 44vw);
+  aspect-ratio: 1;
+  border: 1px solid rgba(12, 96, 72, .11);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 34px rgba(12, 96, 72, .035),
+    inset 0 0 0 84px rgba(196, 154, 53, .035);
+}
+.gateway-shell .generation-dashboard {
+  display: grid;
+  grid-template-columns: minmax(360px, .95fr) minmax(360px, 520px);
+  gap: clamp(26px, 4vw, 70px);
+  align-items: center;
+}
+.gateway-shell .generation-dashboard-copy {
+  max-width: 690px;
+}
+.gateway-shell .generation-dashboard-copy .mini-label {
+  color: #315f51;
+  letter-spacing: .38em;
+}
+.gateway-shell .generation-dashboard-copy > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin-top: 18px;
+  color: #063f34 !important;
+  font-size: clamp(82px, 8vw, 148px);
+  font-weight: 520;
+  letter-spacing: -7px;
+  line-height: .88;
+  text-shadow: none;
+}
+.gateway-shell .generation-dashboard-copy > strong small {
+  color: #5f7768 !important;
+  font-size: clamp(24px, 3vw, 46px);
+  font-weight: 760;
+  letter-spacing: -.05em;
+}
+.gateway-shell .generation-dashboard-copy > p {
+  max-width: 560px;
+  margin: 24px 0 0;
+  color: #315145 !important;
+  font-size: clamp(17px, 1.45vw, 24px);
+  line-height: 1.55;
+}
+.gateway-shell .generation-benefit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gateway-shell .generation-benefit-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  color: #355d4f;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.gateway-shell .generation-benefit-list svg {
+  width: 38px;
+  height: 38px;
+  padding: 10px;
+  border-radius: 50%;
+  color: #0b6047;
+  background: rgba(218, 238, 222, .92);
+}
+.gateway-shell .generation-outlook-dial {
+  position: relative;
+  display: grid;
+  width: min(460px, 34vw);
+  min-width: 340px;
+  aspect-ratio: 1;
+  place-items: center;
+  justify-self: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.98) 0 36%, rgba(236,247,238,.86) 37% 52%, rgba(255,255,255,.56) 53% 100%);
+  box-shadow:
+    0 24px 70px rgba(23, 70, 50, .13),
+    inset 0 0 0 1px rgba(255,255,255,.9);
+}
+.gateway-shell .generation-outlook-dial::before {
+  content: "";
+  position: absolute;
+  inset: -9%;
+  border: 1px solid rgba(196, 154, 53, .32);
+  border-radius: inherit;
+  background:
+    radial-gradient(circle, transparent 0 67%, rgba(255,255,255,.42) 68% 70%, transparent 71%),
+    conic-gradient(from -36deg, transparent 0 73%, rgba(196,154,53,.35) 73% 75%, transparent 75% 100%);
+}
+.gateway-shell .generation-outlook-dial svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.gateway-shell .generation-outlook-dial circle {
+  fill: rgba(255, 255, 255, .35);
+  stroke: rgba(9, 70, 55, .12);
+  stroke-width: 1;
+}
+.gateway-shell .generation-outlook-dial .dial-ticks {
+  fill: none;
+  stroke: rgba(9, 70, 55, .18);
+  stroke-width: 10;
+  stroke-dasharray: 1 8;
+}
+.gateway-shell .generation-outlook-dial path {
+  fill: none;
+  stroke: url(#moderniteDialArc);
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+.gateway-shell .generation-outlook-dial path.is-glow {
+  stroke: rgba(196, 154, 53, .86);
+  stroke-dasharray: 112 320;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 13px rgba(196,154,53,.36));
+  animation: moderniteResultSweep 5.4s ease-in-out infinite;
+}
+.gateway-shell .generation-outlook-dial line {
+  stroke: #c49a35;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 10px rgba(196,154,53,.45));
+}
+.gateway-shell .generation-outlook-dial g circle {
+  fill: #0b6047;
+  stroke: #fff;
+  stroke-width: 3;
+}
+.gateway-shell .generation-outlook-dial span {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  color: #073d33;
+  text-align: center;
+}
+.gateway-shell .generation-outlook-dial span b {
+  color: #0b6047;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: .32em;
+}
+.gateway-shell .generation-outlook-dial span strong {
+  margin-top: 8px;
+  color: #063f34;
+  font-size: clamp(58px, 6vw, 86px);
+  font-weight: 560;
+  letter-spacing: -4px;
+  line-height: .9;
+}
+.gateway-shell .generation-outlook-dial span small {
+  margin-top: 8px;
+  max-width: 150px;
+  color: #66796d;
+  font-size: 15px;
+  font-weight: 650;
+}
+.gateway-shell .generation-range-flow {
+  display: grid;
+  gap: clamp(20px, 2.6vw, 32px);
+  margin-top: clamp(26px, 4vw, 54px);
+}
+.gateway-shell .generation-hero-card .range-window {
+  max-width: 760px;
+  border-color: rgba(196, 154, 53, .35);
+  background: rgba(255,255,255,.68);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+.gateway-shell .generation-hero-card .range-window-head span,
+.gateway-shell .generation-hero-card .range-points i,
+.gateway-shell .generation-hero-card .range-window p {
+  color: #708679;
+}
+.gateway-shell .generation-hero-card .range-window-head b,
+.gateway-shell .generation-hero-card .range-points b {
+  color: #174538;
+}
+.gateway-shell .generation-hero-card .range-track {
+  background: linear-gradient(90deg, #cfe5d5, #0b6047 52%, #c49a35);
+}
+.gateway-shell .generation-hero-card .range-track strong {
+  border-color: rgba(255,255,255,.9);
+  background: #c49a35;
+  box-shadow: 0 0 0 8px rgba(196,154,53,.15);
+}
+.gateway-shell .generation-hero-card .range-track em {
+  border-color: rgba(255,255,255,.9);
+  background: #0b6047;
+}
+.gateway-shell .generation-flow-cards {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(14px, 1.8vw, 24px);
+  margin: 0;
+}
+.gateway-shell .generation-flow-cards::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(196,154,53,.58), transparent);
+  transform: translateY(-50%);
+}
+.gateway-shell .generation-flow-cards article {
+  position: relative;
+  display: grid;
+  min-height: 178px;
+  padding: 26px 26px 22px;
+  border: 1px solid rgba(185, 211, 192, .78);
+  border-radius: 18px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 18px 46px rgba(23, 69, 49, .08);
+}
+.gateway-shell .generation-flow-cards article > span {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  border-radius: 50%;
+  color: #0b6047;
+  background: linear-gradient(180deg, #edf7ef, #dbeee0);
+}
+.gateway-shell .generation-flow-cards small {
+  margin-top: 18px;
+  color: #6b8073;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.gateway-shell .generation-flow-cards b {
+  margin-top: 8px;
+  color: #073d33;
+  font-size: clamp(26px, 2.4vw, 38px);
+  font-weight: 620;
+  letter-spacing: -1.5px;
+}
+.gateway-shell .generation-flow-cards b i,
+.gateway-shell .generation-flow-cards em {
+  color: #526b5e;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+.gateway-shell .generation-flow-cards em {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.35;
+}
+@keyframes moderniteResultSweep {
+  0%, 100% { stroke-dashoffset: 0; opacity: .65; }
+  50% { stroke-dashoffset: -82; opacity: 1; }
+}
+@media (max-width: 1180px) {
+  .gateway-shell .generation-dashboard,
+  .gateway-shell .generation-flow-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .gateway-shell .generation-outlook-dial {
+    width: min(420px, 70vw);
+  }
+}
+@media (max-width: 760px) {
+  .gateway-shell .generation-dashboard,
+  .gateway-shell .generation-benefit-list,
+  .gateway-shell .generation-flow-cards {
+    grid-template-columns: 1fr;
+  }
+  .gateway-shell .generation-dashboard-copy > strong {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    font-size: clamp(58px, 18vw, 82px);
+  }
+  .gateway-shell .generation-outlook-dial {
+    min-width: 0;
+    width: min(330px, 84vw);
+  }
+}
+
+/* Results annual-generation hero, rebuilt as a full-width outcome canvas. */
+.gateway-shell .results-hero-stage {
+  width: min(100% - 48px, 1680px);
+  margin: clamp(18px, 2.4vw, 30px) auto clamp(26px, 3.2vw, 44px);
+}
+.gateway-shell .results-hero-stage .generation-hero-card {
+  min-height: clamp(560px, 44vw, 660px);
+  padding: clamp(28px, 3.4vw, 50px) clamp(34px, 4.5vw, 72px) clamp(26px, 3vw, 42px) !important;
+  border: 1px solid rgba(149, 188, 157, .62) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(106deg, rgba(255,255,255,.99) 0%, rgba(250,253,249,.96) 34%, rgba(234,245,237,.68) 60%, rgba(255,255,255,.18) 100%),
+    linear-gradient(31deg, rgba(226,243,232,.8) 0 17%, transparent 17.2% 61%, rgba(238,247,239,.72) 61.3%),
+    radial-gradient(circle at 72% 12%, rgba(229,179,51,.23), transparent 22%),
+    radial-gradient(circle at 82% 72%, rgba(12,99,73,.12), transparent 26%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right center / auto 112% no-repeat !important;
+  box-shadow: 0 34px 100px rgba(23, 69, 49, .12), inset 0 1px 0 rgba(255,255,255,.96) !important;
+}
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.62) 44%, rgba(255,255,255,.06) 72%),
+    radial-gradient(circle at 61% 48%, rgba(255,255,255,.72) 0 17%, transparent 37%),
+    linear-gradient(147deg, transparent 0 61%, rgba(230,243,232,.75) 61.2% 100%);
+  opacity: 1;
+}
+.gateway-shell .results-hero-stage .generation-hero-card::after {
+  right: 11%;
+  bottom: 10%;
+  width: min(760px, 47vw);
+  opacity: .74;
+  border-color: rgba(196,154,53,.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.55),
+    inset 0 0 0 72px rgba(255,255,255,.14),
+    0 0 0 1px rgba(255,255,255,.4);
+}
+.gateway-shell .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(420px, .86fr) minmax(430px, .94fr);
+  min-height: 332px;
+  gap: clamp(22px, 4vw, 74px);
+  align-items: center;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy {
+  max-width: 640px;
+  z-index: 2;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin-bottom: 12px;
+  color: #315f51;
+  font-size: 15px;
+  letter-spacing: .46em;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  gap: clamp(20px, 2.4vw, 34px);
+  margin-top: 0;
+  font-size: clamp(82px, 8vw, 132px);
+  font-weight: 560;
+  letter-spacing: -6px;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  color: #526b5e !important;
+  font-size: clamp(30px, 2.9vw, 48px);
+  letter-spacing: -.08em;
+  white-space: nowrap;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 560px;
+  margin-top: 18px;
+  color: #0f3f35 !important;
+  font-size: clamp(17px, 1.25vw, 22px);
+  line-height: 1.42;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  max-width: 610px;
+  gap: clamp(18px, 3vw, 42px);
+  margin-top: 24px;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  color: #31594c;
+  min-height: 52px;
+  font-size: 13px;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+  color: #086346;
+  background: radial-gradient(circle at 36% 28%, rgba(255,255,255,.98), rgba(213,237,219,.92));
+  box-shadow: 0 10px 24px rgba(28, 82, 57, .08);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  justify-self: start;
+  width: min(430px, 31vw);
+  min-width: 340px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.98) 0 26%, rgba(246,251,246,.95) 27% 40%, rgba(222,239,226,.64) 41% 53%, rgba(255,255,255,.28) 54% 100%);
+  box-shadow:
+    0 28px 78px rgba(23, 70, 50, .11),
+    0 0 0 1px rgba(255,255,255,.72),
+    inset 0 0 0 1px rgba(255,255,255,.9);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial::before {
+  inset: -12%;
+  background:
+    radial-gradient(circle, transparent 0 66%, rgba(255,255,255,.44) 66.8% 69%, transparent 69.5%),
+    conic-gradient(from -42deg, transparent 0 70%, rgba(196,154,53,.72) 70.4% 71.8%, transparent 72% 100%);
+  box-shadow: 0 0 0 1px rgba(196,154,53,.28), inset 0 0 0 18px rgba(255,255,255,.1);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial svg {
+  inset: 5.5%;
+  width: 89%;
+  height: 89%;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial circle {
+  fill: rgba(255,255,255,.18);
+  stroke: rgba(12, 82, 62, .15);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial .dial-ticks {
+  stroke-width: 8;
+  stroke-dasharray: .7 6.6;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path {
+  stroke-width: 11;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path.is-glow {
+  stroke: rgba(196,154,53,.92);
+  stroke-width: 3.2;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial line {
+  stroke: #c49a35;
+  stroke-width: 2.6;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  color: #234f43;
+  font-size: 14px;
+  letter-spacing: .36em;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  margin-top: 12px;
+  font-size: clamp(58px, 5vw, 82px);
+  font-weight: 580;
+  letter-spacing: -5px;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  max-width: 190px;
+  color: #5c7064;
+  font-size: 14px;
+  line-height: 1.18;
+}
+.gateway-shell .results-hero-stage .generation-range-flow {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(0px, .7vw, 10px);
+  gap: clamp(14px, 1.6vw, 22px);
+}
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  width: min(700px, 44vw);
+  max-width: none;
+  min-height: 104px;
+  padding: 18px 24px 16px;
+  border-color: rgba(196,154,53,.36);
+  border-radius: 16px;
+  background: rgba(255,255,255,.74);
+  backdrop-filter: blur(8px);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(18px, 2.4vw, 44px);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards::before {
+  left: 16%;
+  right: 16%;
+  top: 43%;
+  background: linear-gradient(90deg, transparent, rgba(196,154,53,.75), transparent);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  min-height: 156px;
+  padding: 22px 24px 18px;
+  border-color: rgba(188, 211, 193, .78);
+  border-radius: 17px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.92), rgba(249,252,248,.78)),
+    radial-gradient(circle at 14% 18%, rgba(226,243,232,.7), transparent 32%);
+  backdrop-filter: blur(9px);
+  box-shadow: 0 18px 50px rgba(23, 69, 49, .09), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article::after {
+  content: "";
+  position: absolute;
+  top: calc(43% - 13px);
+  right: -45px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(196,154,53,.85);
+  border-radius: 50%;
+  background: rgba(255,255,255,.88);
+  box-shadow: inset 0 0 0 7px rgba(255,255,255,.7);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article:last-child::after {
+  content: none;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article > span {
+  width: 58px;
+  height: 58px;
+  background: radial-gradient(circle at 36% 26%, rgba(255,255,255,.96), rgba(217,239,222,.92));
+}
+.gateway-shell .results-hero-stage .generation-flow-cards small {
+  margin-top: 14px;
+  color: #315f51;
+  font-size: 12px;
+  letter-spacing: .28em;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards b {
+  font-size: clamp(24px, 2vw, 34px);
+  letter-spacing: -1.6px;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards b i {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards em {
+  margin-top: 8px;
+  color: #536d5f;
+  font-size: 13px;
+}
+@media (max-width: 1180px) {
+  .gateway-shell .results-hero-stage .generation-dashboard,
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    background:
+      linear-gradient(108deg, rgba(255,255,255,.98) 0%, rgba(250,253,249,.94) 48%, rgba(231,244,235,.72) 100%),
+      url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / 70% auto no-repeat !important;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    justify-self: center;
+    width: min(500px, 62vw);
+    min-width: 0;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window {
+    width: 100%;
+  }
+}
+@media (max-width: 760px) {
+  .gateway-shell .results-hero-stage {
+    width: min(100% - 24px, 1680px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard,
+  .gateway-shell .results-hero-stage .generation-benefit-list,
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: 1fr;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(62px, 18vw, 94px);
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article::after {
+    display: none;
+  }
+}
+
+/* Compact the result hero into a single composed presentation board on desktop. */
+@media (min-width: 1181px) {
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    height: min(690px, calc(100vh - 286px));
+    min-height: 620px;
+    max-height: 725px;
+    padding: 0 !important;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    position: absolute;
+    inset: 56px 64px auto 64px;
+    min-height: 0;
+    height: 330px;
+    grid-template-columns: minmax(430px, .82fr) minmax(360px, .78fr);
+    gap: 48px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(76px, 7vw, 122px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+    font-size: clamp(26px, 2.5vw, 42px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    max-width: 555px;
+    margin-top: 14px;
+    font-size: 18px;
+    line-height: 1.42;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list {
+    grid-template-columns: repeat(3, max-content);
+    gap: 34px;
+    margin-top: 22px;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list li {
+    width: 132px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 400px;
+    min-width: 400px;
+    transform: translate(10px, -14px);
+  }
+  .gateway-shell .results-hero-stage .generation-range-flow {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: block;
+    margin: 0;
+    pointer-events: none;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window {
+    position: absolute;
+    left: 64px;
+    bottom: 266px;
+    width: 590px;
+    min-height: 0;
+    height: 126px;
+    padding: 16px 22px 14px;
+    pointer-events: auto;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window-head {
+    margin-bottom: 14px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window-head b {
+    font-size: 15px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-points {
+    margin-bottom: 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-track {
+    margin-top: 6px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window p {
+    display: none;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    position: absolute;
+    left: 64px;
+    right: 64px;
+    bottom: 40px;
+    gap: 30px;
+    pointer-events: auto;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article {
+    min-height: 148px;
+    padding: 20px 20px 16px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article > span {
+    position: absolute;
+    left: 20px;
+    top: 24px;
+    width: 54px;
+    height: 54px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small,
+  .gateway-shell .results-hero-stage .generation-flow-cards b,
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    margin-left: 82px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small {
+    margin-top: 0;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards b {
+    margin-top: 6px;
+    font-size: 27px;
+    white-space: nowrap;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards b i {
+    display: inline;
+    margin-left: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards::before {
+    top: 50%;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article::after {
+    top: calc(50% - 13px);
+    right: -30px;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1180px) {
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    position: relative;
+    height: 620px;
+    min-height: 620px;
+    max-height: 620px;
+    padding: 0 !important;
+    background:
+      linear-gradient(101deg, rgba(255,255,255,.995) 0%, rgba(255,255,255,.97) 38%, rgba(241,248,242,.88) 62%, rgba(238,247,241,.48) 100%),
+      url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 68% no-repeat !important;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    position: absolute;
+    inset: 42px 46px auto 46px;
+    display: grid;
+    grid-template-columns: minmax(410px, 1fr) 300px;
+    gap: 24px;
+    width: auto;
+    min-height: 0;
+    height: 250px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy {
+    max-width: 500px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(60px, 7.2vw, 80px);
+    letter-spacing: -4px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+    font-size: clamp(20px, 2.8vw, 28px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    max-width: 440px;
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.36;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 430px;
+    margin-top: 14px;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list li {
+    min-height: 38px;
+    font-size: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list svg {
+    width: 34px;
+    height: 34px;
+    padding: 9px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 280px;
+    min-width: 280px;
+    justify-self: end;
+    transform: translate(2px, -2px);
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span b {
+    font-size: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+    margin-top: 8px;
+    font-size: 52px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span small {
+    font-size: 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-range-flow {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: block;
+    margin: 0;
+    pointer-events: none;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window {
+    position: absolute;
+    left: 46px;
+    bottom: 162px;
+    width: min(500px, calc(100% - 92px));
+    min-height: 0;
+    height: 104px;
+    padding: 13px 18px 12px;
+    pointer-events: auto;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window-head {
+    margin-bottom: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window-head b {
+    font-size: 14px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-points {
+    margin-bottom: 9px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-points b {
+    font-size: 17px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window p {
+    display: none;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    position: absolute;
+    left: 46px;
+    right: 46px;
+    bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    pointer-events: auto;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article {
+    min-height: 120px;
+    padding: 14px 14px 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article > span {
+    position: absolute;
+    left: 14px;
+    top: 16px;
+    width: 40px;
+    height: 40px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small,
+  .gateway-shell .results-hero-stage .generation-flow-cards b,
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    margin-left: 56px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small {
+    margin-top: 0;
+    font-size: 9px;
+    letter-spacing: .22em;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards b {
+    margin-top: 6px;
+    font-size: 18px;
+    white-space: nowrap;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards b i {
+    display: inline;
+    margin-left: 3px;
+    font-size: 9.5px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    margin-top: 7px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+}
+
+/* Results hero v4: redraw the compass itself as a solar-path instrument. */
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.92) 0 30%, rgba(247,252,248,.74) 31% 47%, rgba(231,244,236,.32) 48% 100%);
+  filter: drop-shadow(0 18px 34px rgba(25, 76, 55, .08));
+  box-shadow: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  display: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial .solar-compass-svg {
+  position: absolute;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  opacity: .96;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-glow {
+  fill: url("#moderniteCompassGlow");
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring {
+  fill: none;
+  stroke: rgba(38, 90, 75, .22);
+  stroke-width: .75;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--outer {
+  stroke: rgba(202, 172, 78, .34);
+  stroke-width: .9;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--middle {
+  stroke: rgba(38, 90, 75, .16);
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--inner {
+  stroke: rgba(38, 90, 75, .12);
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-grid {
+  fill: none;
+  stroke: rgba(38, 90, 75, .16);
+  stroke-width: .55;
+  stroke-dasharray: 3 4;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-faint-path,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path {
+  fill: none;
+  stroke: rgba(38, 90, 75, .34);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 4;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path {
+  stroke: rgba(121, 160, 139, .42);
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun-path {
+  fill: none;
+  stroke: url("#moderniteSunPath");
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 8 4;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-markers circle {
+  fill: #c9a13c;
+  opacity: .82;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun circle {
+  fill: #ffd776;
+  stroke: rgba(255,255,255,.92);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 10px rgba(246, 195, 74, .36));
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun path {
+  fill: none;
+  stroke: rgba(246, 195, 74, .78);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label {
+  fill: rgba(33, 69, 58, .82);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-anchor: middle;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--east {
+  text-anchor: start;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--west {
+  text-anchor: end;
+}
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-small-label {
+  fill: rgba(111, 89, 42, .7);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  width: 46%;
+  min-width: 118px;
+  padding: 18px 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,255,255,.88), rgba(255,255,255,.62) 72%, transparent 73%);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  font-size: 10px;
+  letter-spacing: .42em;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  margin-top: 6px;
+  font-size: 42px;
+  letter-spacing: -2px;
+  line-height: .85;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  margin-top: 5px;
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+@media (min-width: 821px) and (max-width: 1180px) {
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 258px;
+    min-width: 258px;
+    transform: translate(-10px, 6px);
+  }
+}
+
+/* Results hero v2: closer to the approved visual reference, with a clean dial and no busy overlaps. */
+.gateway-shell .results-hero-stage .generation-hero-card {
+  border-radius: 16px !important;
+  border-color: rgba(128, 174, 142, .56) !important;
+  background:
+    linear-gradient(101deg, rgba(255,255,255,.995) 0%, rgba(255,255,255,.97) 35%, rgba(241,248,242,.88) 55%, rgba(238,247,241,.55) 100%),
+    radial-gradient(circle at 68% 20%, rgba(229, 185, 70, .18), transparent 24%),
+    radial-gradient(circle at 81% 77%, rgba(13, 102, 75, .14), transparent 28%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 82% no-repeat !important;
+  box-shadow:
+    0 34px 86px rgba(22, 67, 48, .11),
+    inset 0 4px 0 rgba(0, 96, 67, .92),
+    inset 0 1px 0 rgba(255,255,255,.98) !important;
+}
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.95) 41%, rgba(255,255,255,.66) 58%, rgba(255,255,255,.18) 84%),
+    linear-gradient(151deg, transparent 0 54%, rgba(228,243,234,.72) 54.2% 100%);
+  opacity: 1;
+}
+.gateway-shell .results-hero-stage .generation-hero-card::after {
+  display: none;
+}
+.gateway-shell .results-hero-stage .generation-dashboard,
+.gateway-shell .results-hero-stage .generation-range-flow {
+  z-index: 2;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  color: #24594a;
+  font-size: 14px;
+  font-weight: 760;
+  letter-spacing: .48em;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  align-items: baseline;
+  color: #02483b;
+  font-weight: 520;
+  letter-spacing: -7px;
+  text-shadow: 0 10px 28px rgba(0, 72, 59, .08);
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  color: rgba(46, 82, 67, .86) !important;
+  font-weight: 650;
+  letter-spacing: -2px;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  color: #164b3e !important;
+  font-weight: 430;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  margin-top: 28px;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  color: #355d50;
+  line-height: 1.25;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  background: #e7f5eb;
+  border-radius: 999px;
+  box-shadow: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.98) 0 31%, rgba(250,253,249,.96) 31.5% 43%, rgba(231,243,234,.75) 43.5% 55%, rgba(255,255,255,.48) 56% 100%);
+  filter: drop-shadow(0 26px 46px rgba(26, 78, 55, .12));
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.88),
+    inset 0 0 0 1px rgba(156, 188, 166, .28),
+    inset 0 0 0 30px rgba(255,255,255,.18);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial::before {
+  inset: -8%;
+  background:
+    radial-gradient(circle, transparent 0 65%, rgba(255,255,255,.9) 65.4% 67.4%, transparent 68%),
+    radial-gradient(circle, transparent 0 75%, rgba(196,154,53,.36) 75.4% 75.9%, transparent 76.3%),
+    conic-gradient(from -42deg, transparent 0 68%, rgba(196,154,53,.9) 68.3% 69.2%, transparent 69.6% 100%);
+  box-shadow: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial svg {
+  inset: 7%;
+  width: 86%;
+  height: 86%;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial circle {
+  fill: transparent;
+  stroke: rgba(11, 86, 63, .11);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial .dial-ticks {
+  stroke: rgba(12, 91, 67, .16);
+  stroke-width: 5;
+  stroke-dasharray: .45 6.8;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path {
+  stroke-width: 9.5;
+  stroke-linecap: round;
+  opacity: .88;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path.is-glow {
+  stroke: #c8a13d;
+  stroke-width: 3.4;
+  opacity: .95;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial line {
+  stroke: #c9a23b;
+  stroke-width: 2.2;
+  filter: drop-shadow(0 7px 8px rgba(196, 154, 53, .22));
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  color: #1d4f42;
+  font-weight: 760;
+  letter-spacing: .42em;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  color: #004739;
+  font-weight: 560;
+  letter-spacing: -4px;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  color: #617568;
+  font-weight: 620;
+}
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  border-color: rgba(212, 179, 84, .48);
+  background: rgba(255,255,255,.82);
+  box-shadow:
+    0 18px 46px rgba(33, 84, 60, .08),
+    inset 0 1px 0 rgba(255,255,255,.94);
+}
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head span,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points i {
+  color: #789383;
+  letter-spacing: .18em;
+}
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head b,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points b {
+  color: #063f35;
+}
+.gateway-shell .results-hero-stage .generation-hero-card .range-track {
+  background: linear-gradient(90deg, rgba(185,222,198,.85), rgba(5,101,72,.88), rgba(208,169,62,.82), rgba(185,222,198,.85));
+}
+.gateway-shell .results-hero-stage .generation-flow-cards::before,
+.gateway-shell .results-hero-stage .generation-flow-cards article::after {
+  display: none;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  border-color: rgba(181, 209, 188, .76);
+  background:
+    linear-gradient(144deg, rgba(255,255,255,.94), rgba(248,252,248,.86)),
+    radial-gradient(circle at 13% 22%, rgba(225,243,231,.82), transparent 34%);
+  box-shadow:
+    0 20px 44px rgba(22, 67, 48, .075),
+    inset 0 1px 0 rgba(255,255,255,.96);
+}
+.gateway-shell .results-hero-stage .generation-flow-cards article > span {
+  color: #006145;
+  background: #e8f6ec;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards small {
+  color: #2d594b;
+  font-weight: 780;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards b {
+  color: #004739;
+  font-weight: 570;
+}
+.gateway-shell .results-hero-stage .generation-flow-cards em {
+  color: #577064;
+  font-weight: 620;
+}
+
+@media (min-width: 1181px) {
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    height: 560px;
+    min-height: 560px;
+    max-height: 560px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    inset: 44px 56px auto 56px;
+    height: 238px;
+    grid-template-columns: minmax(470px, 1fr) 350px;
+    gap: 28px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy {
+    max-width: 560px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(66px, 5.2vw, 92px);
+    letter-spacing: -5px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+    font-size: clamp(22px, 1.9vw, 32px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    max-width: 520px;
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.36;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 500px;
+    margin-top: 14px;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list li {
+    width: auto;
+    min-height: 40px;
+    font-size: 11px;
+  }
+  .gateway-shell .results-hero-stage .generation-benefit-list svg {
+    width: 36px;
+    height: 36px;
+    padding: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 286px;
+    min-width: 286px;
+    justify-self: center;
+    transform: translate(18px, -2px);
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span b {
+    font-size: 11px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+    margin-top: 8px;
+    font-size: 54px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span small {
+    font-size: 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window {
+    left: 56px;
+    bottom: 176px;
+    width: 520px;
+    height: 104px;
+    padding: 13px 18px 12px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window-head {
+    margin-bottom: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-points {
+    margin-bottom: 9px;
+  }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-points b {
+    font-size: 17px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    left: 56px;
+    right: 56px;
+    bottom: 24px;
+    gap: 18px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article {
+    min-height: 126px;
+    padding: 16px 16px 14px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards article > span {
+    left: 16px;
+    top: 18px;
+    width: 44px;
+    height: 44px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small,
+  .gateway-shell .results-hero-stage .generation-flow-cards b,
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    margin-left: 64px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards small {
+    font-size: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards b {
+    font-size: 21px;
+  }
+  .gateway-shell .results-hero-stage .generation-flow-cards em {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+}
+
 /* Site step fits one screen: map and brief share the remaining height, the brief scrolls inside */
 @media (min-width: 1021px) and (min-height: 620px) {
   .gateway-shell.gateway-shell--location { display: flex !important; flex-direction: column; height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; }
@@ -6036,6 +7360,142 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   box-shadow:
     0 22px 54px rgba(23, 61, 43, .14),
     inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+/* Results hero v3: refine the dial into a lighter compass-style instrument. */
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  overflow: visible;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.98) 0 30%, rgba(250,253,249,.96) 31% 43%, rgba(229,242,233,.48) 44% 55%, rgba(255,255,255,.18) 56% 100%);
+  filter: drop-shadow(0 18px 34px rgba(25, 76, 55, .09));
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.94),
+    inset 0 0 0 18px rgba(255,255,255,.22);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial::before {
+  inset: -10%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, transparent 0 60%, rgba(255,255,255,.88) 60.4% 62%, transparent 62.5%),
+    radial-gradient(circle, transparent 0 70%, rgba(120, 157, 136, .22) 70.3% 70.9%, transparent 71.2%),
+    radial-gradient(circle, transparent 0 80%, rgba(190, 164, 82, .24) 80.2% 80.7%, transparent 81%),
+    conic-gradient(from -36deg, transparent 0 71%, rgba(190, 164, 82, .42) 71.2% 72.1%, transparent 72.4% 100%);
+  opacity: .78;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  z-index: 1;
+  width: 4px;
+  height: 27%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(190, 164, 82, .48), rgba(190, 164, 82, .08));
+  box-shadow: 0 8px 18px rgba(190, 164, 82, .1);
+  transform: translateX(-50%) rotate(18deg);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial svg {
+  opacity: .9;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial circle {
+  stroke: rgba(36, 89, 74, .09);
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial .dial-ticks {
+  stroke: rgba(36, 89, 74, .18);
+  stroke-width: 3.2;
+  stroke-dasharray: .32 7.6;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path {
+  stroke-width: 5.5;
+  opacity: .48;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial path.is-glow {
+  stroke: rgba(190, 164, 82, .56);
+  stroke-width: 2.1;
+  opacity: .62;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial line,
+.gateway-shell .results-hero-stage .generation-outlook-dial g circle {
+  display: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span {
+  z-index: 3;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  color: #1f5447;
+  letter-spacing: .38em;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  color: #004739;
+  line-height: .78;
+  text-shadow: none;
+}
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  margin-top: 8px;
+  color: rgba(52, 78, 66, .82);
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  line-height: 1.45;
+}
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  gap: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  align-items: center;
+}
+
+@media (min-width: 1181px) {
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 265px;
+    min-width: 265px;
+    transform: translate(-4px, 4px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(60px, 4.6vw, 82px);
+    letter-spacing: -2.2px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1180px) {
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(430px, 1fr) 270px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 248px;
+    min-width: 248px;
+    transform: translate(-2px, 8px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(58px, 6.6vw, 74px);
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    max-width: 450px;
+    font-size: 13.5px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+    font-size: 40px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span b {
+    font-size: 8px;
+  }
+  .gateway-shell .results-hero-stage .generation-outlook-dial span small {
+    margin-top: 5px;
+    font-size: 10px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(54px, 6.1vw, 66px);
+    letter-spacing: -1.8px;
+  }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+    font-size: 21px;
+  }
 }
 
 .gateway-shell .results-advisor::before {
@@ -6105,6 +7565,594 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 
 .results-advisor .assistant-prompts {
   gap: 7px;
+}
+
+/* Results hero v6: clean reference-style redraw. Keep this block last for this hero. */
+.gateway-shell .results-hero-stage {
+  width: min(100% - 40px, 1660px);
+  margin: clamp(16px, 2vw, 26px) auto clamp(28px, 3vw, 42px);
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  overflow: hidden;
+  min-height: 690px;
+  padding: 0 !important;
+  border: 1px solid rgba(160, 191, 166, .64) !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(98deg, rgba(255,255,255,.995) 0%, rgba(255,255,255,.985) 35%, rgba(247,251,247,.82) 51%, rgba(237,247,240,.42) 100%),
+    radial-gradient(circle at 72% 22%, rgba(238, 189, 57, .18), transparent 23%),
+    radial-gradient(circle at 83% 73%, rgba(11, 93, 67, .12), transparent 29%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 76% no-repeat !important;
+  box-shadow:
+    0 34px 86px rgba(22, 67, 48, .11),
+    inset 0 1px 0 rgba(255,255,255,.96) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-top: 4px solid #006548;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.98) 35%, rgba(255,255,255,.7) 55%, rgba(255,255,255,.08) 84%),
+    linear-gradient(151deg, transparent 0 55%, rgba(229,243,233,.72) 55.2% 100%);
+  pointer-events: none;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::after {
+  content: "";
+  position: absolute;
+  right: -8%;
+  bottom: -16%;
+  z-index: 0;
+  width: 62%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(209, 174, 82, .3);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 28px rgba(255,255,255,.18),
+    inset 0 0 0 82px rgba(255,255,255,.12),
+    0 0 0 1px rgba(255,255,255,.35);
+  pointer-events: none;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(520px, .94fr) minmax(420px, .8fr);
+  align-items: start;
+  gap: clamp(40px, 6vw, 110px);
+  min-height: 390px;
+  padding: clamp(54px, 5vw, 76px) clamp(54px, 5vw, 76px) 0;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy {
+  max-width: 670px;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin: 0 0 18px;
+  color: #24594a;
+  font-size: 14px;
+  font-weight: 760;
+  letter-spacing: .46em;
+  line-height: 1.4;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(18px, 2vw, 28px);
+  margin: 0;
+  color: #004739;
+  font-size: clamp(92px, 8vw, 148px);
+  font-weight: 560;
+  letter-spacing: -5px;
+  line-height: .8;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 14px 30px rgba(0, 71, 57, .08);
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  color: rgba(47, 78, 66, .86) !important;
+  font-size: clamp(34px, 3.1vw, 54px);
+  font-weight: 650;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 620px;
+  margin: 28px 0 0;
+  color: #12483b !important;
+  font-size: clamp(18px, 1.45vw, 25px);
+  font-weight: 430;
+  line-height: 1.42;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 3vw, 46px);
+  max-width: 690px;
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 54px;
+  color: #31594c;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  box-sizing: border-box;
+  width: 50px;
+  height: 50px;
+  padding: 13px;
+  color: #006548;
+  border-radius: 999px;
+  background: radial-gradient(circle at 36% 28%, rgba(255,255,255,.98), rgba(220,241,225,.96));
+  box-shadow: 0 12px 26px rgba(28, 82, 57, .08);
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  justify-self: center;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: clamp(360px, 30vw, 510px);
+  min-width: 360px;
+  aspect-ratio: 1;
+  overflow: visible;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.98) 0 21%, rgba(255,255,255,.86) 21.4% 32%, rgba(234,246,237,.48) 32.5% 50%, rgba(255,255,255,.2) 50.5% 100%);
+  filter: drop-shadow(0 24px 44px rgba(25, 76, 55, .1));
+  box-shadow: none;
+  transform: translate(0, -18px);
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  display: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .solar-compass-svg {
+  position: absolute;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  opacity: .96;
+  overflow: visible;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-glow {
+  fill: url("#moderniteCompassGlow");
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring {
+  fill: none;
+  stroke: rgba(32, 84, 69, .18);
+  stroke-width: .8;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--gold {
+  stroke: rgba(205, 169, 68, .33);
+  stroke-width: .72;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--outer {
+  stroke: rgba(255,255,255,.86);
+  stroke-width: 2.5;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--middle {
+  stroke: rgba(28, 91, 70, .16);
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--inner,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--core {
+  stroke: rgba(28, 91, 70, .1);
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-grid,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-radials {
+  fill: none;
+  stroke: rgba(28, 91, 70, .14);
+  stroke-width: .55;
+  stroke-dasharray: 3 5;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-radials {
+  stroke: rgba(28, 91, 70, .08);
+  stroke-dasharray: 1 5;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ticks line {
+  stroke: rgba(35, 87, 72, .18);
+  stroke-width: .7;
+  stroke-linecap: round;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-faint-path,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path {
+  fill: none;
+  stroke: rgba(28, 91, 70, .36);
+  stroke-width: 1.15;
+  stroke-dasharray: 4 5;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path {
+  stroke: rgba(120, 153, 132, .38);
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun-path {
+  fill: none;
+  stroke: url("#moderniteSunPath");
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-dasharray: 7 4;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-needle {
+  fill: none;
+  stroke: url("#moderniteCompassNeedle");
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-markers circle {
+  fill: #cda43f;
+  stroke: rgba(255,255,255,.9);
+  stroke-width: 1;
+  opacity: .9;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun circle {
+  fill: #ffd773;
+  stroke: rgba(255,255,255,.95);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 12px rgba(246, 195, 74, .38));
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun path {
+  fill: none;
+  stroke: rgba(246, 195, 74, .8);
+  stroke-width: 1.05;
+  stroke-linecap: round;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label {
+  fill: rgba(29, 68, 57, .72);
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: .14em;
+  text-anchor: middle;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--east {
+  text-anchor: start;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--west {
+  text-anchor: end;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-small-label {
+  fill: rgba(111, 89, 42, .7);
+  font-size: 6px;
+  font-weight: 760;
+  letter-spacing: .12em;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  width: 46%;
+  min-width: 166px;
+  aspect-ratio: 1;
+  padding: 0;
+  place-content: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.98) 0 57%, rgba(255,255,255,.72) 58% 74%, rgba(255,255,255,0) 75%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.74);
+  text-align: center;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  color: #1c5144;
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: .44em;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  margin: 8px 0 0;
+  color: #004739;
+  font-size: clamp(58px, 4.4vw, 82px);
+  font-weight: 560;
+  letter-spacing: -4px;
+  line-height: .82;
+  text-shadow: none;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  margin-top: 8px;
+  color: rgba(52, 78, 66, .82);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.gateway-shell .results-hero-stage .generation-range-flow {
+  position: relative;
+  z-index: 2;
+  display: block;
+  margin: 0;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  position: absolute;
+  left: clamp(54px, 5vw, 76px);
+  bottom: 190px;
+  width: min(760px, 52%);
+  min-height: 138px;
+  padding: 24px 28px 20px;
+  border: 1px solid rgba(209, 174, 82, .48);
+  border-radius: 17px;
+  background: rgba(255,255,255,.82);
+  box-shadow:
+    0 18px 46px rgba(33, 84, 60, .08),
+    inset 0 1px 0 rgba(255,255,255,.94);
+  backdrop-filter: blur(9px);
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head {
+  margin-bottom: 18px;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head span,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points i {
+  color: #789383;
+  font-weight: 760;
+  letter-spacing: .28em;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head b,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points b {
+  color: #063f35;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-points {
+  margin-bottom: 14px;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-points b {
+  font-size: 22px;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-track {
+  height: 9px;
+  background: linear-gradient(90deg, rgba(186,222,199,.86), rgba(6,101,73,.92), rgba(208,169,62,.86), rgba(186,222,199,.86));
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window p {
+  margin-top: 14px;
+  color: #6a7f71 !important;
+  font-size: 13px;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards {
+  position: absolute;
+  left: clamp(54px, 5vw, 76px);
+  right: clamp(54px, 5vw, 76px);
+  bottom: 38px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(18px, 2.4vw, 34px);
+  margin: 0;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards::before,
+.gateway-shell .results-hero-stage .generation-flow-cards article::after {
+  display: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: 18px;
+  min-height: 146px;
+  padding: 24px 22px 20px;
+  border: 1px solid rgba(181, 209, 188, .78);
+  border-radius: 17px;
+  background:
+    linear-gradient(144deg, rgba(255,255,255,.94), rgba(248,252,248,.86)),
+    radial-gradient(circle at 14% 20%, rgba(225,243,231,.82), transparent 34%);
+  box-shadow:
+    0 20px 44px rgba(22, 67, 48, .075),
+    inset 0 1px 0 rgba(255,255,255,.96);
+  backdrop-filter: blur(9px);
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards article > span {
+  grid-row: 1 / 4;
+  display: grid;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  color: #006145;
+  border-radius: 999px;
+  background: #e8f6ec;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards small,
+.gateway-shell .results-hero-stage .generation-flow-cards b,
+.gateway-shell .results-hero-stage .generation-flow-cards em {
+  margin-left: 0;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards small {
+  margin-top: 0;
+  color: #2d594b;
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: .24em;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards b {
+  margin-top: 8px;
+  color: #004739;
+  font-size: clamp(24px, 2vw, 34px);
+  font-weight: 570;
+  letter-spacing: -1.1px;
+  line-height: 1;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards b i {
+  display: block;
+  margin-top: 4px;
+  color: #526b5e;
+  font-size: 13px;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards em {
+  margin-top: 10px;
+  color: #577064;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 620;
+  line-height: 1.34;
+}
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    min-height: 650px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(430px, .96fr) 360px;
+    gap: 34px;
+    padding: 46px 48px 0;
+  }
+
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(72px, 7vw, 104px);
+  }
+
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+    font-size: clamp(26px, 2.6vw, 38px);
+  }
+
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+    font-size: 16px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-benefit-list {
+    gap: 15px;
+    margin-top: 22px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-benefit-list li {
+    grid-template-columns: 42px minmax(0, 1fr);
+    font-size: 12px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-benefit-list svg {
+    width: 42px;
+    height: 42px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 350px;
+    min-width: 350px;
+    transform: translate(0, -8px);
+  }
+
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window {
+    left: 48px;
+    bottom: 184px;
+    width: min(610px, 54%);
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    left: 48px;
+    right: 48px;
+    bottom: 34px;
+    gap: 16px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards article {
+    grid-template-columns: 48px minmax(0, 1fr);
+    min-height: 132px;
+    padding: 18px 16px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards article > span {
+    width: 48px;
+    height: 48px;
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards b {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 900px) {
+  .gateway-shell .results-hero-stage .generation-hero-card {
+    min-height: 0;
+    padding: 36px 26px !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: min(360px, 80vw);
+    min-width: 0;
+    transform: none;
+  }
+
+  .gateway-shell .results-hero-stage .generation-benefit-list,
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window,
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 22px;
+  }
 }
 
 .results-advisor .assistant-prompts button {
@@ -6551,5 +8599,896 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   .calculation-radar__spark,
   .calculation-orb {
     animation: none !important;
+  }
+}
+
+/* Results hero final redraw: reference-style composition without overlap. */
+.gateway-shell .results-hero-stage {
+  width: min(100% - 44px, 1660px) !important;
+  margin: clamp(18px, 2vw, 28px) auto clamp(30px, 3vw, 44px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card {
+  position: relative !important;
+  isolation: isolate !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: clamp(26px, 3.2vw, 46px) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: clamp(46px, 4.4vw, 74px) clamp(48px, 5vw, 80px) clamp(36px, 4vw, 58px) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(155, 190, 164, .62) !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(98deg, rgba(255,255,255,.995) 0%, rgba(255,255,255,.985) 36%, rgba(246,251,247,.82) 55%, rgba(237,247,240,.42) 100%),
+    radial-gradient(circle at 72% 22%, rgba(238, 189, 57, .16), transparent 23%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 72% no-repeat !important;
+  box-shadow: 0 34px 86px rgba(22, 67, 48, .11), inset 0 1px 0 rgba(255,255,255,.96) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  display: block !important;
+  border-top: 4px solid #006548 !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.98) 38%, rgba(255,255,255,.72) 58%, rgba(255,255,255,.1) 85%),
+    linear-gradient(151deg, transparent 0 55%, rgba(229,243,233,.68) 55.2% 100%) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -9% !important;
+  bottom: -18% !important;
+  z-index: 0 !important;
+  display: block !important;
+  width: min(920px, 58vw) !important;
+  aspect-ratio: 1 !important;
+  border: 1px solid rgba(209, 174, 82, .28) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 0 0 32px rgba(255,255,255,.18), inset 0 0 0 88px rgba(255,255,255,.1) !important;
+  pointer-events: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  grid-template-columns: minmax(520px, .98fr) minmax(380px, .72fr) !important;
+  align-items: center !important;
+  gap: clamp(44px, 6vw, 104px) !important;
+  inset: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy {
+  max-width: 700px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin: 0 0 18px !important;
+  color: #24594a !important;
+  font-size: 14px !important;
+  font-weight: 760 !important;
+  letter-spacing: .46em !important;
+  line-height: 1.45 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: clamp(18px, 2vw, 28px) !important;
+  margin: 0 !important;
+  color: #004739 !important;
+  font-size: clamp(88px, 7.8vw, 142px) !important;
+  font-weight: 560 !important;
+  letter-spacing: -4px !important;
+  line-height: .82 !important;
+  font-variant-numeric: tabular-nums !important;
+  text-shadow: 0 14px 30px rgba(0, 71, 57, .08) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  color: rgba(47, 78, 66, .86) !important;
+  font-size: clamp(30px, 2.9vw, 50px) !important;
+  font-weight: 650 !important;
+  letter-spacing: -1px !important;
+  white-space: nowrap !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 620px !important;
+  margin: 26px 0 0 !important;
+  color: #12483b !important;
+  font-size: clamp(17px, 1.35vw, 23px) !important;
+  font-weight: 430 !important;
+  line-height: 1.42 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(18px, 3vw, 42px) !important;
+  max-width: 680px !important;
+  margin: 34px 0 0 !important;
+  padding: 0 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  display: grid !important;
+  grid-template-columns: 50px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 54px !important;
+  color: #31594c !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.28 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  box-sizing: border-box !important;
+  width: 50px !important;
+  height: 50px !important;
+  padding: 13px !important;
+  color: #006548 !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle at 36% 28%, rgba(255,255,255,.98), rgba(220,241,225,.96)) !important;
+  box-shadow: 0 12px 26px rgba(28, 82, 57, .08) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  justify-self: center !important;
+  position: relative !important;
+  isolation: isolate !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(380px, 31vw, 510px) !important;
+  min-width: 0 !important;
+  aspect-ratio: 1 !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(255,255,255,.98) 0 21%, rgba(255,255,255,.86) 21.4% 32%, rgba(234,246,237,.48) 32.5% 50%, rgba(255,255,255,.2) 50.5% 100%) !important;
+  filter: drop-shadow(0 24px 44px rgba(25, 76, 55, .1)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  display: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .solar-compass-svg {
+  position: absolute !important;
+  inset: -18% !important;
+  width: 136% !important;
+  height: 136% !important;
+  opacity: .96 !important;
+  overflow: visible !important;
+}
+
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-glow { fill: url("#moderniteCompassGlow") !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring { fill: none !important; stroke: rgba(32, 84, 69, .18) !important; stroke-width: .8 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--gold { stroke: rgba(205, 169, 68, .33) !important; stroke-width: .72 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--outer { stroke: rgba(255,255,255,.86) !important; stroke-width: 2.5 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--middle { stroke: rgba(28, 91, 70, .16) !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--inner,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ring--core { stroke: rgba(28, 91, 70, .1) !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-grid,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-radials { fill: none !important; stroke: rgba(28, 91, 70, .14) !important; stroke-width: .55 !important; stroke-dasharray: 3 5 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-radials { stroke: rgba(28, 91, 70, .08) !important; stroke-dasharray: 1 5 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-ticks line { display: block !important; stroke: rgba(35, 87, 72, .18) !important; stroke-width: .7 !important; stroke-linecap: round !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-faint-path,
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path { fill: none !important; stroke: rgba(28, 91, 70, .36) !important; stroke-width: 1.15 !important; stroke-dasharray: 4 5 !important; opacity: 1 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-winter-path { stroke: rgba(120, 153, 132, .38) !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun-path { fill: none !important; stroke: url("#moderniteSunPath") !important; stroke-width: 1.7 !important; stroke-linecap: round !important; stroke-dasharray: 7 4 !important; opacity: 1 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-needle { fill: none !important; stroke: url("#moderniteCompassNeedle") !important; stroke-width: 3 !important; stroke-linecap: round !important; opacity: 1 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-markers circle { display: block !important; fill: #cda43f !important; stroke: rgba(255,255,255,.9) !important; stroke-width: 1 !important; opacity: .9 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun circle { display: block !important; fill: #ffd773 !important; stroke: rgba(255,255,255,.95) !important; stroke-width: 2 !important; filter: drop-shadow(0 0 12px rgba(246, 195, 74, .38)) !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-sun path { fill: none !important; stroke: rgba(246, 195, 74, .8) !important; stroke-width: 1.05 !important; stroke-linecap: round !important; opacity: 1 !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label { fill: rgba(29, 68, 57, .72) !important; font-size: 8px !important; font-weight: 760 !important; letter-spacing: .14em !important; text-anchor: middle !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--east { text-anchor: start !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-label--west { text-anchor: end !important; }
+.gateway-shell .results-hero-stage .solar-compass-svg .compass-small-label { fill: rgba(111, 89, 42, .7) !important; font-size: 6px !important; font-weight: 760 !important; letter-spacing: .12em !important; }
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-halo {
+  fill: none !important;
+  stroke: rgba(255, 255, 255, .9) !important;
+  stroke-width: 1.4 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-halo--outer {
+  stroke: rgba(205, 169, 68, .28) !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-halo--mid {
+  stroke: rgba(255, 255, 255, .92) !important;
+  stroke-width: 4.5 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-face {
+  fill: url("#moderniteCoverageFace") !important;
+  stroke: rgba(24, 86, 64, .12) !important;
+  stroke-width: 1 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring {
+  fill: none !important;
+  stroke-linecap: round !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring--white {
+  stroke: rgba(255,255,255,.94) !important;
+  stroke-width: 14 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring--green-soft {
+  stroke: rgba(87, 156, 119, .22) !important;
+  stroke-width: 24 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring--inner,
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring--inner-soft {
+  stroke: rgba(36, 91, 74, .12) !important;
+  stroke-width: 1.2 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ring--inner-soft {
+  stroke: rgba(36, 91, 74, .08) !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-ticks line {
+  display: block !important;
+  stroke: rgba(32, 83, 70, .2) !important;
+  stroke-width: .75 !important;
+  stroke-linecap: round !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-arc {
+  fill: none !important;
+  stroke-linecap: round !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-arc--main {
+  stroke: url("#moderniteCoverageArc") !important;
+  stroke-width: 18 !important;
+  opacity: .88 !important;
+  filter: drop-shadow(0 4px 8px rgba(7, 96, 69, .12)) !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-arc--gold-left,
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-arc--gold-bottom {
+  stroke: url("#moderniteGoldStroke") !important;
+  stroke-width: 5.6 !important;
+  opacity: .84 !important;
+  filter: drop-shadow(0 5px 8px rgba(196, 154, 53, .13)) !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-needle {
+  fill: none !important;
+  stroke: rgba(198, 154, 45, .52) !important;
+  stroke-width: 3.6 !important;
+  stroke-linecap: round !important;
+  filter: drop-shadow(0 6px 9px rgba(196, 154, 53, .12)) !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-needle--down {
+  stroke-width: 4.8 !important;
+  opacity: .78 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-glints circle {
+  display: block !important;
+  fill: rgba(255, 255, 255, .98) !important;
+  stroke: rgba(11, 93, 67, .22) !important;
+  stroke-width: 1 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-center-sun circle {
+  display: block !important;
+  fill: transparent !important;
+  stroke: #c99b2f !important;
+  stroke-width: 1.6 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-center-sun path {
+  display: block !important;
+  fill: none !important;
+  stroke: #c99b2f !important;
+  stroke-width: 1.35 !important;
+  stroke-linecap: round !important;
+  opacity: .86 !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-scale {
+  fill: rgba(14, 66, 55, .78) !important;
+  font-size: 11px !important;
+  font-weight: 640 !important;
+  letter-spacing: 0 !important;
+  text-anchor: middle !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-svg .coverage-scale--left {
+  text-anchor: middle !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span {
+  position: relative !important;
+  z-index: 3 !important;
+  display: grid !important;
+  justify-items: center !important;
+  place-content: center !important;
+  width: 46% !important;
+  min-width: 160px !important;
+  aspect-ratio: 1 !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(255,255,255,.98) 0 57%, rgba(255,255,255,.72) 58% 74%, rgba(255,255,255,0) 75%) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.74) !important;
+  text-align: center !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span small {
+  order: 1 !important;
+  margin: 0 0 8px !important;
+  color: rgba(37, 78, 65, .78) !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  letter-spacing: .28em !important;
+  line-height: 1 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span strong {
+  order: 2 !important;
+  margin: 0 !important;
+  color: #004739 !important;
+  font-size: clamp(60px, 4.7vw, 84px) !important;
+  font-weight: 560 !important;
+  letter-spacing: -4px !important;
+  line-height: .8 !important;
+  text-shadow: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b {
+  order: 3 !important;
+  display: grid !important;
+  justify-items: center !important;
+  margin-top: 20px !important;
+  color: #1c5144 !important;
+  font-size: 16px !important;
+  font-weight: 760 !important;
+  letter-spacing: .38em !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial span b::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 32px !important;
+  width: 28px !important;
+  height: 1px !important;
+  background: rgba(198, 154, 45, .72) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b::before {
+  left: 40px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b::after {
+  right: 40px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial span b i {
+  margin-top: 7px !important;
+  color: #b98d22 !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  font-weight: 760 !important;
+  letter-spacing: .36em !important;
+}
+
+.gateway-shell .results-hero-stage .generation-range-flow {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  gap: clamp(22px, 2.5vw, 34px) !important;
+  margin: 0 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: min(760px, 58%) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 24px 28px 20px !important;
+  border: 1px solid rgba(209, 174, 82, .48) !important;
+  border-radius: 17px !important;
+  background: rgba(255,255,255,.84) !important;
+  box-shadow: 0 18px 46px rgba(33, 84, 60, .08), inset 0 1px 0 rgba(255,255,255,.94) !important;
+  backdrop-filter: blur(9px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head { margin-bottom: 18px !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head span,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points i { color: #789383 !important; font-weight: 760 !important; letter-spacing: .28em !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-window-head b,
+.gateway-shell .results-hero-stage .generation-hero-card .range-points b { color: #063f35 !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-points { margin-bottom: 14px !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-points b { font-size: 22px !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-track { height: 9px !important; background: linear-gradient(90deg, rgba(186,222,199,.86), rgba(6,101,73,.92), rgba(208,169,62,.86), rgba(186,222,199,.86)) !important; }
+.gateway-shell .results-hero-stage .generation-hero-card .range-window p { margin-top: 14px !important; color: #6a7f71 !important; font-size: 13px !important; }
+
+.gateway-shell .results-hero-stage .generation-flow-cards {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: clamp(18px, 2.2vw, 32px) !important;
+  margin: 0 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards::before,
+.gateway-shell .results-hero-stage .generation-flow-cards article::after { display: none !important; }
+
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 62px minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  column-gap: 18px !important;
+  min-height: 146px !important;
+  padding: 24px 22px 20px !important;
+  border: 1px solid rgba(181, 209, 188, .78) !important;
+  border-radius: 17px !important;
+  background: linear-gradient(144deg, rgba(255,255,255,.94), rgba(248,252,248,.86)), radial-gradient(circle at 14% 20%, rgba(225,243,231,.82), transparent 34%) !important;
+  box-shadow: 0 20px 44px rgba(22, 67, 48, .075), inset 0 1px 0 rgba(255,255,255,.96) !important;
+  backdrop-filter: blur(9px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards article > span {
+  position: static !important;
+  grid-row: 1 / 4 !important;
+  display: grid !important;
+  width: 62px !important;
+  height: 62px !important;
+  place-items: center !important;
+  color: #006145 !important;
+  border-radius: 999px !important;
+  background: #e8f6ec !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards small,
+.gateway-shell .results-hero-stage .generation-flow-cards b,
+.gateway-shell .results-hero-stage .generation-flow-cards em { margin-left: 0 !important; }
+.gateway-shell .results-hero-stage .generation-flow-cards small { margin-top: 0 !important; color: #2d594b !important; font-size: 11px !important; font-weight: 780 !important; letter-spacing: .24em !important; }
+.gateway-shell .results-hero-stage .generation-flow-cards b { margin-top: 8px !important; color: #004739 !important; font-size: clamp(24px, 2vw, 34px) !important; font-weight: 570 !important; letter-spacing: -1.1px !important; line-height: 1 !important; }
+.gateway-shell .results-hero-stage .generation-flow-cards b i { display: block !important; margin-top: 4px !important; color: #526b5e !important; font-size: 13px !important; font-style: normal !important; letter-spacing: 0 !important; }
+.gateway-shell .results-hero-stage .generation-flow-cards em { margin-top: 10px !important; color: #577064 !important; font-size: 13px !important; font-style: normal !important; font-weight: 620 !important; line-height: 1.34 !important; }
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-hero-card { padding: 44px 48px 42px !important; }
+  .gateway-shell .results-hero-stage .generation-dashboard { grid-template-columns: minmax(430px, .98fr) 350px !important; gap: 34px !important; }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong { font-size: clamp(72px, 7vw, 104px) !important; }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > strong small { font-size: clamp(26px, 2.6vw, 38px) !important; }
+  .gateway-shell .results-hero-stage .generation-dashboard-copy > p { font-size: 16px !important; }
+  .gateway-shell .results-hero-stage .generation-benefit-list { gap: 15px !important; margin-top: 22px !important; }
+  .gateway-shell .results-hero-stage .generation-benefit-list li { grid-template-columns: 42px minmax(0, 1fr) !important; font-size: 12px !important; }
+  .gateway-shell .results-hero-stage .generation-benefit-list svg { width: 42px !important; height: 42px !important; }
+  .gateway-shell .results-hero-stage .generation-outlook-dial { width: 350px !important; }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window { width: min(620px, 58%) !important; }
+  .gateway-shell .results-hero-stage .generation-flow-cards { gap: 16px !important; }
+  .gateway-shell .results-hero-stage .generation-flow-cards article { grid-template-columns: 48px minmax(0, 1fr) !important; min-height: 132px !important; padding: 18px 16px !important; }
+  .gateway-shell .results-hero-stage .generation-flow-cards article > span { width: 48px !important; height: 48px !important; }
+  .gateway-shell .results-hero-stage .generation-flow-cards b { font-size: 22px !important; }
+}
+
+@media (max-width: 900px) {
+  .gateway-shell .results-hero-stage { width: min(100% - 24px, 1660px) !important; }
+  .gateway-shell .results-hero-stage .generation-hero-card { padding: 34px 24px !important; }
+  .gateway-shell .results-hero-stage .generation-dashboard { grid-template-columns: 1fr !important; }
+  .gateway-shell .results-hero-stage .generation-outlook-dial { width: min(360px, 80vw) !important; }
+  .gateway-shell .results-hero-stage .generation-benefit-list,
+  .gateway-shell .results-hero-stage .generation-flow-cards { grid-template-columns: 1fr !important; }
+  .gateway-shell .results-hero-stage .generation-hero-card .range-window { width: 100% !important; }
+}
+
+/* Results hero reference pass: make the whole block read as one composed board. */
+.gateway-shell .results-hero-stage .generation-hero-card {
+  gap: clamp(18px, 2.2vw, 30px) !important;
+  padding: clamp(36px, 3.8vw, 58px) clamp(42px, 4.8vw, 76px) clamp(32px, 3.5vw, 48px) !important;
+  background:
+    linear-gradient(98deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.995) 43%, rgba(247,251,247,.9) 60%, rgba(237,247,240,.48) 100%),
+    radial-gradient(circle at 69% 18%, rgba(238, 189, 57, .16), transparent 23%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 66% no-repeat !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.995) 45%, rgba(255,255,255,.78) 66%, rgba(255,255,255,.08) 88%),
+    linear-gradient(151deg, transparent 0 56%, rgba(229,243,233,.62) 56.2% 100%) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(500px, .98fr) minmax(420px, .78fr) !important;
+  gap: clamp(34px, 5vw, 90px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin-bottom: 16px !important;
+  font-size: 14px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  font-size: clamp(96px, 8.6vw, 158px) !important;
+  letter-spacing: -5.5px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  font-size: clamp(32px, 3vw, 52px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 650px !important;
+  margin-top: 24px !important;
+  font-size: clamp(17px, 1.28vw, 22px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  margin-top: 30px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  width: clamp(430px, 34vw, 560px) !important;
+  margin-top: 2px !important;
+  z-index: 4 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .solar-compass-svg {
+  inset: -20% !important;
+  width: 140% !important;
+  height: 140% !important;
+}
+
+.gateway-shell .results-hero-stage .generation-range-flow {
+  grid-template-columns: minmax(390px, .78fr) minmax(520px, 1fr) !important;
+  align-items: stretch !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  width: 100% !important;
+  min-height: 168px !important;
+  padding: 28px 32px 24px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  min-height: 168px !important;
+  padding: 26px 24px 22px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards b {
+  font-size: clamp(26px, 2.2vw, 36px) !important;
+}
+
+@media (min-width: 1320px) {
+  .gateway-shell .results-hero-stage .generation-range-flow {
+    grid-template-columns: minmax(520px, .86fr) minmax(680px, 1.14fr) !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(390px, .98fr) minmax(330px, .72fr) !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: 340px !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-range-flow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Results compass asset lock: use the reference compass as the visual source and
+   keep only the calculated percentage as live UI. */
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(430px, 34vw, 560px) !important;
+  aspect-ratio: 1 !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  filter: none !important;
+  isolation: isolate !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  display: none !important;
+  content: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial svg,
+.gateway-shell .results-hero-stage .generation-outlook-dial .solar-compass-svg,
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-compass-svg {
+  display: none !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-image {
+  position: absolute !important;
+  inset: -13% !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 126% !important;
+  height: 126% !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value {
+  position: relative !important;
+  z-index: 3 !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 9px !important;
+  place-items: center !important;
+  width: 52% !important;
+  min-width: 178px !important;
+  aspect-ratio: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #004739 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: translateY(8px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  width: 156% !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.98) 0 34%, rgba(255,255,255,.82) 58%, rgba(235,246,239,.62) 82%, rgba(255,255,255,0) 83%) !important;
+  box-shadow:
+    0 20px 34px rgba(43, 91, 74, .1),
+    inset 0 0 0 1px rgba(255,255,255,.86) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  z-index: 2 !important;
+  width: 31% !important;
+  height: 6px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 210, .86), rgba(255, 247, 210, 0) 42%),
+    linear-gradient(90deg, #b98513 0%, #d1a232 58%, #eed47d 100%) !important;
+  box-shadow:
+    0 5px 13px rgba(119, 80, 8, .24),
+    0 0 0 1px rgba(255, 255, 255, .34) inset !important;
+  transform: rotate(var(--coverage-angle, -30deg)) translateY(-50%) !important;
+  transform-origin: 0 50% !important;
+  transition: transform 900ms cubic-bezier(.18, .86, .22, 1) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -6px !important;
+  top: 50% !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #f3d36f !important;
+  border: 3px solid rgba(255,255,255,.92) !important;
+  box-shadow: 0 4px 14px rgba(157, 111, 18, .22) !important;
+  transform: translateY(-50%) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -9px !important;
+  top: 50% !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #fff6cc 0 24%, #d09d22 25% 65%, rgba(208,157,34,0) 66%) !important;
+  transform: translateY(-50%) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value strong {
+  display: block !important;
+  color: #004739 !important;
+  font-size: clamp(66px, 5.2vw, 92px) !important;
+  font-weight: 560 !important;
+  line-height: .82 !important;
+  letter-spacing: -4px !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .72) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value small {
+  display: block !important;
+  color: #0b493d !important;
+  font-size: clamp(9px, .7vw, 13px) !important;
+  font-weight: 760 !important;
+  line-height: 1.1 !important;
+  letter-spacing: .42em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 2px 10px rgba(255,255,255,.9) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b {
+  position: relative !important;
+  display: grid !important;
+  gap: 3px !important;
+  color: #0b493d !important;
+  font-size: clamp(11px, .82vw, 15px) !important;
+  font-style: normal !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  letter-spacing: .52em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 2px 10px rgba(255,255,255,.9) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::after {
+  content: "" !important;
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  width: 42px !important;
+  height: 2px !important;
+  background: #d2a22c !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::before {
+  left: 4px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::after {
+  right: 4px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b i {
+  color: #b2861e !important;
+  font-size: clamp(9px, .62vw, 11px) !important;
+  font-style: normal !important;
+  font-weight: 780 !important;
+  letter-spacing: .58em !important;
+}
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: min(360px, 82vw) !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value strong {
+    font-size: clamp(58px, 8vw, 74px) !important;
+  }
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.995) 43%, rgba(255,255,255,.72) 66%, rgba(255,255,255,.05) 100%) !important;
+  opacity: 1 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card {
+  padding: clamp(42px, 4.2vw, 64px) clamp(46px, 5vw, 82px) clamp(38px, 3.7vw, 56px) !important;
+  border-color: rgba(156, 190, 170, .54) !important;
+  box-shadow:
+    0 34px 80px rgba(20, 63, 51, .08),
+    inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(520px, .94fr) minmax(470px, .82fr) !important;
+  align-items: center !important;
+  gap: clamp(48px, 6vw, 112px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy {
+  padding-top: 8px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin-bottom: 18px !important;
+  color: rgba(12, 72, 59, .82) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  font-size: clamp(88px, 7.5vw, 142px) !important;
+  line-height: .86 !important;
+  letter-spacing: -5px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  margin-left: 18px !important;
+  color: rgba(27, 65, 53, .74) !important;
+  font-size: clamp(28px, 2.45vw, 44px) !important;
+  letter-spacing: -1px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 620px !important;
+  margin-top: 26px !important;
+  color: rgba(5, 61, 50, .88) !important;
+  font-size: clamp(17px, 1.16vw, 20px) !important;
+  line-height: 1.48 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  max-width: 640px !important;
+  gap: 20px !important;
+  margin-top: 32px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  color: rgba(13, 77, 62, .82) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  width: 48px !important;
+  height: 48px !important;
+  background: rgba(222, 242, 230, .84) !important;
+  box-shadow: 0 12px 28px rgba(42, 93, 76, .08) !important;
+}
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(380px, .96fr) minmax(340px, .72fr) !important;
+    gap: 34px !important;
   }
 }
