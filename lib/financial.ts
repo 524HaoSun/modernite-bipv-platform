@@ -65,7 +65,9 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
   });
   const breakEven = flows.find((flow) => flow.cumulativeNetGbp >= 0)?.year ?? null;
   const labels: Record<FinancialScenario["id"], string> = { "solar-only": "Solar only", "battery-only": "Battery only", "solar-battery": "Solar + battery" };
-  return { id, title: labels[id], available: true, upfrontGbp: upfront, firstYearBenefitGbp: flows[0]?.netBenefitGbp ?? 0, breakEvenYear: breakEven, net25YearGbp: flows.at(-1)?.cumulativeNetGbp ?? -upfront, annualCashFlows: flows };
+  const first = flows[0];
+  const annualBenefit = first ? first.billSavingGbp + first.exportIncomeGbp + first.arbitrageIncomeGbp : 0;
+  return { id, title: labels[id], available: true, upfrontGbp: upfront, firstYearBenefitGbp: first?.netBenefitGbp ?? 0, breakEvenYear: breakEven, net25YearGbp: flows.at(-1)?.cumulativeNetGbp ?? -upfront, annualBenefitGbp: annualBenefit, incrementalPaybackYears: annualBenefit > 0 ? upfront / annualBenefit : null, annualCashFlows: flows };
 }
 
 export function calculateFinancialScenarios(input: ScenarioInput): FinancialScenario[] {

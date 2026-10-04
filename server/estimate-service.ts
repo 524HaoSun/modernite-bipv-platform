@@ -129,9 +129,11 @@ async function estimateProjectEconomics(input: ProjectCalculationInput, study: C
     },
     currentModel: {
       annualDemandKwh: study.energy.annualDemandKwh,
-      selfConsumedKwh: Math.round(study.simulation.selfConsumedKwh),
-      exportKwh: Math.round(study.simulation.exportKwh),
+      solarUsedAtHomeKwh: Math.round(study.simulation.balance.pvUsedKwh),
+      exportKwh: Math.round(study.simulation.balance.exportKwh),
+      solarCoverage: Number(study.simulation.balance.coverage.toFixed(3)),
       recommendedBatteryKwh: study.simulation.recommendedBatteryKwh,
+      selectedBatteryKwh: study.simulation.balance.batteryKwh,
     },
   };
   const response = await invokeLLM({
@@ -336,7 +338,9 @@ export const projectCalculationInputSchema = z.object({
     evCharger: z.boolean(),
     batteryMode: z.enum(["solar-only", "solar-battery"]),
     batteryCapacityKwh: z.number().finite().min(1).max(100),
+    batteryCapacityAuto: z.boolean().optional(),
     projectPriceGbp: z.number().finite().min(0).max(10_000_000).nullable().optional(),
+    conventionalPriceGbp: z.number().finite().min(0).max(10_000_000).nullable().optional(),
     batteryPriceGbp: z.number().finite().min(0).max(100_000).nullable().optional(),
   }).optional(),
 });

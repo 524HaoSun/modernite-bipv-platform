@@ -45,33 +45,106 @@ export type HomeEnergySettings = {
   evCharger: boolean;
   batteryMode: "solar-only" | "solar-battery";
   batteryCapacityKwh: number;
+  /** When not false, the battery is sized to the hourly recommendation and batteryCapacityKwh is ignored. */
+  batteryCapacityAuto?: boolean;
+  /** Quoted Modernite PV product cost (product only, before common roofing works). */
   projectPriceGbp?: number | null;
+  /** Quoted cost of the conventional roof tiles / cladding / glazing the PV products replace. */
+  conventionalPriceGbp?: number | null;
   batteryPriceGbp?: number | null;
 };
 
-/** Indicative installed BIPV price per m² of active product and battery price per usable kWh, in local currency. */
-export const PLANNING_COST_RATES: Record<Region, { perM2: number; batteryPerKwh: number }> = {
-  UK: { perM2: 320, batteryPerKwh: 770 },
-  EU: { perM2: 340, batteryPerKwh: 800 },
-  CA: { perM2: 480, batteryPerKwh: 1150 },
-  JP: { perM2: 52000, batteryPerKwh: 160000 },
+export type ProductFamily = "roof" | "facade" | "glazing" | "railing" | "canopy";
+
+/**
+ * Indicative UK product prices per m² (GBP): the Modernite PV product and the conventional product it replaces.
+ * Common works (labour, installation, scaffolding, roofing) occur either way and are excluded from the PV investment.
+ */
+const UK_PRODUCT_RATES: Record<ProductFamily, { pv: number; conventional: number }> = {
+  roof: { pv: 165, conventional: 35 },
+  facade: { pv: 220, conventional: 90 },
+  glazing: { pv: 260, conventional: 150 },
+  railing: { pv: 240, conventional: 160 },
+  canopy: { pv: 230, conventional: 120 },
 };
+
+/** Local-currency multiplier on the UK product rates, battery price per usable kWh and PV-specific costs. */
+export const PLANNING_COST_RATES: Record<Region, { factor: number; batteryPerKwh: number; pvFixed: number; pvPerKwp: number }> = {
+  UK: { factor: 1, batteryPerKwh: 770, pvFixed: 1500, pvPerKwp: 40 },
+  EU: { factor: 1.0625, batteryPerKwh: 800, pvFixed: 1600, pvPerKwp: 42 },
+  CA: { factor: 1.5, batteryPerKwh: 1150, pvFixed: 2250, pvPerKwp: 60 },
+  JP: { factor: 162.5, batteryPerKwh: 160000, pvFixed: 240000, pvPerKwp: 6500 },
+};
+
+export function productFamily(product: string): ProductFamily {
+  if (product === "roof_tiles") return "roof";
+  if (product === "facade") return "facade";
+  if (product === "railing") return "railing";
+  if (["canopy", "carport", "pergola", "shading"].includes(product)) return "canopy";
+  return "glazing";
+}
 
 export function activeSolarAreaM2(snapshot: Pick<StudioCalculationSnapshot, "surfaces">): number {
   return snapshot.surfaces.filter((surface) => surface.enabled !== false && surface.area > 0).reduce((sum, surface) => sum + surface.area, 0);
 }
 
-export type PlanningCosts = { projectPrice: number; projectPriceSource: "user" | "estimate"; batteryPrice: number | null; batteryPriceSource: "user" | "estimate" | null };
+export function activeAreaByFamily(snapshot: Pick<StudioCalculationSnapshot, "surfaces">): Partial<Record<ProductFamily, number>> {
+  const out: Partial<Record<ProductFamily, number>> = {};
+  for (const surface of snapshot.surfaces) {
+    if (surface.enabled === false || !(surface.area > 0) || !productForSnapshot(surface)) continue;
+    const family = productFamily(surface.product);
+    out[family] = (out[family] ?? 0) + surface.area;
+  }
+  return out;
+}
 
-export function planningCosts(region: Region, solarAreaM2: number, settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">): PlanningCosts {
+export type PlanningCosts = {
+  /** Modernite PV product cost. */
+  pvProductPrice: number;
+  /** Conventional product cost the PV products replace. */
+  conventionalPrice: number;
+  /** Costs that only arise because the roof generates electricity (inverter, electrical connection, commissioning). */
+  pvSpecificPrice: number;
+  /** pvProductPrice − conventionalPrice + pvSpecificPrice. */
+  incrementalPrice: number;
+  /** Gross PV scheme price before the conventional credit (pvProductPrice + pvSpecificPrice). */
+  projectPrice: number;
+  projectPriceSource: "user" | "estimate";
+  conventionalPriceSource: "user" | "estimate";
+  batteryPrice: number | null;
+  batteryPriceSource: "user" | "estimate" | null;
+};
+
+export function planningCosts(
+  region: Region,
+  areas: number | Partial<Record<ProductFamily, number>>,
+  settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "conventionalPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">,
+  capacityKwp = 0,
+): PlanningCosts {
   const rates = PLANNING_COST_RATES[region];
-  const round = (value: number) => Math.round(value / (region === "JP" ? 10000 : 100)) * (region === "JP" ? 10000 : 100);
+  const step = region === "JP" ? 10000 : 100;
+  const round = (value: number) => Math.round(value / step) * step;
+  const byFamily = typeof areas === "number" ? { roof: areas } : areas;
+  let pv = 0, conventional = 0;
+  for (const [family, area] of Object.entries(byFamily) as [ProductFamily, number][]) {
+    pv += Math.max(0, area) * UK_PRODUCT_RATES[family].pv * rates.factor;
+    conventional += Math.max(0, area) * UK_PRODUCT_RATES[family].conventional * rates.factor;
+  }
   const userProject = settings?.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : null;
+  const userConventional = settings?.conventionalPriceGbp !== null && settings?.conventionalPriceGbp !== undefined && settings.conventionalPriceGbp >= 0 ? settings.conventionalPriceGbp : null;
+  const pvProductPrice = userProject ?? round(pv);
+  const conventionalPrice = userConventional ?? round(conventional);
+  const pvSpecificPrice = pv > 0 || userProject ? round(rates.pvFixed + Math.max(0, capacityKwp) * rates.pvPerKwp) : 0;
   const battery = settings?.batteryMode === "solar-battery";
   const userBattery = battery && settings?.batteryPriceGbp && settings.batteryPriceGbp > 0 ? settings.batteryPriceGbp : null;
   return {
-    projectPrice: userProject ?? round(Math.max(0, solarAreaM2) * rates.perM2),
+    pvProductPrice,
+    conventionalPrice,
+    pvSpecificPrice,
+    incrementalPrice: Math.max(0, pvProductPrice - conventionalPrice) + pvSpecificPrice,
+    projectPrice: pvProductPrice + pvSpecificPrice,
     projectPriceSource: userProject ? "user" : "estimate",
+    conventionalPriceSource: userConventional !== null ? "user" : "estimate",
     batteryPrice: battery ? userBattery ?? round(Math.max(1, settings?.batteryCapacityKwh ?? 0) * rates.batteryPerKwh) : null,
     batteryPriceSource: battery ? (userBattery ? "user" : "estimate") : null,
   };
@@ -158,6 +231,7 @@ export function buildPlanningInput(input: {
   coordinates: { lat: number; lng: number };
   snapshot: StudioCalculationSnapshot;
   energySettings?: HomeEnergySettings;
+  capacityKwp?: number;
 }): {
   location: LocationInfo;
   building: BuildingConfig;
@@ -172,7 +246,7 @@ export function buildPlanningInput(input: {
   const settings = input.energySettings;
   const householdSize = Math.max(1, Math.min(12, Math.round(settings?.householdSize ?? 2)));
   const annualDemandKwh = settings?.annualDemandKwh && settings.annualDemandKwh > 0 ? Math.round(settings.annualDemandKwh) : null;
-  const prices = planningCosts(input.region, activeSolarAreaM2(input.snapshot), settings);
+  const prices = planningCosts(input.region, activeAreaByFamily(input.snapshot), settings, input.capacityKwp ?? 0);
 
   return {
     location: {
@@ -215,7 +289,7 @@ export function buildPlanningInput(input: {
     },
     costs: {
       schemePriceGbp: prices.projectPrice > 0 ? prices.projectPrice : null,
-      conventionalMaterialGbp: null,
+      conventionalMaterialGbp: prices.projectPrice > 0 ? prices.conventionalPrice : null,
       conventionalLabourGbp: null,
       batteryInterest: settings?.batteryMode === "solar-battery" ? "yes" : "no",
       batteryCapacityKwh: settings?.batteryMode === "solar-battery" ? Math.max(1, settings.batteryCapacityKwh) : 0,

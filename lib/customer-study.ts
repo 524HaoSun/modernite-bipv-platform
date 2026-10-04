@@ -4,7 +4,7 @@ import * as core from "./customer-energy-core";
 import { calculateFinancialScenarios } from "./financial";
 import { compassName } from "./geometry";
 import type { GoogleSolarReference } from "./google-solar";
-import { activeSolarAreaM2, buildPlanningInput, estimateAnnualDemandKwh, planningCosts, productForSnapshot, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "./studio-calculation";
+import { activeAreaByFamily, buildPlanningInput, estimateAnnualDemandKwh, planningCosts, productForSnapshot, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "./studio-calculation";
 
 export type Market = "GB" | "EU" | "CA" | "JP";
 
@@ -45,9 +45,57 @@ export type SimulationSummary = {
   clippingKwh: number;
   recommendedBatteryKwh: number;
   battery: { nominalKwh: number; powerKw: number; selfConsumedKwh: number; exportKwh: number; gridImportKwh: number };
+  /** Hourly energy balance per scenario; `balance` is the one selected on the energy page. */
+  balances: Record<BalanceScenario, EnergyBalance>;
+  balance: EnergyBalance;
+  batteryCapacityAuto: boolean;
   buildingNorthDeg: number;
   demandCalibration: "bill" | "household" | "model";
   irradiationWarnings: number;
+};
+
+export type BalanceScenario = "solar-only" | "solar-battery";
+
+/** Annual totals of the hourly dispatch PV → load → battery → export / grid import. */
+export type EnergyBalance = {
+  scenario: BalanceScenario;
+  batteryKwh: number;
+  generationKwh: number;
+  loadKwh: number;
+  directKwh: number;
+  /** PV-origin battery discharge delivered to the home (the battery only charges from PV surplus). */
+  batteryToLoadKwh: number;
+  pvUsedKwh: number;
+  exportKwh: number;
+  importKwh: number;
+  /** pvUsedKwh ÷ loadKwh. */
+  coverage: number;
+  /** pvUsedKwh ÷ generationKwh. */
+  selfConsumptionRate: number;
+  /** exportKwh ÷ generationKwh. */
+  exportRate: number;
+};
+
+export function energyBalance(scenario: BalanceScenario, batteryKwh: number, rows: Array<Record<string, number>>): EnergyBalance {
+  const sum = (key: string) => rows.reduce((total, row) => total + (row[key] ?? 0), 0);
+  const generationKwh = sum("pv"), loadKwh = sum("load"), directKwh = sum("directSelf"), batteryToLoadKwh = sum("batteryDischarge");
+  const pvUsedKwh = directKwh + batteryToLoadKwh, exportKwh = sum("export"), importKwh = sum("grid");
+  return {
+    scenario, batteryKwh, generationKwh, loadKwh, directKwh, batteryToLoadKwh, pvUsedKwh, exportKwh, importKwh,
+    coverage: loadKwh ? pvUsedKwh / loadKwh : 0,
+    selfConsumptionRate: generationKwh ? pvUsedKwh / generationKwh : 0,
+    exportRate: generationKwh ? exportKwh / generationKwh : 0,
+  };
+}
+
+export type StudyEconomics = {
+  pvProductPrice: number;
+  conventionalPrice: number;
+  pvSpecificPrice: number;
+  incrementalPrice: number;
+  batteryPrice: number | null;
+  projectPriceSource: "user" | "estimate";
+  conventionalPriceSource: "user" | "estimate";
 };
 
 export type ProjectEnergy = {
@@ -87,6 +135,7 @@ export type CustomerStudy = {
   validation: ProjectValidation;
   energy: ProjectEnergy;
   simulation: SimulationSummary;
+  economics: StudyEconomics;
   weather: WeatherProvenance;
   googleSolar: GoogleSolarReference | null;
 };
@@ -208,11 +257,17 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   }
 
   const t = sim.totals, sizing = sim.systemSizing!;
-  const requestedBattery = settings?.batteryMode === "solar-battery" ? settings.batteryCapacityKwh : 0;
-  const batteryNominal = requestedBattery > 0 ? requestedBattery : sizing.recommendedBatteryKWh > 0 ? sizing.recommendedBatteryKWh : 5;
+  const batteryAuto = settings?.batteryCapacityAuto !== false;
+  const manualBattery = !batteryAuto && settings?.batteryCapacityKwh && settings.batteryCapacityKwh > 0 ? settings.batteryCapacityKwh : 0;
+  const batteryNominal = manualBattery > 0 ? manualBattery : sizing.recommendedBatteryKWh > 0 ? sizing.recommendedBatteryKWh : 5;
   const batteryPower = Math.min(sizing.inverterKW || batteryNominal * core.SYSTEM_ASSUMPTIONS.cRate, batteryNominal * core.SYSTEM_ASSUMPTIONS.cRate);
   const withBattery = core.dispatch(sim.hourly, batteryNominal, batteryPower, true);
-  const batterySums = withBattery.rows.reduce((acc, row) => ({ self: acc.self + row.self, export: acc.export + row.export, grid: acc.grid + row.grid }), { self: 0, export: 0, grid: 0 });
+  const balances: Record<BalanceScenario, EnergyBalance> = {
+    "solar-only": energyBalance("solar-only", 0, core.dispatch(sim.hourly, 0, 0, true).rows),
+    "solar-battery": energyBalance("solar-battery", batteryNominal, withBattery.rows),
+  };
+  const activeScenario: BalanceScenario = settings?.batteryMode === "solar-battery" ? "solar-battery" : "solar-only";
+  const effectiveSettings = settings ? { ...settings, batteryCapacityKwh: batteryNominal } : undefined;
 
   const annualGeneration = t.pv;
   const annualDemand = t.load;
@@ -221,7 +276,8 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     label: input.address,
     coordinates: input.coordinates,
     snapshot: input.snapshot,
-    energySettings: settings ? { ...settings, annualDemandKwh: Math.round(annualDemand) } : undefined,
+    energySettings: effectiveSettings ? { ...effectiveSettings, annualDemandKwh: Math.round(annualDemand) } : undefined,
+    capacityKwp: sim.kwp,
   });
   planning.energy.annualDemandKwh = Math.round(annualDemand);
   if (input.economicPlan?.importPence) planning.energy.importPence = input.economicPlan.importPence;
@@ -232,15 +288,15 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   if (input.economicPlan?.inverterReplacementGbp !== undefined && input.economicPlan.inverterReplacementGbp !== null) planning.costs.inverterReplacementGbp = input.economicPlan.inverterReplacementGbp;
   if (input.economicPlan?.batteryReplacementPercent !== undefined && input.economicPlan.batteryReplacementPercent !== null) planning.costs.batteryReplacementPercent = input.economicPlan.batteryReplacementPercent;
   const currency = REGION_CONFIG[region];
-  const prices = planningCosts(region, activeSolarAreaM2(input.snapshot), settings);
+  const prices = planningCosts(region, activeAreaByFamily(input.snapshot), effectiveSettings, sim.kwp);
   const scenarios = calculateFinancialScenarios({
     annualGenerationKwh: annualGeneration,
     energy: planning.energy,
     costs: planning.costs,
     unitPriceDivisor: currency.priceDivisor,
     simulatedDirectShares: {
-      solarOnly: annualGeneration ? t.self / annualGeneration : 0,
-      solarBattery: annualGeneration ? batterySums.self / annualGeneration : 0,
+      solarOnly: balances["solar-only"].selfConsumptionRate,
+      solarBattery: balances["solar-battery"].selfConsumptionRate,
     },
   });
   const bestScenario = scenarios.filter((scenario) => scenario.available).sort((a, b) => b.net25YearGbp - a.net25YearGbp)[0] ?? scenarios[0];
@@ -305,7 +361,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     { id: "demand", label: "Annual electricity demand", value: `${Math.round(annualDemand).toLocaleString("en")} kWh`, provenance: demandTarget !== null ? "user" : "assumed", stepNumber: 4, fieldKey: "demand", params: { kwh: Math.round(annualDemand) }, note: calibrationNote },
     { id: "inverter", label: "Inverter sizing", value: `${sizing.inverterKW} kW AC · DC/AC ${sizing.dcAcRatio.toFixed(2)} · clipping ${(sizing.clippingFraction * 100).toFixed(2)}%`, provenance: "assumed", stepNumber: 5, fieldKey: "inverter", params: { kw: sizing.inverterKW, ratio: Math.round(sizing.dcAcRatio * 100) / 100, clipping: Math.round(sizing.clippingFraction * 10000) / 100 } },
     { id: "battery", label: "Battery comparison", value: `${batteryNominal} kWh / ${batteryPower.toFixed(2)} kW AC-coupled (90% usable, 90% round trip) · recommended ${sizing.recommendedBatteryKWh} kWh`, provenance: "assumed", stepNumber: 5, fieldKey: "battery", params: { kwh: batteryNominal, kw: Math.round(batteryPower * 100) / 100, recommended: sizing.recommendedBatteryKWh } },
-    { id: "costs", label: "Planning cost", value: `${currency.currency} ${Math.round(prices.projectPrice).toLocaleString("en")} solar${prices.batteryPrice !== null ? ` + ${Math.round(prices.batteryPrice).toLocaleString("en")} battery` : ""}`, provenance: prices.projectPriceSource === "user" ? "user" : "assumed", stepNumber: 5, fieldKey: "costs", params: { currency: currency.currency, solar: Math.round(prices.projectPrice), battery: prices.batteryPrice !== null ? Math.round(prices.batteryPrice) : null, estimated: prices.projectPriceSource === "estimate" || prices.batteryPriceSource === "estimate" ? 1 : 0 }, note: prices.projectPriceSource === "estimate" ? "Indicative installed price from the active product area; enter a quote on the energy page to replace it." : undefined },
+    { id: "costs", label: "BIPV incremental investment", value: `${currency.currency} ${Math.round(prices.incrementalPrice).toLocaleString("en")} = PV products ${Math.round(prices.pvProductPrice).toLocaleString("en")} − conventional products ${Math.round(prices.conventionalPrice).toLocaleString("en")} + PV-specific ${Math.round(prices.pvSpecificPrice).toLocaleString("en")}${prices.batteryPrice !== null ? ` · battery ${Math.round(prices.batteryPrice).toLocaleString("en")}` : ""}`, provenance: prices.projectPriceSource === "user" ? "user" : "assumed", stepNumber: 5, fieldKey: "costs", params: { currency: currency.currency, incremental: Math.round(prices.incrementalPrice), pv: Math.round(prices.pvProductPrice), conventional: Math.round(prices.conventionalPrice), specific: Math.round(prices.pvSpecificPrice), battery: prices.batteryPrice !== null ? Math.round(prices.batteryPrice) : null, estimated: prices.projectPriceSource === "estimate" || prices.conventionalPriceSource === "estimate" || prices.batteryPriceSource === "estimate" ? 1 : 0 }, note: "Common roofing works (labour, installation, scaffolding) occur with conventional tiles too and are excluded. Product prices are indicative unless quotes are entered on the energy page." },
   ];
   if (input.googleSolar?.status === "ok") {
     const top = input.googleSolar.roofSegments?.[0];
@@ -387,10 +443,22 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       inverterKw: sizing.inverterKW,
       clippingKwh: sizing.clippingKWh,
       recommendedBatteryKwh: sizing.recommendedBatteryKWh,
-      battery: { nominalKwh: batteryNominal, powerKw: batteryPower, selfConsumedKwh: batterySums.self, exportKwh: batterySums.export, gridImportKwh: batterySums.grid },
+      battery: { nominalKwh: batteryNominal, powerKw: batteryPower, selfConsumedKwh: balances["solar-battery"].pvUsedKwh, exportKwh: balances["solar-battery"].exportKwh, gridImportKwh: balances["solar-battery"].importKwh },
+      balances,
+      balance: balances[activeScenario],
+      batteryCapacityAuto: manualBattery === 0,
       buildingNorthDeg: north,
       demandCalibration: bill !== null ? "bill" : household !== null ? "household" : "model",
       irradiationWarnings: sim.irradiationWarnings,
+    },
+    economics: {
+      pvProductPrice: prices.pvProductPrice,
+      conventionalPrice: prices.conventionalPrice,
+      pvSpecificPrice: prices.pvSpecificPrice,
+      incrementalPrice: prices.incrementalPrice,
+      batteryPrice: prices.batteryPrice,
+      projectPriceSource: prices.projectPriceSource,
+      conventionalPriceSource: prices.conventionalPriceSource,
     },
     weather,
     googleSolar: input.googleSolar ?? null,

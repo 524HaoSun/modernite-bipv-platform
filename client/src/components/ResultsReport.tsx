@@ -5,12 +5,15 @@ import {
 } from "lucide-react";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
+import { bipvCopy, type BipvCopy } from "@/lib/bipv-copy";
+import { balanceFor, pct } from "@/lib/energy-balance";
 import { shareCopy } from "@/lib/share-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
 import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
 import "@/styles/results-compass-refinement.css";
 import type { ProjectCalculation } from "../../../server/estimate-service";
+import type { EnergyBalance } from "../../../lib/customer-study";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../../types/solar";
 
 type Route = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
@@ -27,10 +30,13 @@ const ORIENTATION_SERIES = [
   ["north", "#79aeca"],
   ["horizontal", "#f1b33d"],
 ] as const;
+/** Same DC→AC factor as the hourly generation model, so Google's DC benchmark is compared like for like. */
+const GOOGLE_AC_FACTOR = 0.9;
 const SCENARIO_COLORS: Record<string, string> = { "solar-only": "#0c6249", "solar-battery": "#d6a226", "battery-only": "#789" };
 
 type Fmt = {
   t: ResultsCopy;
+  b: BipvCopy;
   n: (value: number, digits?: number) => string;
   money: (value: number) => string;
   moneyCompact: (value: number) => string;
@@ -63,7 +69,9 @@ function ledgerValue(entry: LedgerEntry, f: Fmt) {
     case "demand": return `${num("kwh")} kWh`;
     case "inverter": return lt.inverter(num("kw", 1), num("ratio", 2), num("clipping", 2));
     case "battery": return lt.battery(num("kwh", 1), num("kw", 2), num("recommended", 1));
-    case "costs": return lt.costs(f.money(Number(p.solar)), typeof p.battery === "number" ? f.money(p.battery) : null, p.estimated === 1);
+    case "costs": return typeof p.incremental === "number"
+      ? f.b.ledgerCosts(f.money(p.incremental), f.money(Number(p.pv)), f.money(Number(p.conventional)), f.money(Number(p.specific)), typeof p.battery === "number" ? f.money(p.battery) : null, p.estimated === 1)
+      : lt.costs(f.money(Number(p.solar)), typeof p.battery === "number" ? f.money(p.battery) : null, p.estimated === 1);
     case "google-solar": return [
       lt.google(Number(p.segments), num("area")),
       p.topArea != null ? lt.googleTop(num("topArea"), num("topPitch"), num("topAz")) : "",
@@ -81,6 +89,7 @@ function useFormatters(language: string, currency: string): Fmt {
     const months = new Intl.DateTimeFormat(t.locale, { month: "short" });
     return {
       t,
+      b: bipvCopy(language),
       n: (value, digits = 0) => value.toLocaleString(t.locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
       money: (value) => money.format(Math.round(value)),
       moneyCompact: (value) => compact.format(Math.round(value)),
@@ -90,21 +99,17 @@ function useFormatters(language: string, currency: string): Fmt {
   }, [language, currency]);
 }
 
-function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }) {
-  const { t } = f;
+function GenerationRangeCard({ study, balance, f }: { study: ProjectCalculation; balance: EnergyBalance; f: Fmt }) {
+  const { t, b } = f;
   const range = study.result.range;
   const position = ((range.representative - range.low) / Math.max(1, range.high - range.low)) * 100;
-  const generated = range.representative;
-  const demand = Math.max(1, study.energy.annualDemandKwh);
-  const selfUsed = study.simulation.selfConsumedKwh;
-  const exportKwh = study.simulation.exportKwh;
-  const demandCoverage = Math.round(Math.min(100, (selfUsed / demand) * 100));
-  const needleAngle = 90 + demandCoverage * 3.6;
-  const selfUseShare = Math.round((selfUsed / Math.max(1, generated)) * 100);
+  const withBattery = balance.batteryToLoadKwh > 0;
+  const coverage = Math.min(100, pct(balance.coverage));
+  const needleAngle = 90 + coverage * 3.6;
   const flowCards = [
-    { key: "generated", icon: <SunMedium size={28} />, label: t.generated, value: f.n(generated), unit: t.perYear, note: t.heroBody(study.result.surfaces.length) },
-    { key: "used", icon: <Home size={28} />, label: t.usedHome, value: f.n(selfUsed), unit: t.perYear, note: `${demandCoverage}% ${t.demandLabel.toLowerCase()}` },
-    { key: "exported", icon: <TowerControl size={28} />, label: t.exported, value: f.n(exportKwh), unit: t.perYear, note: t.exportedDetail },
+    { key: "generated", icon: <SunMedium size={28} />, label: t.generated, value: f.n(range.representative), unit: t.perYear, note: t.heroBody(study.result.surfaces.length) },
+    { key: "used", icon: <Home size={28} />, label: b.pvUsed, value: f.n(balance.pvUsedKwh), unit: t.perYear, note: `${b.coverageShort} ${coverage}% · ${b.pvUsedDetail(f.n(balance.directKwh), withBattery ? f.n(balance.batteryToLoadKwh) : null)}` },
+    { key: "exported", icon: <TowerControl size={28} />, label: t.exported, value: f.n(balance.exportKwh), unit: t.perYear, note: b.exportRate(pct(balance.exportRate)) },
     { key: "capacity", icon: <BarChart3 size={28} />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
   ];
   return <section className="result-section generation-range-card generation-hero-card">
@@ -112,17 +117,17 @@ function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }
       <div className="generation-dashboard-copy">
         <p className="mini-label">Design Studio · {t.heroLabel}</p>
         <strong>{f.n(range.representative)} <small>{t.perYear}</small></strong>
-        <p>{t.heroBody(study.result.surfaces.length)} {t.chainDetail(demandCoverage, selfUseShare)}</p>
+        <p>{t.heroBody(study.result.surfaces.length)} {b.chainDetail(coverage, pct(balance.selfConsumptionRate), withBattery)}</p>
         <ul className="generation-benefit-list" aria-label={t.flowTitle}>
-          <li><Leaf size={16} /> {t.usedHomeDetail}</li>
-          <li><Home size={16} /> {t.demandLabel}: {f.n(study.energy.annualDemandKwh)} {t.perYear}</li>
-          <li><TrendingUp size={16} /> {t.view25}</li>
+          <li><Home size={16} /> {t.demandLabel}: {f.n(balance.loadKwh)} {t.perYear}</li>
+          <li><Leaf size={16} /> {b.selfRate(pct(balance.selfConsumptionRate))} · {b.exportRate(pct(balance.exportRate))}</li>
+          <li><BatteryCharging size={16} /> {balance.batteryKwh > 0 ? b.withBattery(f.n(balance.batteryKwh, 1)) : b.solarOnly}</li>
         </ul>
       </div>
-      <div className="generation-outlook-dial" aria-label={`${t.demandLabel} ${demandCoverage}%`}>
+      <div className="generation-outlook-dial" aria-label={`${b.coverage} ${coverage}%`}>
         <img className="coverage-compass-image" src="/assets/modernite-coverage-compass-reference.svg" alt="" aria-hidden="true" />
         <span className="coverage-needle-live" style={{ "--coverage-angle": `${needleAngle}deg` } as CSSProperties} aria-hidden="true" />
-        <span className="coverage-value"><strong>{demandCoverage}%</strong><small>{t.demandLabel}</small><b>MODERNITÉ <i>BIPV</i></b></span>
+        <span className="coverage-value"><strong>{coverage}%</strong><small>{b.coverage}</small><b>MODERNITÉ <i>BIPV</i></b></span>
       </div>
     </div>
     <div className="generation-range-flow">
@@ -144,65 +149,80 @@ function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }
   </section>;
 }
 
-function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
-  const { t } = f;
-  const firstYear = scenario.annualCashFlows[0];
-  const selfUse = firstYear?.directUseKwh ?? study.simulation.selfConsumedKwh;
-  const exportKwh = firstYear?.exportKwh ?? study.simulation.exportKwh;
-  const annualValue = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.arbitrageIncomeGbp ?? 0);
-  const selfUseShare = Math.round((selfUse / Math.max(1, study.result.range.representative)) * 100);
-  const exportShare = Math.max(0, 100 - selfUseShare);
+function scenarioEconomics(scenario: FinancialScenario, f: Fmt) {
+  const first = scenario.annualCashFlows[0];
+  const benefit = scenario.annualBenefitGbp ?? (first ? first.billSavingGbp + first.exportIncomeGbp + first.arbitrageIncomeGbp : 0);
+  const payback = scenario.incrementalPaybackYears !== undefined ? scenario.incrementalPaybackYears : benefit > 0 ? scenario.upfrontGbp / benefit : null;
+  const paybackText = payback === null || payback > 25 ? f.b.noPayback : f.b.years(f.n(payback, 1));
+  return { investment: scenario.upfrontGbp, benefit, payback, paybackText };
+}
+
+function ExecutiveOutcomePanel({ study, scenario, balance, f }: { study: ProjectCalculation; scenario: FinancialScenario; balance: EnergyBalance; f: Fmt }) {
+  const { t, b } = f;
+  const econ = scenarioEconomics(scenario, f);
+  const usedShare = pct(balance.selfConsumptionRate);
+  const exportShare = pct(balance.exportRate);
   return <section className="result-section executive-outcome-panel">
     <div className="executive-outcome-main">
-      <p className="mini-label">{t.estimatedValue}</p>
-      <h2>{f.money(annualValue)} <small>{t.perYearMoney}</small></h2>
-      <p>{scenario.breakEvenYear ? t.breakEvenSimple(scenario.breakEvenYear) : t.longTerm} · {t.byYear25(f.money(scenario.net25YearGbp))}</p>
+      <p className="mini-label">{b.annualBenefit}</p>
+      <h2>{f.money(econ.benefit)} <small>{t.perYearMoney}</small></h2>
+      <p>{b.paybackLine(f.money(econ.investment), econ.paybackText)}</p>
     </div>
     <div className="executive-kpis">
       <article><span>{t.annualGeneration}</span><strong>{f.n(study.result.range.representative)}</strong><small>{t.perYear}</small></article>
-      <article><span>{t.demandLabel}</span><strong>{f.n(study.energy.annualDemandKwh)}</strong><small>{t.perYear}</small></article>
-      <article><span>{t.scenario}</span><strong>{t.scenarioTitles[scenario.id]}</strong><small>{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.planningComparison}</small></article>
+      <article><span>{b.investment}</span><strong>{f.money(econ.investment)}</strong><small>{t.scenarioTitles[scenario.id]}</small></article>
+      <article><span>{b.payback}</span><strong>{econ.paybackText}</strong><small>{b.coverage} {pct(balance.coverage)}%</small></article>
     </div>
     <div className="executive-flow-strip" aria-label={t.flowTitle}>
-      <span style={{ ["--w" as string]: `${Math.max(8, selfUseShare)}%` }}><b>{t.usedHome}</b><i>{f.n(selfUse)} kWh</i></span>
-      <span style={{ ["--w" as string]: `${Math.max(8, exportShare)}%` }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
+      <span style={{ ["--w" as string]: `${Math.max(8, usedShare)}%` }}><b>{b.pvUsed}</b><i>{f.n(balance.pvUsedKwh)} kWh</i></span>
+      <span style={{ ["--w" as string]: `${Math.max(8, exportShare)}%` }}><b>{t.exported}</b><i>{f.n(balance.exportKwh)} kWh</i></span>
     </div>
   </section>;
 }
 
-function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: Route) => void; f: Fmt }) {
-  const { t } = f;
-  const firstYear = scenario.annualCashFlows[0];
-  const directUse = firstYear?.directUseKwh ?? study.simulation.selfConsumedKwh;
-  const exported = firstYear?.exportKwh ?? study.simulation.exportKwh;
-  const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.arbitrageIncomeGbp ?? 0);
-  const directPercent = Math.round((directUse / Math.max(1, study.energy.annualDemandKwh)) * 100);
-  const keptPercent = Math.round((directUse / Math.max(1, study.result.range.representative)) * 100);
+function EnergyAppliedChain({ study, scenario, balance, onNavigate, f }: { study: ProjectCalculation; scenario: FinancialScenario; balance: EnergyBalance; onNavigate: (route: Route) => void; f: Fmt }) {
+  const { t, b } = f;
+  const econ = scenarioEconomics(scenario, f);
   return <section className="result-section energy-applied-chain">
     <div className="result-section-heading"><div><p className="mini-label">{t.chainLabel}</p><h2>{t.chainTitle}</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> {t.editEnergy}</button></div>
     <div className="applied-chain-grid">
-      <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(study.energy.annualDemandKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</small></article>
+      <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(balance.loadKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</small></article>
       <i><ArrowRight size={18} /></i>
-      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(directUse), f.n(exported))}</strong><small>{t.chainDetail(directPercent, keptPercent)}</small></article>
+      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(balance.pvUsedKwh), f.n(balance.exportKwh))}</strong><small>{b.chainDetail(pct(balance.coverage), pct(balance.selfConsumptionRate), balance.batteryToLoadKwh > 0)}</small></article>
       <i><ArrowRight size={18} /></i>
-      <article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · {t.estimatedValue}</p><strong>{f.money(value)} {t.perYearMoney}</strong><small>{scenario.breakEvenYear ? t.breakEvenSimple(scenario.breakEvenYear) : t.longTerm} {t.onCost(f.money(scenario.upfrontGbp))}</small></article>
+      <article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · {t.estimatedValue}</p><strong>{f.money(econ.benefit)} {t.perYearMoney}</strong><small>{b.paybackLine(f.money(econ.investment), econ.paybackText)}</small></article>
     </div>
     <p className="result-note"><Gauge size={14} /> {t.chainNote}</p>
   </section>;
 }
 
-function EnergyFlowPanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
-  const { t } = f;
+function IncrementalEconomicsPanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
+  const { b, t } = f;
+  const econ = scenarioEconomics(scenario, f);
+  const e = study.economics;
+  if (!e) return null;
+  const battery = scenario.id === "solar-battery" && e.batteryPrice ? e.batteryPrice : null;
+  return <section className="result-section incremental-economics-card">
+    <div className="result-section-heading"><div><p className="mini-label">{b.investment}</p><h2>{b.payback}: {econ.paybackText}</h2></div><span className="validation-status ready">{t.scenarioTitles[scenario.id]}</span></div>
+    <div className="validation-grid">
+      <div><span>{b.investment}</span><strong>{f.money(econ.investment)}</strong></div>
+      <div><span>{b.annualBenefit}</span><strong>{f.money(econ.benefit)} {t.perYearMoney}</strong></div>
+      <div><span>{b.payback}</span><strong>{econ.paybackText}</strong></div>
+    </div>
+    <p className="result-note"><CircleHelp size={14} /> {b.formula(f.money(e.pvProductPrice), f.money(e.conventionalPrice), f.money(e.pvSpecificPrice))}{battery ? ` ${b.plusBattery(f.money(battery))}` : ""} = {f.money(econ.investment)}</p>
+    <p className="result-note">{b.economicsNote}</p>
+  </section>;
+}
+
+function EnergyFlowPanel({ study, scenario, balance, f }: { study: ProjectCalculation; scenario: FinancialScenario; balance: EnergyBalance; f: Fmt }) {
+  const { t, b } = f;
   const generation = study.result.range.representative;
-  const withBattery = scenario.id === "solar-battery";
-  const directUse = study.simulation.selfConsumedKwh;
-  const batteryUse = withBattery ? Math.max(0, study.simulation.battery.selfConsumedKwh - study.simulation.selfConsumedKwh) : 0;
-  const exported = withBattery ? study.simulation.battery.exportKwh : study.simulation.exportKwh;
-  const total = Math.max(1, directUse + batteryUse + exported);
+  const withBattery = scenario.id === "solar-battery" && balance.batteryToLoadKwh > 0;
+  const total = Math.max(1, balance.directKwh + balance.batteryToLoadKwh + balance.exportKwh);
   const flows = [
-    { key: "home", label: t.usedHome, value: directUse, color: "#0b6047", detail: t.usedHomeDetail },
-    { key: "battery", label: t.batteryShift, value: batteryUse, color: "#efba45", detail: withBattery ? t.batteryShiftOn : t.batteryShiftOff },
-    { key: "export", label: t.exported, value: exported, color: "#8fbf79", detail: t.exportedDetail },
+    { key: "home", label: b.direct, value: balance.directKwh, color: "#0b6047", detail: b.directDetail },
+    { key: "battery", label: b.batteryToLoad, value: balance.batteryToLoadKwh, color: "#efba45", detail: withBattery ? b.batteryToLoadOn : b.batteryToLoadOff },
+    { key: "export", label: t.exported, value: balance.exportKwh, color: "#8fbf79", detail: `${b.exportRate(pct(balance.exportRate))} · ${t.exportedDetail}` },
   ];
   return <section className="result-section energy-flow-panel">
     <div className="result-section-heading"><div><p className="mini-label">{t.flowLabel}</p><h2>{t.flowTitle}</h2></div><span className="chart-total">{f.n(generation)} {t.perYear}</span></div>
@@ -210,6 +230,7 @@ function EnergyFlowPanel({ study, scenario, f }: { study: ProjectCalculation; sc
       <div className="energy-flow-source"><SunMedium size={25} /><strong>{f.n(generation)}</strong><small>{t.generated}</small></div>
       <div className="energy-flow-bars">{flows.map((flow) => <article key={flow.key} style={{ ["--flow-color" as string]: flow.color, ["--flow-width" as string]: `${Math.max(5, (flow.value / total) * 100)}%` }}><span><i /></span><div><b>{flow.label}</b><strong>{f.n(flow.value)} kWh</strong><small>{flow.detail}</small></div></article>)}</div>
     </div>
+    <p className="result-note"><Home size={14} /> {b.pvUsed}: {f.n(balance.pvUsedKwh)} kWh ÷ {t.demandLabel} {f.n(balance.loadKwh)} kWh = {b.coverage} {pct(balance.coverage)}% · {b.selfRate(pct(balance.selfConsumptionRate))} · {b.gridImport} {f.n(balance.importKwh)} kWh</p>
   </section>;
 }
 
@@ -263,7 +284,7 @@ function ScenarioComparisonPanel({ scenarios, scenario, onSelect, f }: { scenari
     <div className="result-section-heading"><div><p className="mini-label">{t.scenarioLabel}</p><h2>{t.scenarioTitle}</h2></div><span className="validation-status ready">{t.view25}</span></div>
     <div className="scenario-options">{visible.map((item) => <button key={item.id} type="button" className={`${scenario.id === item.id ? "is-selected" : ""} ${!item.available ? "is-unavailable" : ""}`} onClick={() => onSelect(item.id)}>
       <span>{item.id === "solar-battery" ? <BatteryCharging size={17} /> : <SunMedium size={17} />}</span>
-      <div><b>{t.scenarioTitles[item.id]}</b><small>{item.available ? `${item.breakEvenYear ? t.breakEvenYear(item.breakEvenYear) : t.planningComparison} · ${t.byYear25(f.money(item.net25YearGbp))}` : t.unavailable[item.id]}</small></div>
+      <div><b>{t.scenarioTitles[item.id]}</b><small>{item.available ? `${f.b.payback} ${scenarioEconomics(item, f).paybackText} · ${t.byYear25(f.money(item.net25YearGbp))}` : t.unavailable[item.id]}</small></div>
     </button>)}</div>
     <p className="result-note"><ShieldCheck size={14} /> {t.scenarioNote}</p>
   </section>;
@@ -309,7 +330,7 @@ function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialSce
     setHoverIndex(Math.max(0, Math.min(years - 1, Math.round(((x - CHART.left) / (CHART.right - CHART.left)) * (years - 1)))));
   };
   return <section className="result-section cash-position-card premium-chart-card">
-    <div className="result-section-heading"><div><p className="mini-label">{t.cashLabel}</p><h2>{t.cashTitle}</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.noBreakEven}</span></div>
+    <div className="result-section-heading"><div><p className="mini-label">{t.cashLabel}</p><h2>{t.cashTitle}</h2></div><span className="cash-position-stat">{scenario.breakEvenYear ? f.b.cashBreakEven(scenario.breakEvenYear) : t.noBreakEven}</span></div>
     {visible.length > 0 ? <>
       <svg className="cash-position-chart" viewBox={`0 0 ${CHART.width} ${CHART.height}`} role="img" aria-label={t.cashTitle} onPointerMove={onMove} onPointerLeave={() => setHoverIndex(null)}>
         <defs>
@@ -379,7 +400,7 @@ function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; regi
         <div><dt>{t.inverter}</dt><dd>{t.inverterValue(rec.inverterKw)}</dd></div>
         <div><dt>{t.peakAc}</dt><dd>{f.n(sim.peakAcKw, 2)} kW</dd></div>
         <div><dt>{t.mppt}</dt><dd>{split ? t.mpptSplit : t.mpptShared}</dd></div>
-        <div><dt>{t.battery}</dt><dd>{f.n(rec.batteryCapacityKwh, 1)} kWh</dd></div>
+        <div><dt>{f.b.battery}</dt><dd>{f.b.batteryValue(f.n(sim.battery.nominalKwh, 1), f.n(rec.batteryCapacityKwh, 1), sim.batteryCapacityAuto ?? sim.battery.nominalKwh === rec.batteryCapacityKwh)}</dd></div>
       </dl>
       <ul className="result-bullets">{t.installerNotes.map((note) => <li key={note}>{note}</li>)}</ul>
     </section>
@@ -489,6 +510,8 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const isDemo = study.caseId.startsWith("MOD-DEMO");
   const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
+  const balance = balanceFor(study, scenario.id);
+  const { b } = f;
   const surfaces = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh);
   const sim = study.simulation;
   const solar = study.googleSolar;
@@ -506,17 +529,18 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
-      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} /></div>
+      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} balance={balance} f={f} /></div>
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
-        <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
+        <ExecutiveOutcomePanel study={study} scenario={scenario} balance={balance} f={f} />
         <div className="result-main-grid">
           <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
           <section className="result-section result-capacity-tile"><span><BarChart3 size={20} /></span><p className="mini-label">{t.capacity}</p><h2>{f.n(study.result.totalCapacityKwp, 2)} kWp</h2><p>{t.activeSurfaces(study.result.surfaces.length)}</p></section>
         </div>
-        <EnergyAppliedChain study={study} scenario={scenario} onNavigate={onNavigate} f={f} />
-        <EnergyFlowPanel study={study} scenario={scenario} f={f} />
+        <EnergyAppliedChain study={study} scenario={scenario} balance={balance} onNavigate={onNavigate} f={f} />
+        <EnergyFlowPanel study={study} scenario={scenario} balance={balance} f={f} />
         <MonthlyProfileChart study={study} f={f} />
         <ScenarioComparisonPanel scenarios={study.result.scenarios} scenario={scenario} onSelect={setScenarioId} f={f} />
+        <IncrementalEconomicsPanel study={study} scenario={scenario} f={f} />
         <CashPositionChart scenarios={study.result.scenarios} scenario={scenario} f={f} />
         <SystemAndCarbon study={study} region={region} f={f} />
         <section className="result-section">
@@ -552,30 +576,50 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><span>{t.annualGeneration}</span><strong>{f.n(study.validation.empiricalAnnualKwh)} {t.perYear}</strong></div>
             <div><span>{t.hourlyWeather}</span><strong>{weatherSourceLabel(study.weather.kind, study.weather.source, study.weather.name, t)}</strong></div>
             <div><span>{t.irradiation}</span><strong>GHI {f.n(study.weather.annualGhiKwhM2)} · DNI {f.n(study.weather.annualDniKwhM2)} · DHI {f.n(study.weather.annualDhiKwhM2)} kWh/m²</strong></div>
-            <div><span>{t.solarOnSite}</span><strong>{t.selfUse(Math.round(sim.selfConsumption * 100), Math.round(sim.selfSufficiency * 100))}</strong></div>
-            <div><span>{t.withBattery(sim.battery.nominalKwh)}</span><strong>{t.usedOnSite(f.n(sim.battery.selfConsumedKwh))}</strong></div>
+            {(["solar-only", "solar-battery"] as const).map((id) => {
+              const row = balanceFor(study, id);
+              return <div key={id}><span>{id === "solar-only" ? b.solarOnly : b.withBattery(f.n(row.batteryKwh, 1))}</span><strong>{b.scenarioRow(f.n(row.pvUsedKwh) + " kWh", pct(row.coverage), pct(row.selfConsumptionRate))}</strong></div>;
+            })}
             <div><span>{t.meanTemp}</span><strong>{f.n(study.weather.meanAirTemperatureC, 1)} °C</strong></div>
           </div>
           <p className="result-note">{weatherKind === "customer-synthetic" ? t.basisSynthetic : t.basisSite(study.weather.source, study.weather.hours)}</p>
         </section>
         {solar && <section className="result-section">
-          <div className="result-section-heading"><div><p className="mini-label">{t.extLabel}</p><h2>{t.googleTitle}</h2></div><span className={`validation-status ${solar.status}`}>{solar.status === "ok" ? t.imagery(solar.imageryQuality ?? "") : t.unavailableShort}</span></div>
+          <div className="result-section-heading"><div><p className="mini-label">{b.googleLabel}</p><h2>{b.googleTitle}</h2></div><span className={`validation-status ${solar.status}`}>{solar.status === "ok" ? t.imagery(solar.imageryQuality ?? "") : t.unavailableShort}</span></div>
           {solar.status === "ok" && <>
             <div className="validation-grid">
               <div><span>{t.roofSegments}</span><strong>{solar.roofSegments?.length ?? 0}</strong></div>
               <div><span>{t.usableArea}</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div>
               <div><span>{t.peakSunshine}</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} {t.hoursYear}</strong></div>
-              {solar.maxArrayPanelsCount ? <div><span>{sc.googleLayout}</span><strong>{sc.googleLayoutValue(solar.maxArrayPanelsCount, f.n(solar.maxArrayCapacityKwp ?? 0, 1))}</strong></div> : null}
-              {solar.maxArrayYearlyDcKwh ? <div><span>{sc.googleYearly}</span><strong>{f.n(solar.maxArrayYearlyDcKwh)} {t.perYear}</strong></div> : null}
+              <div><span>{b.moderniteLine}</span><strong>{b.moderniteValue(f.n(surfaces.reduce((sum, item) => sum + item.areaM2, 0), 1), f.n(study.result.totalCapacityKwp, 2), f.n(study.result.range.representative))}</strong></div>
+              {solar.maxArrayPanelsCount ? <div><span>{b.googleLayout}</span><strong>{b.googleLayoutValue(solar.maxArrayPanelsCount, f.n(solar.maxArrayCapacityKwp ?? 0, 1))}</strong></div> : null}
+              {solar.maxArrayYearlyDcKwh ? <div><span>{b.googleYearly}</span><strong>{f.n(solar.maxArrayYearlyDcKwh * GOOGLE_AC_FACTOR)} {t.perYear}</strong></div> : null}
             </div>
-            {solar.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp && study.result.totalCapacityKwp > 0 ? <p className="result-note result-crosscheck">{sc.crossCheck(f.n(study.result.range.representative / study.result.totalCapacityKwp), f.n(solar.maxArrayYearlyDcKwh / solar.maxArrayCapacityKwp))}</p> : null}
+            {solar.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp && study.result.totalCapacityKwp > 0 ? (() => {
+              const area = surfaces.reduce((sum, item) => sum + item.areaM2, 0);
+              const googleAc = solar.maxArrayYearlyDcKwh * GOOGLE_AC_FACTOR;
+              const rows = [
+                { key: "kwp", label: b.perKwp, ours: study.result.range.representative / study.result.totalCapacityKwp, google: googleAc / solar.maxArrayCapacityKwp },
+                { key: "m2", label: b.perM2, ours: area > 0 ? study.result.range.representative / area : null, google: solar.maxArrayAreaM2 ? googleAc / solar.maxArrayAreaM2 : null },
+              ];
+              return <div className="result-table-wrap"><table className="result-table google-benchmark-table">
+                <caption>{b.compareTitle}</caption>
+                <thead><tr><th>{b.colMetric}</th><th>{b.moderniteLine}</th><th>{b.googleLabel}</th><th>Δ</th></tr></thead>
+                <tbody>{rows.map((row) => <tr key={row.key}>
+                  <td>{row.label}</td>
+                  <td><b>{row.ours !== null ? f.n(row.ours) : "—"}</b></td>
+                  <td>{row.google !== null ? f.n(row.google) : "—"}</td>
+                  <td>{row.ours !== null && row.google ? `${row.ours >= row.google ? "+" : ""}${f.n((row.ours / row.google - 1) * 100)}%` : "—"}</td>
+                </tr>)}</tbody>
+              </table></div>;
+            })() : null}
             <div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>{t.segment(index + 1)}</strong><span>{t.pitchAz(segment.pitchDeg, segment.azimuthDeg)}</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} {t.hoursYear}</b></article>)}</div>
           </>}
-          <p className="result-note">{solar.status === "ok" ? t.googleOk : t.googleNone}{solar.distanceM !== undefined ? ` ${t.nearest(solar.distanceM)}` : ""}</p>
+          <p className="result-note">{solar.status === "ok" ? b.googleNote : t.googleNone}{solar.distanceM !== undefined ? ` ${t.nearest(solar.distanceM)}` : ""}</p>
         </section>}
         <section className="result-section source-ledger">
           <div className="result-section-heading"><div><p className="mini-label">{t.ledgerLabel}</p><h2>{t.ledgerTitle}</h2></div></div>
-          <dl>{study.result.ledger.map((entry) => <div key={entry.id}><dt>{t.ledger[entry.id] ?? entry.label}<small>{t.provenance[entry.provenance] ?? entry.provenance}</small></dt><dd>{ledgerValue(entry, f)}</dd></div>)}</dl>
+          <dl>{study.result.ledger.map((entry) => <div key={entry.id}><dt>{entry.id === "costs" && typeof entry.params?.incremental === "number" ? f.b.ledgerCostsLabel : t.ledger[entry.id] ?? entry.label}<small>{t.provenance[entry.provenance] ?? entry.provenance}</small></dt><dd>{ledgerValue(entry, f)}</dd></div>)}</dl>
         </section>
       </main><aside className="results-side-rail">
         <section className="study-summary-card">
@@ -588,6 +632,8 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             {project && <div><dt>{t.heating}</dt><dd>{t.heatModes[project.heatMode]}{(project.electricHotWater || project.evCharger) && <small>{[project.electricHotWater ? t.extras.hotWater : "", project.evCharger ? t.extras.ev : ""].filter(Boolean).join(" · ")}</small>}</dd></div>}
             <div><dt>{t.surfaces}</dt><dd>{t.surfacesValue(study.result.surfaces.length)}<small>{f.n(study.result.totalCapacityKwp, 2)} kWp</small></dd></div>
             <div><dt>{t.scenario}</dt><dd>{t.scenarioTitles[scenario.id]}<small>{scenario.available ? t.scenarioSub : t.planningComparison}</small></dd></div>
+            {scenario.id === "solar-battery" && <div><dt>{b.battery}</dt><dd>{b.batteryValue(f.n(sim.battery.nominalKwh, 1), f.n(sim.recommendedBatteryKwh, 1), sim.batteryCapacityAuto ?? sim.battery.nominalKwh === sim.recommendedBatteryKwh)}{!share?.sharedId && <small><button type="button" className="result-inline-link" onClick={() => onNavigate("energy")}><Pencil size={12} /> {b.editBattery}</button></small>}</dd></div>}
+            <div><dt>{b.coverage}</dt><dd>{pct(balance.coverage)}%<small>{b.selfRate(pct(balance.selfConsumptionRate))} · {b.exportRate(pct(balance.exportRate))}</small></dd></div>
           </dl>
           {share && (share.sharedId || share.onCreate) && !isDemo && <ShareActions share={share} language={language} />}
           {!share?.sharedId && <>

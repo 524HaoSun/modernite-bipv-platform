@@ -121,8 +121,39 @@ describe("project study calculation service", () => {
     const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings: settings });
     expect(study.energy.source).toBe("household");
     expect(study.energy.annualDemandKwh).toBeCloseTo(estimateAnnualDemandKwh(settings), -1);
-    expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.upfrontGbp).toBe(7700);
-    expect(study.result.ledger.find((entry) => entry.id === "costs")?.params).toMatchObject({ currency: "GBP", estimated: 1 });
+    expect(study.economics).toMatchObject({ pvProductPrice: 4000, conventionalPrice: 800, pvSpecificPrice: 1600, incrementalPrice: 4800 });
+    const solarOnly = study.result.scenarios.find((scenario) => scenario.id === "solar-only")!;
+    expect(solarOnly.upfrontGbp).toBe(4800);
+    expect(solarOnly.incrementalPaybackYears).toBeCloseTo(4800 / solarOnly.annualBenefitGbp!, 6);
+    expect(study.result.ledger.find((entry) => entry.id === "costs")?.params).toMatchObject({ currency: "GBP", incremental: 4800, estimated: 1 });
+  });
+
+  it("uses one hourly balance with the recommended battery as the default capacity", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const base = { market: "GB" as const, address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy" as const, studioSnapshot: snapshot };
+    const auto = await runProjectCalculation({ ...base, energySettings: { ...energySettings, batteryMode: "solar-battery", batteryCapacityKwh: 7.5, projectPriceGbp: null } });
+    const sim = auto.simulation;
+    expect(sim.recommendedBatteryKwh).toBeGreaterThan(0);
+    expect(sim.balance.scenario).toBe("solar-battery");
+    expect(sim.balance.batteryKwh).toBe(sim.recommendedBatteryKwh);
+    expect(sim.batteryCapacityAuto).toBe(true);
+    for (const balance of Object.values(sim.balances)) {
+      expect(balance.pvUsedKwh).toBeCloseTo(balance.directKwh + balance.batteryToLoadKwh, 6);
+      expect(balance.pvUsedKwh + balance.importKwh).toBeCloseTo(balance.loadKwh, 3);
+      expect(balance.coverage).toBeCloseTo(balance.pvUsedKwh / balance.loadKwh, 9);
+      expect(balance.selfConsumptionRate).toBeCloseTo(balance.pvUsedKwh / balance.generationKwh, 9);
+      expect(balance.pvUsedKwh + balance.exportKwh).toBeLessThanOrEqual(balance.generationKwh + 1e-6);
+    }
+    expect(sim.balances["solar-only"].batteryToLoadKwh).toBe(0);
+    expect(sim.balances["solar-battery"].coverage).toBeGreaterThan(sim.balances["solar-only"].coverage);
+    const flows = auto.result.scenarios.find((scenario) => scenario.id === "solar-battery")!.annualCashFlows[0]!;
+    expect(flows.directUseKwh).toBeCloseTo(sim.balance.pvUsedKwh, 0);
+    expect(auto.economics.batteryPrice).toBe(Math.round(sim.recommendedBatteryKwh * 770 / 100) * 100);
+
+    const manual = await runProjectCalculation({ ...base, energySettings: { ...energySettings, batteryMode: "solar-battery", batteryCapacityKwh: 3, batteryCapacityAuto: false, projectPriceGbp: null } });
+    expect(manual.simulation.balance.batteryKwh).toBe(3);
+    expect(manual.simulation.batteryCapacityAuto).toBe(false);
+    expect(manual.economics.batteryPrice).toBe(2300);
   });
 
   it("falls back to the customer synthetic climate when no site weather is reachable", async () => {
