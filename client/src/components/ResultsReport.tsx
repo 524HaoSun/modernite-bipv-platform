@@ -108,7 +108,7 @@ function GenerationRangeCard({ study, balance, f }: { study: ProjectCalculation;
   const needleAngle = 90 + coverage * 3.6;
   const flowCards = [
     { key: "generated", icon: <SunMedium size={28} />, label: t.generated, value: f.n(range.representative), unit: t.perYear, note: t.heroBody(study.result.surfaces.length) },
-    { key: "used", icon: <Home size={28} />, label: b.pvUsed, value: f.n(balance.pvUsedKwh), unit: t.perYear, note: `${b.coverageShort} ${coverage}% · ${b.pvUsedDetail(f.n(balance.directKwh), withBattery ? f.n(balance.batteryToLoadKwh) : null)}` },
+    { key: "used", icon: <Home size={28} />, label: b.pvUsed, value: f.n(balance.pvUsedKwh), unit: t.perYear, note: b.pvUsedDetail(f.n(balance.directKwh), withBattery ? f.n(balance.batteryToLoadKwh) : null) },
     { key: "exported", icon: <TowerControl size={28} />, label: t.exported, value: f.n(balance.exportKwh), unit: t.perYear, note: b.exportRate(pct(balance.exportRate)) },
     { key: "capacity", icon: <BarChart3 size={28} />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
   ];
@@ -230,7 +230,7 @@ function EnergyFlowPanel({ study, scenario, balance, f }: { study: ProjectCalcul
       <div className="energy-flow-source"><SunMedium size={25} /><strong>{f.n(generation)}</strong><small>{t.generated}</small></div>
       <div className="energy-flow-bars">{flows.map((flow) => <article key={flow.key} style={{ ["--flow-color" as string]: flow.color, ["--flow-width" as string]: `${Math.max(5, (flow.value / total) * 100)}%` }}><span><i /></span><div><b>{flow.label}</b><strong>{f.n(flow.value)} kWh</strong><small>{flow.detail}</small></div></article>)}</div>
     </div>
-    <p className="result-note"><Home size={14} /> {b.pvUsed}: {f.n(balance.pvUsedKwh)} kWh ÷ {t.demandLabel} {f.n(balance.loadKwh)} kWh = {b.coverage} {pct(balance.coverage)}% · {b.selfRate(pct(balance.selfConsumptionRate))} · {b.gridImport} {f.n(balance.importKwh)} kWh</p>
+    <p className="result-note"><Home size={14} /> {b.coverageNote(f.n(balance.pvUsedKwh), f.n(balance.loadKwh), pct(balance.coverage), pct(balance.selfConsumptionRate), f.n(balance.importKwh))}</p>
   </section>;
 }
 
