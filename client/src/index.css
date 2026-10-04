@@ -9492,3 +9492,674 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
     gap: 34px !important;
   }
 }
+
+/* Entry page premium motion pass. Keep this at EOF so the entry screen is driven by one final composition. */
+.gateway-shell--entry {
+  background: #fbfdf9 !important;
+}
+
+.gateway-shell--entry .entry-page {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(440px, 48vw) minmax(0, 1fr) !important;
+  align-items: center !important;
+  min-height: calc(100dvh - 72px) !important;
+  padding: clamp(58px, 7.2vh, 92px) clamp(34px, 4.6vw, 78px) clamp(66px, 8vh, 104px) clamp(54px, 6vw, 104px) !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background: #fbfdf9 !important;
+}
+
+.gateway-shell--entry .entry-background {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.gateway-shell--entry .entry-background img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: calc(100% + 72px) !important;
+  object-fit: cover !important;
+  object-position: 58% top !important;
+  transform: translateY(-72px) scale(1.01) !important;
+  filter: saturate(1.16) contrast(1.09) brightness(1.04) !important;
+  opacity: 1 !important;
+  animation: entryImageDrift 18s ease-in-out infinite alternate !important;
+}
+
+.gateway-shell--entry .entry-background::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse 56% 74% at 20% 47%, rgba(251, 253, 249, .98) 0%, rgba(251, 253, 249, .86) 36%, rgba(251, 253, 249, .34) 62%, rgba(251, 253, 249, 0) 84%),
+    linear-gradient(90deg, rgba(251, 253, 249, .74) 0%, rgba(251, 253, 249, .32) 28%, rgba(251, 253, 249, .04) 54%, rgba(251, 253, 249, 0) 76%) !important;
+}
+
+.gateway-shell--entry .entry-background::after {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 2 !important;
+  inset: -20% -12% -10% -12% !important;
+  display: block !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(112deg, transparent 0 42%, rgba(255, 255, 255, .22) 48%, transparent 54%),
+    radial-gradient(circle at 66% 34%, rgba(255, 205, 91, .16), transparent 16%),
+    radial-gradient(circle at 78% 52%, rgba(72, 145, 114, .12), transparent 18%) !important;
+  mix-blend-mode: screen !important;
+  animation: entryLightSweep 9s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-page::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: clamp(48px, 6vw, 96px) !important;
+  top: clamp(78px, 11vh, 138px) !important;
+  width: min(560px, 42vw) !important;
+  height: min(560px, 58vh) !important;
+  pointer-events: none !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle, rgba(251, 253, 249, .8) 0 28%, rgba(251, 253, 249, .42) 42%, rgba(251, 253, 249, 0) 70%) !important;
+  filter: blur(10px) !important;
+  opacity: .78 !important;
+}
+
+.gateway-shell--entry .entry-haze,
+.gateway-shell--entry .entry-foreground,
+.gateway-shell--entry .entry-visual {
+  display: none !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry {
+  display: block !important;
+  position: absolute !important;
+  z-index: 2 !important;
+  top: clamp(-168px, -12vh, -82px) !important;
+  right: clamp(-140px, -4vw, -28px) !important;
+  width: min(66vw, 1040px) !important;
+  min-width: 720px !important;
+  height: auto !important;
+  opacity: .46 !important;
+  pointer-events: none !important;
+  mix-blend-mode: multiply !important;
+  transform-origin: 52% 52% !important;
+  animation: entryGeometryFloat 16s ease-in-out infinite alternate !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-grid-lines line,
+.gateway-shell--entry .entry-solar-geometry .solar-grid-lines circle {
+  stroke: rgba(21, 69, 58, .2) !important;
+  stroke-width: .85 !important;
+  opacity: 1 !important;
+  animation: entryFineGrid 5.6s ease-in-out infinite alternate !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-path {
+  stroke-linecap: round !important;
+  stroke-dasharray: 1 !important;
+  animation:
+    entryDrawPath 1.55s cubic-bezier(.32, .74, .2, 1) both,
+    entryPathPulse 5.2s ease-in-out infinite 1.7s !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-path--summer {
+  stroke: rgba(214, 145, 16, .92) !important;
+  stroke-width: 2.1 !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-path--equinox {
+  stroke: rgba(49, 101, 82, .64) !important;
+  stroke-width: 1.5 !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-path--winter {
+  stroke: rgba(75, 124, 139, .43) !important;
+  stroke-width: 1.3 !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solarMarkers circle {
+  opacity: .82 !important;
+  animation: entryMarkerPulse 3.8s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .sunMarker {
+  opacity: .96 !important;
+  transform-origin: 292px 270px !important;
+  animation: entrySunOrbit 6.5s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-solar-geometry .solar-compass-labels text,
+.gateway-shell--entry .entry-solar-geometry .solar-annotations text {
+  opacity: .92 !important;
+  animation: none !important;
+}
+
+.gateway-shell--entry .entry-wireframe-overlay {
+  display: block !important;
+  position: absolute !important;
+  z-index: 3 !important;
+  right: clamp(-40px, 1vw, 24px) !important;
+  bottom: clamp(84px, 10vh, 132px) !important;
+  width: min(43vw, 680px) !important;
+  min-width: 420px !important;
+  opacity: .32 !important;
+  pointer-events: none !important;
+  filter: drop-shadow(0 18px 28px rgba(4, 57, 47, .12)) !important;
+  animation: entryWireGlow 7.5s ease-in-out infinite alternate !important;
+}
+
+.gateway-shell--entry .entry-wireframe-overlay .wireframe-shell polygon,
+.gateway-shell--entry .entry-wireframe-overlay .wireframe-shell polyline,
+.gateway-shell--entry .entry-wireframe-overlay .wireframe-shell line,
+.gateway-shell--entry .entry-wireframe-overlay .wireframe-panels line {
+  stroke: rgba(238, 255, 251, .72) !important;
+  stroke-dasharray: 1 !important;
+  animation:
+    entryDrawPath 1.6s cubic-bezier(.32, .74, .2, 1) both,
+    entryWirePulse 4.8s ease-in-out infinite 1.8s !important;
+}
+
+.gateway-shell--entry .entry-copy {
+  position: relative !important;
+  z-index: 8 !important;
+  grid-column: 1 !important;
+  max-width: min(760px, 48vw) !important;
+  padding: 0 !important;
+  pointer-events: auto !important;
+}
+
+.gateway-shell--entry .entry-copy .eyebrow,
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-copy h1 em,
+.gateway-shell--entry .entry-lede {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  clip: auto !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.gateway-shell--entry .entry-copy .eyebrow {
+  color: #637489 !important;
+  letter-spacing: clamp(4px, .48vw, 8px) !important;
+  animation: entryTextLift .7s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-copy h1 {
+  max-width: 760px !important;
+  margin: clamp(20px, 2.7vh, 34px) 0 clamp(18px, 2.4vh, 28px) !important;
+  color: #003b31 !important;
+  font-size: clamp(58px, 5.4vw, 94px) !important;
+  font-weight: 660 !important;
+  letter-spacing: clamp(-4.4px, -.24vw, -2.2px) !important;
+  line-height: .95 !important;
+  text-shadow: 0 18px 44px rgba(255, 255, 255, .8) !important;
+  animation: entryTextLift .82s .08s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-copy h1 br {
+  display: none !important;
+}
+
+.gateway-shell--entry .entry-copy h1 em {
+  display: block !important;
+  margin-top: .06em !important;
+  color: #063f35 !important;
+  font-family: Georgia, "Times New Roman", "Noto Serif SC", serif !important;
+  font-size: .88em !important;
+  font-weight: 400 !important;
+  letter-spacing: clamp(-3px, -.16vw, -1.4px) !important;
+}
+
+.gateway-shell--entry .entry-lede {
+  max-width: 560px !important;
+  color: #5a6f80 !important;
+  font-size: clamp(18px, 1.18vw, 22px) !important;
+  line-height: 1.48 !important;
+  text-shadow: 0 10px 30px rgba(255, 255, 255, .9) !important;
+  animation: entryTextLift .82s .18s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-actions {
+  position: static !important;
+  z-index: 9 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 22px !important;
+  width: auto !important;
+  margin-top: clamp(42px, 6vh, 76px) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  animation: entryTextLift .82s .3s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  min-width: min(398px, 100%) !important;
+  min-height: 76px !important;
+  padding: 0 28px 0 20px !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  color: #fff !important;
+  background:
+    linear-gradient(135deg, #087d58 0%, #055945 48%, #03382f 100%) !important;
+  box-shadow:
+    0 28px 52px rgba(3, 58, 45, .3),
+    inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+  font-size: 19px !important;
+  font-weight: 760 !important;
+  letter-spacing: -.2px !important;
+  pointer-events: auto !important;
+  transition: transform .28s ease, box-shadow .28s ease !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary::before {
+  content: "+" !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  width: 54px !important;
+  height: 54px !important;
+  place-items: center !important;
+  margin-right: 4px !important;
+  border: 1px solid rgba(255, 255, 255, .28) !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 38% 30%, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 60%),
+    rgba(255, 255, 255, .08) !important;
+  font-size: 34px !important;
+  font-weight: 300 !important;
+  line-height: 1 !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -40% auto -40% -34% !important;
+  display: block !important;
+  width: 42% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent) !important;
+  transform: skewX(-18deg) !important;
+  animation: entryButtonSheen 4.8s ease-in-out infinite 1.2s !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary svg {
+  display: block !important;
+  color: currentColor !important;
+  transition: transform .28s ease !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 34px 62px rgba(3, 58, 45, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary:hover svg {
+  transform: translateX(4px) !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 46px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #5f7181 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 16px !important;
+  font-weight: 640 !important;
+  pointer-events: auto !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet::after {
+  display: block !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet svg {
+  display: block !important;
+  color: currentColor !important;
+}
+
+.gateway-shell--entry .entry-language-hotspot,
+.gateway-shell--entry .entry-workspace-pulse {
+  display: block !important;
+}
+
+.gateway-shell--entry .entry-language-hotspot {
+  position: absolute !important;
+  z-index: 25 !important;
+  left: auto !important;
+  right: clamp(174px, 11.6vw, 216px) !important;
+  top: clamp(16px, 2.2vh, 24px) !important;
+  width: clamp(112px, 7.9vw, 140px) !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+}
+
+.gateway-shell--entry .entry-language-hotspot select {
+  width: 100% !important;
+  height: 100% !important;
+  cursor: pointer !important;
+  opacity: 0 !important;
+}
+
+.gateway-shell--entry .entry-workspace-pulse {
+  position: absolute !important;
+  z-index: 25 !important;
+  left: auto !important;
+  right: clamp(132px, 8.8vw, 160px) !important;
+  top: clamp(33px, 4.1vh, 42px) !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  background: rgba(65, 189, 104, .92) !important;
+  box-shadow: 0 0 0 0 rgba(65, 189, 104, .26) !important;
+  animation: entryWorkspacePulse 1.7s ease-in-out infinite !important;
+}
+
+@keyframes entryImageDrift {
+  from { transform: translateY(-72px) scale(1.01); }
+  to { transform: translateY(-72px) scale(1.035) translateX(-.35%); }
+}
+
+@keyframes entryLightSweep {
+  0%, 100% { opacity: .48; transform: translateX(-3%); }
+  50% { opacity: .82; transform: translateX(3%); }
+}
+
+@keyframes entryGeometryFloat {
+  from { transform: rotate(-.4deg) translate3d(0, 0, 0); }
+  to { transform: rotate(.6deg) translate3d(-10px, 6px, 0); }
+}
+
+@keyframes entryFineGrid {
+  from { opacity: .46; }
+  to { opacity: .78; }
+}
+
+@keyframes entryPathPulse {
+  0%, 100% { opacity: .74; }
+  50% { opacity: 1; }
+}
+
+@keyframes entryMarkerPulse {
+  0%, 100% { opacity: .58; transform: scale(.92); }
+  50% { opacity: .95; transform: scale(1.14); }
+}
+
+@keyframes entrySunOrbit {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .9; }
+  50% { transform: translate3d(10px, -5px, 0) scale(1.08); opacity: 1; }
+}
+
+@keyframes entryWireGlow {
+  from { opacity: .22; transform: translate3d(0, 0, 0); }
+  to { opacity: .42; transform: translate3d(-8px, -4px, 0); }
+}
+
+@keyframes entryWirePulse {
+  0%, 100% { opacity: .58; }
+  50% { opacity: .92; }
+}
+
+@keyframes entryTextLift {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes entryButtonSheen {
+  0% { left: -42%; opacity: 0; }
+  18% { opacity: 1; }
+  38% { left: 112%; opacity: 0; }
+  100% { left: 112%; opacity: 0; }
+}
+
+@media (min-width: 1540px) {
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(72px, 4.9vw, 94px) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .gateway-shell--entry .entry-page {
+    grid-template-columns: minmax(0, 58vw) minmax(0, 1fr) !important;
+    padding-left: clamp(36px, 4.4vw, 58px) !important;
+  }
+
+  .gateway-shell--entry .entry-copy {
+    max-width: 58vw !important;
+  }
+
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(50px, 6vw, 70px) !important;
+  }
+
+  .gateway-shell--entry .entry-solar-geometry {
+    right: -230px !important;
+    opacity: .38 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .gateway-shell--entry,
+  .gateway-shell--entry .entry-page {
+    overflow: visible !important;
+  }
+
+  .gateway-shell--entry .entry-page {
+    display: block !important;
+    min-height: calc(100dvh - 68px) !important;
+    padding: 48px 22px 46vh !important;
+  }
+
+  .gateway-shell--entry .entry-background img {
+    object-position: 72% bottom !important;
+  }
+
+  .gateway-shell--entry .entry-background::before {
+    background:
+      linear-gradient(180deg, rgba(251, 253, 249, .98) 0%, rgba(251, 253, 249, .88) 52%, rgba(251, 253, 249, .12) 80%),
+      radial-gradient(ellipse 90% 56% at 28% 30%, rgba(251, 253, 249, .92), transparent 72%) !important;
+  }
+
+  .gateway-shell--entry .entry-copy {
+    max-width: none !important;
+  }
+
+  .gateway-shell--entry .entry-copy h1 {
+    font-size: clamp(43px, 12vw, 60px) !important;
+    letter-spacing: -2.4px !important;
+  }
+
+  .gateway-shell--entry .entry-lede {
+    font-size: 17px !important;
+  }
+
+  .gateway-shell--entry .entry-actions {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: min(100%, 430px) !important;
+  }
+
+  .gateway-shell--entry .entry-actions .button-primary {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .gateway-shell--entry .entry-solar-geometry {
+    top: 34vh !important;
+    right: -78vw !important;
+    width: 150vw !important;
+    min-width: 620px !important;
+    opacity: .42 !important;
+  }
+
+  .gateway-shell--entry .entry-wireframe-overlay,
+  .gateway-shell--entry .entry-language-hotspot,
+  .gateway-shell--entry .entry-workspace-pulse {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gateway-shell--entry .entry-background img,
+  .gateway-shell--entry .entry-background::after,
+  .gateway-shell--entry .entry-solar-geometry,
+  .gateway-shell--entry .entry-wireframe-overlay,
+  .gateway-shell--entry .entry-actions .button-primary::after {
+    animation: none !important;
+  }
+}
+
+
+/* Entry pass QA fix: keep the CTA text clear and remove accidental first-screen scroll. */
+.gateway-shell--entry {
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.gateway-shell--entry .gateway-page,
+.gateway-shell--entry .entry-page {
+  height: calc(100dvh - 72px) !important;
+  min-height: calc(100dvh - 72px) !important;
+  max-height: calc(100dvh - 72px) !important;
+  overflow: hidden !important;
+}
+
+.gateway-shell--entry .entry-copy h1 {
+  font-size: clamp(54px, min(5.2vw, 10vh), 88px) !important;
+}
+
+.gateway-shell--entry .entry-actions {
+  margin-top: clamp(28px, 4.8vh, 58px) !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary {
+  min-height: clamp(62px, 8.2vh, 76px) !important;
+  padding-left: clamp(92px, 7.4vw, 108px) !important;
+  padding-right: 28px !important;
+  text-align: left !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary::before {
+  position: absolute !important;
+  left: 18px !important;
+  top: 50% !important;
+  width: clamp(44px, 5.8vh, 54px) !important;
+  height: clamp(44px, 5.8vh, 54px) !important;
+  margin: 0 !important;
+  transform: translateY(-50%) !important;
+  z-index: 0 !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary svg {
+  position: relative !important;
+  z-index: 1 !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet {
+  color: rgba(72, 89, 101, .82) !important;
+  text-shadow: 0 8px 24px rgba(255,255,255,.9) !important;
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  .gateway-shell--entry .entry-page {
+    padding-top: clamp(38px, 5vh, 50px) !important;
+    padding-bottom: clamp(32px, 5vh, 50px) !important;
+  }
+
+  .gateway-shell--entry .entry-copy h1 {
+    margin-top: 16px !important;
+    margin-bottom: 14px !important;
+    font-size: clamp(48px, 8.6vh, 62px) !important;
+  }
+
+  .gateway-shell--entry .entry-lede {
+    font-size: 17px !important;
+    line-height: 1.42 !important;
+  }
+
+  .gateway-shell--entry .entry-actions {
+    margin-top: 28px !important;
+  }
+}
+
+/* Entry CTA alignment: keep the secondary action as a quiet line below the main button. */
+.gateway-shell--entry .entry-actions {
+  align-items: flex-start !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet {
+  margin-left: 2px !important;
+  min-height: 32px !important;
+  color: rgba(76, 94, 106, .88) !important;
+  font-size: 15px !important;
+}
+
+
+/* Entry trajectory alignment fix: do not redraw solar paths over the reference artwork. */
+.gateway-shell--entry .entry-solar-geometry {
+  display: none !important;
+}
+
+.gateway-shell--entry .entry-background::after {
+  background:
+    radial-gradient(circle at 59% 23%, rgba(255, 206, 82, .18), transparent 8%),
+    radial-gradient(circle at 74% 14%, rgba(8, 110, 83, .08), transparent 7%),
+    linear-gradient(112deg, transparent 0 46%, rgba(255, 255, 255, .18) 50%, transparent 56%) !important;
+  mix-blend-mode: screen !important;
+  animation: entryLightSweep 9s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-wireframe-overlay {
+  opacity: .24 !important;
+  right: clamp(-54px, -1vw, 10px) !important;
+  bottom: clamp(76px, 9vh, 124px) !important;
+}
+
+.gateway-shell--entry .entry-copy h1,
+.gateway-shell--entry .entry-lede {
+  text-shadow: 0 16px 38px rgba(251, 253, 249, .88) !important;
+}
+
+/* Entry QA cleanup: preserve only the original artwork trajectory; remove stray points/hotspots. */
+.gateway-shell--entry .entry-background::after {
+  background:
+    linear-gradient(112deg, transparent 0 47%, rgba(255, 255, 255, .16) 50%, transparent 56%) !important;
+  mix-blend-mode: screen !important;
+  opacity: .58 !important;
+}
+
+.gateway-shell--entry .entry-wireframe-overlay,
+.gateway-shell--entry .entry-language-hotspot,
+.gateway-shell--entry .entry-workspace-pulse {
+  display: none !important;
+}
