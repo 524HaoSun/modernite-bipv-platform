@@ -1,0 +1,323 @@
+.gateway-shell .results-hero-stage .generation-hero-card {
+  gap: clamp(18px, 2.2vw, 30px) !important;
+  padding: clamp(42px, 4.2vw, 64px) clamp(46px, 5vw, 82px) clamp(38px, 3.7vw, 56px) !important;
+  border-color: rgba(156, 190, 170, .54) !important;
+  background:
+    linear-gradient(98deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.995) 43%, rgba(247,251,247,.9) 60%, rgba(237,247,240,.48) 100%),
+    radial-gradient(circle at 69% 18%, rgba(238, 189, 57, .16), transparent 23%),
+    url("/assets/premium-solar-house-hero_ae3a0ca1.png") right bottom / auto 66% no-repeat !important;
+  box-shadow:
+    0 34px 80px rgba(20, 63, 51, .08),
+    inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card::before {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.995) 43%, rgba(255,255,255,.72) 66%, rgba(255,255,255,.05) 100%) !important;
+  opacity: 1 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard {
+  display: grid !important;
+  grid-template-columns: minmax(520px, .94fr) minmax(470px, .82fr) !important;
+  align-items: center !important;
+  gap: clamp(48px, 6vw, 112px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy {
+  padding-top: 8px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy .mini-label {
+  margin-bottom: 18px !important;
+  color: rgba(12, 72, 59, .82) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 18px !important;
+  color: #004739 !important;
+  font-size: clamp(88px, 7.5vw, 142px) !important;
+  font-weight: 640 !important;
+  line-height: .86 !important;
+  letter-spacing: -5px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > strong small {
+  margin-left: 0 !important;
+  padding-bottom: .16em !important;
+  color: rgba(27, 65, 53, .74) !important;
+  font-size: clamp(28px, 2.45vw, 44px) !important;
+  letter-spacing: -1px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 620px !important;
+  margin-top: 26px !important;
+  color: rgba(5, 61, 50, .88) !important;
+  font-size: clamp(17px, 1.16vw, 20px) !important;
+  line-height: 1.48 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 640px !important;
+  gap: 20px !important;
+  margin: 32px 0 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list li {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  color: rgba(13, 77, 62, .82) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+}
+
+.gateway-shell .results-hero-stage .generation-benefit-list svg {
+  width: 48px !important;
+  height: 48px !important;
+  padding: 13px !important;
+  color: #067456 !important;
+  background: rgba(222, 242, 230, .84) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 12px 28px rgba(42, 93, 76, .08) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-range-flow {
+  display: grid !important;
+  grid-template-columns: minmax(390px, .78fr) minmax(520px, 1fr) !important;
+  align-items: stretch !important;
+  gap: 24px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-hero-card .range-window {
+  width: 100% !important;
+  min-height: 168px !important;
+  padding: 28px 32px 24px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards article {
+  min-height: 168px !important;
+  padding: 26px 24px 22px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-flow-cards b {
+  font-size: clamp(26px, 2.2vw, 36px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(430px, 34vw, 560px) !important;
+  aspect-ratio: 1 !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  filter: none !important;
+  isolation: isolate !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial::after {
+  display: none !important;
+  content: none !important;
+}
+
+.gateway-shell .results-hero-stage .coverage-compass-image {
+  position: absolute !important;
+  inset: -13% !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 126% !important;
+  height: 126% !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  z-index: 2 !important;
+  width: 31% !important;
+  height: 6px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 210, .86), rgba(255, 247, 210, 0) 42%),
+    linear-gradient(90deg, #b98513 0%, #d1a232 58%, #eed47d 100%) !important;
+  box-shadow:
+    0 5px 13px rgba(119, 80, 8, .24),
+    0 0 0 1px rgba(255, 255, 255, .34) inset !important;
+  transform: rotate(var(--coverage-angle, -30deg)) translateY(-50%) !important;
+  transform-origin: 0 50% !important;
+  transition: transform 900ms cubic-bezier(.18, .86, .22, 1) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -6px !important;
+  top: 50% !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #f3d36f !important;
+  border: 3px solid rgba(255,255,255,.92) !important;
+  box-shadow: 0 4px 14px rgba(157, 111, 18, .22) !important;
+  transform: translateY(-50%) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-needle-live::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -9px !important;
+  top: 50% !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #fff6cc 0 24%, #d09d22 25% 65%, rgba(208,157,34,0) 66%) !important;
+  transform: translateY(-50%) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value {
+  position: relative !important;
+  z-index: 3 !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 9px !important;
+  place-items: center !important;
+  width: 52% !important;
+  min-width: 178px !important;
+  aspect-ratio: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #004739 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: translateY(8px) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  width: 156% !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.98) 0 34%, rgba(255,255,255,.82) 58%, rgba(235,246,239,.62) 82%, rgba(255,255,255,0) 83%) !important;
+  box-shadow:
+    0 20px 34px rgba(43, 91, 74, .1),
+    inset 0 0 0 1px rgba(255,255,255,.86) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value strong {
+  display: block !important;
+  color: #004739 !important;
+  font-size: clamp(66px, 5.2vw, 92px) !important;
+  font-weight: 560 !important;
+  line-height: .82 !important;
+  letter-spacing: -4px !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .72) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value small {
+  display: block !important;
+  color: #0b493d !important;
+  font-size: clamp(9px, .7vw, 13px) !important;
+  font-weight: 760 !important;
+  line-height: 1.1 !important;
+  letter-spacing: .42em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 2px 10px rgba(255,255,255,.9) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b {
+  position: relative !important;
+  display: grid !important;
+  gap: 3px !important;
+  color: #0b493d !important;
+  font-size: clamp(11px, .82vw, 15px) !important;
+  font-style: normal !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  letter-spacing: .52em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 2px 10px rgba(255,255,255,.9) !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::before,
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::after {
+  content: "" !important;
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  width: 42px !important;
+  height: 2px !important;
+  background: #d2a22c !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::before {
+  left: 4px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b::after {
+  right: 4px !important;
+}
+
+.gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value b i {
+  color: #b2861e !important;
+  font-size: clamp(9px, .62vw, 11px) !important;
+  font-style: normal !important;
+  font-weight: 780 !important;
+  letter-spacing: .58em !important;
+}
+
+@media (max-width: 1280px) {
+  .gateway-shell .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(380px, .96fr) minmax(340px, .72fr) !important;
+    gap: 34px !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial {
+    width: min(360px, 82vw) !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-outlook-dial .coverage-value strong {
+    font-size: clamp(58px, 8vw, 74px) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .gateway-shell .results-hero-stage .generation-dashboard,
+  .gateway-shell .results-hero-stage .generation-range-flow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell .results-hero-stage .generation-benefit-list,
+  .gateway-shell .results-hero-stage .generation-flow-cards {
+    grid-template-columns: 1fr !important;
+  }
+}

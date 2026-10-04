@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
-  Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp,
+  Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TowerControl, TrendingUp,
 } from "lucide-react";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
@@ -9,6 +9,7 @@ import { shareCopy } from "@/lib/share-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
 import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
+import "@/styles/results-compass-refinement.css";
 import type { ProjectCalculation } from "../../../server/estimate-service";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../../types/solar";
 
@@ -93,26 +94,51 @@ function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }
   const { t } = f;
   const range = study.result.range;
   const position = ((range.representative - range.low) / Math.max(1, range.high - range.low)) * 100;
+  const generated = range.representative;
+  const demand = Math.max(1, study.energy.annualDemandKwh);
+  const selfUsed = study.simulation.selfConsumedKwh;
+  const exportKwh = study.simulation.exportKwh;
+  const demandCoverage = Math.round(Math.min(100, (selfUsed / demand) * 100));
+  const needleAngle = 90 + demandCoverage * 3.6;
+  const selfUseShare = Math.round((selfUsed / Math.max(1, generated)) * 100);
+  const flowCards = [
+    { key: "generated", icon: <SunMedium size={28} />, label: t.generated, value: f.n(generated), unit: t.perYear, note: t.heroBody(study.result.surfaces.length) },
+    { key: "used", icon: <Home size={28} />, label: t.usedHome, value: f.n(selfUsed), unit: t.perYear, note: `${demandCoverage}% ${t.demandLabel.toLowerCase()}` },
+    { key: "exported", icon: <TowerControl size={28} />, label: t.exported, value: f.n(exportKwh), unit: t.perYear, note: t.exportedDetail },
+    { key: "capacity", icon: <BarChart3 size={28} />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
+  ];
   return <section className="result-section generation-range-card generation-hero-card">
-    <div className="range-card-top">
-      <div>
+    <div className="generation-dashboard">
+      <div className="generation-dashboard-copy">
         <p className="mini-label">Design Studio · {t.heroLabel}</p>
         <strong>{f.n(range.representative)} <small>{t.perYear}</small></strong>
-        <p>{t.heroBody(study.result.surfaces.length)} {t.basisSite(study.weather.source, study.weather.hours)}</p>
+        <p>{t.heroBody(study.result.surfaces.length)} {t.chainDetail(demandCoverage, selfUseShare)}</p>
+        <ul className="generation-benefit-list" aria-label={t.flowTitle}>
+          <li><Leaf size={16} /> {t.usedHomeDetail}</li>
+          <li><Home size={16} /> {t.demandLabel}: {f.n(study.energy.annualDemandKwh)} {t.perYear}</li>
+          <li><TrendingUp size={16} /> {t.view25}</li>
+        </ul>
       </div>
-      <span><i /> {t.model} · {t.weather[study.weather.kind]}</span>
+      <div className="generation-outlook-dial" aria-label={`${t.demandLabel} ${demandCoverage}%`}>
+        <img className="coverage-compass-image" src="/assets/modernite-coverage-compass-reference.svg" alt="" aria-hidden="true" />
+        <span className="coverage-needle-live" style={{ "--coverage-angle": `${needleAngle}deg` } as CSSProperties} aria-hidden="true" />
+        <span className="coverage-value"><strong>{demandCoverage}%</strong><small>{t.demandLabel}</small><b>MODERNITÉ <i>BIPV</i></b></span>
+      </div>
     </div>
-    <div className="range-insight-grid">
+    <div className="generation-range-flow">
       <div className="range-window">
         <div className="range-window-head"><span>{t.rangeTitle}</span><b>{f.n(range.low)} – {f.n(range.high)} {t.perYear}</b></div>
         <div className="range-points"><span><i>{t.low}</i><b>{f.n(range.low)}</b></span><span className="is-main"><i>{t.representative}</i><b>{f.n(range.representative)}</b></span><span><i>{t.high}</i><b>{f.n(range.high)}</b></span></div>
         <div className="range-track"><em style={{ left: "0%" }} /><strong style={{ left: `${position}%` }} /><em style={{ left: "100%" }} /></div>
         <p>{t.rangeNote}</p>
       </div>
-      <div className="hero-result-metrics">
-        <article><span><BarChart3 size={18} /></span><small>{t.capacity}</small><b>{f.n(study.result.totalCapacityKwp, 2)} kWp</b></article>
-        <article><span><Building2 size={18} /></span><small>{t.surfacesLabel}</small><b>{t.activeSurfaces(study.result.surfaces.length)}</b></article>
-        <article><span><ShieldCheck size={18} /></span><small>{t.hourlyWeather}</small><b>{t.weather[study.weather.kind]}</b></article>
+      <div className="result-story-strip generation-flow-cards">
+        {flowCards.map((card) => <article key={card.key}>
+          <span>{card.icon}</span>
+          <small>{card.label}</small>
+          <b>{card.value} <i>{card.unit}</i></b>
+          <em>{card.note}</em>
+        </article>)}
       </div>
     </div>
   </section>;
@@ -480,8 +506,8 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
+      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} /></div>
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
-        <GenerationRangeCard study={study} f={f} />
         <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
           <section className="result-section energy-demand-card"><div><p className="mini-label">{t.demandLabel}</p><h2>{f.n(study.energy.annualDemandKwh)} {t.perYear}</h2><p>{study.energy.source === "bill" ? t.demandBill : t.demandModel} · {study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</p></div><button type="button" onClick={() => onNavigate("energy")}>{t.demandUpdate} <ArrowRight size={14} /></button></section>
