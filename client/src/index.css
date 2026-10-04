@@ -10163,3 +10163,155 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .gateway-shell--entry .entry-workspace-pulse {
   display: none !important;
 }
+
+/* Entry redesign v2: visible premium motion without adding off-track solar geometry. */
+.gateway-shell--entry .entry-page {
+  padding-left: clamp(64px, 6.8vw, 118px) !important;
+}
+
+.gateway-shell--entry .entry-background img {
+  object-position: 58% top !important;
+  animation: entryImageBreath 14s ease-in-out infinite alternate !important;
+}
+
+.gateway-shell--entry .entry-background::before {
+  background:
+    radial-gradient(ellipse 48% 70% at 18% 48%, rgba(251, 253, 249, .98) 0%, rgba(251, 253, 249, .84) 39%, rgba(251, 253, 249, .22) 66%, rgba(251, 253, 249, 0) 84%),
+    linear-gradient(90deg, rgba(251, 253, 249, .72) 0%, rgba(251, 253, 249, .28) 28%, rgba(251, 253, 249, .04) 52%, rgba(251, 253, 249, 0) 76%) !important;
+}
+
+.gateway-shell--entry .entry-background::after {
+  background:
+    radial-gradient(circle at 58.9% 20.8%, rgba(255, 198, 45, .34) 0 0.55%, rgba(255, 198, 45, .16) 1.4%, rgba(255, 220, 103, .08) 4.8%, transparent 9%),
+    linear-gradient(105deg, transparent 0 52%, rgba(255, 255, 255, .34) 56%, transparent 62%) !important;
+  mix-blend-mode: screen !important;
+  opacity: .9 !important;
+  animation: entryRoofLightSweep 5.8s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-page::after {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 4 !important;
+  left: 44% !important;
+  top: 0 !important;
+  width: 54% !important;
+  height: 58% !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(104deg, transparent 12%, rgba(255, 219, 117, .08) 32%, rgba(255, 255, 255, .22) 48%, rgba(255, 219, 117, .10) 58%, transparent 78%) !important;
+  clip-path: ellipse(48% 38% at 46% 42%) !important;
+  mix-blend-mode: screen !important;
+  opacity: .72 !important;
+  animation: entryTrajectorySheen 6.8s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-copy {
+  max-width: min(660px, 46vw) !important;
+}
+
+.gateway-shell--entry .entry-copy .eyebrow {
+  animation: entryTextLift .7s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-copy h1 {
+  max-width: 660px !important;
+  margin-top: clamp(18px, 2.2vh, 28px) !important;
+  margin-bottom: clamp(16px, 2vh, 24px) !important;
+  font-size: clamp(56px, min(5vw, 9.4vh), 84px) !important;
+  line-height: .96 !important;
+  letter-spacing: clamp(-4px, -.22vw, -2px) !important;
+  animation: entryTextLift .82s .08s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-lede {
+  max-width: 520px !important;
+  animation: entryTextLift .82s .17s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-actions {
+  width: auto !important;
+  margin-top: clamp(34px, 5vh, 58px) !important;
+  animation: entryTextLift .82s .28s cubic-bezier(.22, .72, .16, 1) both !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary {
+  width: clamp(340px, 23.5vw, 372px) !important;
+  min-width: 0 !important;
+  min-height: clamp(64px, 8vh, 76px) !important;
+  padding-left: clamp(74px, 5.8vw, 86px) !important;
+  padding-right: 22px !important;
+  border-radius: 11px !important;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, .14), transparent 18%),
+    linear-gradient(135deg, #08815a 0%, #056146 42%, #02382f 100%) !important;
+  box-shadow:
+    0 24px 42px rgba(2, 67, 50, .28),
+    0 0 0 1px rgba(255,255,255,.16) inset !important;
+  white-space: nowrap !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary::before {
+  left: 15px !important;
+  width: clamp(42px, 5.2vh, 50px) !important;
+  height: clamp(42px, 5.2vh, 50px) !important;
+  z-index: 1 !important;
+  box-shadow: 0 0 0 0 rgba(255,255,255,.18) !important;
+  animation: entryButtonOrbPulse 2.2s ease-in-out infinite !important;
+}
+
+.gateway-shell--entry .entry-actions .button-primary::after {
+  opacity: 1 !important;
+  animation: entryButtonSheen 3.8s ease-in-out infinite .55s !important;
+}
+
+.gateway-shell--entry .entry-actions .button-quiet {
+  display: none !important;
+}
+
+@keyframes entryImageBreath {
+  from { transform: translateY(-72px) scale(1.012); filter: saturate(1.16) contrast(1.09) brightness(1.04); }
+  to { transform: translateY(-72px) scale(1.032) translateX(-.45%); filter: saturate(1.2) contrast(1.11) brightness(1.055); }
+}
+
+@keyframes entryRoofLightSweep {
+  0%, 100% { opacity: .52; transform: translateX(-4%); }
+  38% { opacity: .96; }
+  62% { opacity: .74; transform: translateX(5%); }
+}
+
+@keyframes entrySunPulseClean {
+  0%, 100% { opacity: .48; transform: translate(-50%, -50%) scale(.86); }
+  50% { opacity: .96; transform: translate(-50%, -50%) scale(1.14); }
+}
+
+@keyframes entryTrajectorySheen {
+  0%, 100% { opacity: .38; transform: translateX(-8%) scaleX(.9); }
+  42% { opacity: .88; }
+  62% { opacity: .58; transform: translateX(8%) scaleX(1.08); }
+}
+
+@keyframes entryButtonOrbPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.18); }
+  50% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  .gateway-shell--entry .entry-actions .button-primary {
+    width: clamp(335px, 23vw, 365px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .gateway-shell--entry .entry-page::after {
+    display: none !important;
+  }
+
+  .gateway-shell--entry .entry-copy {
+    max-width: none !important;
+  }
+
+  .gateway-shell--entry .entry-actions .button-primary {
+    width: min(100%, 390px) !important;
+  }
+}

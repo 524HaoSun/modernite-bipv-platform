@@ -1215,9 +1215,6 @@ function EntryPage({ copy, language, onLanguageChange, onStart, onNavigate }: {
           <button className="button-primary" type="button" onClick={onStart}>
             {copy.start} <ArrowRight size={18} />
           </button>
-          <button className="button-quiet" type="button" onClick={() => onNavigate("studio")}>
-            {copy.resume} <MoveUpRight size={15} />
-          </button>
         </div>
       </div>
       <figure className="entry-visual">
