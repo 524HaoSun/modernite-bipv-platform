@@ -486,12 +486,12 @@ describe("local admin demo workspace", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
-  it("stays off unless CONTROL_PREVIEW=1 outside production", () => {
-    vi.stubEnv("CONTROL_PREVIEW", "1");
-    vi.stubEnv("NODE_ENV", "production");
+  it("stays off unless CONTROL_PREVIEW=1", () => {
+    vi.stubEnv("CONTROL_PREVIEW", "");
     expect(isControlPreview()).toBe(false);
     expect(previewLoginStatus().preview).toBeUndefined();
-    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("CONTROL_PREVIEW", "1");
+    vi.stubEnv("NODE_ENV", "production");
     expect(isControlPreview()).toBe(true);
     expect(previewLoginStatus()).toMatchObject({
       available: false,

@@ -6,7 +6,9 @@ The application now serves `/admin` and `/account` alongside the existing Solar 
 
 Use Node 24 (minimum 22.13, which supports `node:sqlite`) and the repository's declared pnpm version. Install with `pnpm install --frozen-lockfile`, then run `pnpm dev`. Open `/admin` for administration and `/account` for private projects. Public trials continue without login.
 
-Local demo (no email): run `pnpm control:preview`, then open `http://127.0.0.1:3018/admin` (or the port printed in the terminal). The sign-in page offers **Open as editor** / **Open as reviewer** against a temporary SQLite file at `.data/control-preview.sqlite`. Demo login is only enabled when `CONTROL_PREVIEW=1` and `NODE_ENV` is not `production`, and the server binds to loopback. Do not set `CONTROL_PREVIEW` on the live site.
+Local demo (no email): run `pnpm control:preview`, then open `http://127.0.0.1:3018/admin` (or the port printed in the terminal). The sign-in page offers **Open as editor** / **Open as reviewer** against a temporary SQLite file at `.data/control-preview.sqlite`. Demo login is only enabled when `CONTROL_PREVIEW=1`, and the server then binds to loopback unless `HOST` is set.
+
+The demo site `https://modernite.wenda.global` runs with `CONTROL_PREVIEW=1`, `CONTROL_AUTH_KEY` and `CONTROL_DB_PATH=/opt/modernite/data/control-demo.sqlite` in `/opt/modernite/.env`, so anyone can open `/admin` against sample data (Caddy proxies to the loopback port). Remove `CONTROL_PREVIEW` and point `CONTROL_DB_PATH` at a fresh database before using a deployment for real accounts.
 
 The normal sign-in screen checks `/api/control/login/status` before accepting an email. If delivery is unconfigured, the form is disabled and explains that setup is required. The server also rejects requests in that state, without generating a code or returning a delivery-success message. Provider authorization failures surface as configuration problems without logging recipients, codes or keys.
 

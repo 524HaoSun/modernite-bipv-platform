@@ -1,7 +1,7 @@
 /**
- * Local demo workspace for product administration.
- * Only active when CONTROL_PREVIEW=1 and NODE_ENV is not production.
- * Never enable this on the live site.
+ * Demo workspace for product administration: one-click editor/reviewer sign-in, no email.
+ * Only active when CONTROL_PREVIEW=1. Anyone who can reach the site can open the admin,
+ * so only enable it on demo deployments backed by a sample CONTROL_DB_PATH.
  */
 import { createHash, randomBytes } from "node:crypto";
 import type { Response } from "express";
@@ -27,10 +27,7 @@ const ACCOUNTS = {
 export type PreviewAccount = keyof typeof ACCOUNTS;
 
 export function isControlPreview() {
-  return (
-    process.env.CONTROL_PREVIEW === "1" &&
-    process.env.NODE_ENV !== "production"
-  );
+  return process.env.CONTROL_PREVIEW === "1";
 }
 
 export function previewLoginStatus(): PreviewLoginStatus {
