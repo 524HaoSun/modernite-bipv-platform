@@ -22,9 +22,14 @@ import {
   setSession,
   logout,
   sendLoginEmail,
-  emailLoginStatus,
   limit,
 } from "./auth";
+import {
+  isControlPreview,
+  previewLogin,
+  previewLoginStatus,
+  type PreviewAccount,
+} from "./preview";
 import {
   domains,
   roles,
@@ -54,7 +59,7 @@ export function registerControlRoutes(
   app: Express,
   getStore: () => ControlStore = controlStore,
   send = sendLoginEmail,
-  loginStatus = emailLoginStatus
+  loginStatus = previewLoginStatus
 ) {
   const router = Router();
   router.use((req, res, next) => {
@@ -100,6 +105,17 @@ export function registerControlRoutes(
     endpoint((_req, res, _store, user) => res.json({ user }), false)
   );
   router.get("/login/status", (_req, res) => res.json(loginStatus()));
+  if (isControlPreview()) {
+    router.post(
+      "/preview/login",
+      endpoint((req, res, store) => {
+        const input = z
+          .object({ account: z.enum(["admin", "reviewer"]) })
+          .parse(req.body);
+        res.json(previewLogin(store, input.account as PreviewAccount, res));
+      }, false)
+    );
+  }
   router.post(
     "/login/request",
     endpoint(async (req, res, store) => {

@@ -66,8 +66,17 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  // Demo workspace stays on loopback so it cannot be reached from the public internet.
+  const host =
+    process.env.HOST ||
+    (process.env.CONTROL_PREVIEW === "1" ? "127.0.0.1" : undefined);
+
+  server.listen(port, host, () => {
+    const where = host ? `http://${host}:${port}/` : `http://localhost:${port}/`;
+    console.log(`Server running on ${where}`);
+    if (process.env.CONTROL_PREVIEW === "1") {
+      console.log(`Admin demo: ${where.replace(/\/$/, "")}/admin`);
+    }
   });
 }
 

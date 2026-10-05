@@ -12,6 +12,11 @@ import {
   sendLoginEmail,
 } from "../server/control/auth";
 import {
+  isControlPreview,
+  previewLogin,
+  previewLoginStatus,
+} from "../server/control/preview";
+import {
   submitRelease,
   transition,
   publicCatalogue,
@@ -474,5 +479,41 @@ describe("email delivery configuration", () => {
       "[auth] Email provider rejected delivery",
       { status: 403 }
     );
+  });
+});
+
+describe("local admin demo workspace", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+  it("stays off unless CONTROL_PREVIEW=1 outside production", () => {
+    vi.stubEnv("CONTROL_PREVIEW", "1");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(isControlPreview()).toBe(false);
+    expect(previewLoginStatus().preview).toBeUndefined();
+    vi.stubEnv("NODE_ENV", "test");
+    expect(isControlPreview()).toBe(true);
+    expect(previewLoginStatus()).toMatchObject({
+      available: false,
+      preview: true,
+    });
+  });
+  it("opens editor and reviewer sessions against sample users", () => {
+    vi.stubEnv("CONTROL_PREVIEW", "1");
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("CONTROL_AUTH_KEY", "local-preview-auth-key-for-demo-only-32chars");
+    const cookies: string[] = [];
+    const res = {
+      cookie: (...args: unknown[]) => {
+        cookies.push(String(args[0]));
+      },
+    } as any;
+    const editor = previewLogin(store, "admin", res);
+    const reviewer = previewLogin(store, "reviewer", res);
+    expect(editor.user.email).toBe("editor@preview.local");
+    expect(editor.user.roles).toContain("super");
+    expect(reviewer.user.email).toBe("reviewer@preview.local");
+    expect(reviewer.user.id).not.toBe(editor.user.id);
+    expect(cookies).toEqual(["modernite_session", "modernite_session"]);
   });
 });

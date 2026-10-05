@@ -6,7 +6,7 @@ The application now serves `/admin` and `/account` alongside the existing Solar 
 
 Use Node 24 (minimum 22.13, which supports `node:sqlite`) and the repository's declared pnpm version. Install with `pnpm install --frozen-lockfile`, then run `pnpm dev`. Open `/admin` for administration and `/account` for private projects. Public trials continue without login.
 
-The isolated local review server at `http://localhost:3017/admin` is a demo. It does not send emails. Its sign-in page offers **Open demo workspace**, which starts a session against its temporary sample database. That route exists only in the unshipped `.cache/control-preview.ts` fixture, binds to loopback, rejects cross-origin requests and refuses production mode. The normal application has no demo-login route.
+Local demo (no email): run `pnpm control:preview`, then open `http://127.0.0.1:3018/admin` (or the port printed in the terminal). The sign-in page offers **Open as editor** / **Open as reviewer** against a temporary SQLite file at `.data/control-preview.sqlite`. Demo login is only enabled when `CONTROL_PREVIEW=1` and `NODE_ENV` is not `production`, and the server binds to loopback. Do not set `CONTROL_PREVIEW` on the live site.
 
 The normal sign-in screen checks `/api/control/login/status` before accepting an email. If delivery is unconfigured, the form is disabled and explains that setup is required. The server also rejects requests in that state, without generating a code or returning a delivery-success message. Provider authorization failures surface as configuration problems without logging recipients, codes or keys.
 
