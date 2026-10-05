@@ -105,7 +105,7 @@ describe("project study calculation service", () => {
     expect(study.validation.status).toBe("pvgis-tmy");
     expect(study.weather.source).toContain("PVGIS-SARAH3");
     expect(study.result.surfaces).toHaveLength(1);
-    expect(study.result.surfaces[0]).toMatchObject({ productName: "Yorkshire Longspan · Black", azimuthDeg: 180, orientationName: "south" });
+    expect(study.result.surfaces[0]).toMatchObject({ productName: "Yorkshire Longspan · All Black", azimuthDeg: 180, orientationName: "south" });
     expect(study.result.surfaces[0].monthlyKwh.reduce((a, b) => a + b, 0)).toBeCloseTo(study.result.surfaces[0].annualKwh, 6);
     expect(study.energy.source).toBe("bill");
     expect(study.energy.annualDemandKwh).toBeCloseTo(4800, -1);
@@ -113,6 +113,18 @@ describe("project study calculation service", () => {
     expect(study.simulation.selfConsumption).toBeGreaterThan(0);
     expect(study.googleSolar).toBeNull();
     expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.annualCashFlows).toHaveLength(25);
+  });
+
+  it("keeps the public calculator running on built-in product data when product administration is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const brokenStore = { current: () => { throw new Error("unable to open database file"); } } as never;
+    const input = { market: "GB" as const, address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy" as const, studioSnapshot: snapshot, energySettings };
+    const study = await runProjectCalculation(input, { store: brokenStore });
+    expect(study.result.surfaces[0].productName).toBe("Yorkshire Longspan · Black");
+    expect(study.parameterVersions).toBeUndefined();
+    await expect(runProjectCalculation(input, { store: brokenStore, versions: { catalogue: "c", technical: "t" } })).rejects.toThrow();
+    warn.mockRestore();
   });
 
   it("calibrates demand to the household estimate and prices the design when no bill or quote is entered", async () => {

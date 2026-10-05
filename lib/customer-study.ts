@@ -141,6 +141,7 @@ export type CustomerStudy = {
 };
 
 export type CustomerStudyInput = {
+  productRuntime?: core.ProductRuntime;
   market: Market;
   address: string;
   coordinates: { lat: number; lng: number };
@@ -235,6 +236,8 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const location: core.Location = { lat: input.coordinates.lat, lon: input.coordinates.lng, tz: input.timezone };
   const settings = input.energySettings;
   const p = parametersFor(building, settings, north);
+  p.productRuntime = input.productRuntime;
+  const profiles = input.productRuntime?.profiles ?? core.PROFILES;
 
   let sim = core.simulate(p, surfaces, input.weather, location);
   const bill = settings?.demandMode === "bill" && settings.annualDemandKwh && settings.annualDemandKwh > 0 ? settings.annualDemandKwh : null;
@@ -306,7 +309,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     const source = snapshotById.get(product.id)!;
     const coreSurface = surfaces.find((surface) => surface.id === product.id)!;
     const mapping = productForSnapshot(source);
-    const profile = core.PROFILES[product.profile];
+    const profile = profiles[product.profile];
     const azimuthDeg = (coreSurface.az + (coreSurface.linked ? north : 0) + 360) % 360;
     const orientationName = coreSurface.tilt < 10 ? "horizontal" : compassName(azimuthDeg);
     return {
@@ -336,7 +339,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const schedule = surfaceResults.reduce<ProductScheduleLine[]>((lines, surface) => {
     const product = sim.products.find((item) => item.id === surface.surfaceId)!;
     const existing = lines.find((line) => line.productId === product.profile);
-    const line = existing ?? { productId: product.profile, productName: surface.productName, finishName: "Standard", surfaceNames: [], totalAreaM2: 0, unit: "m²" as const, peakPowerWpM2: core.PROFILES[product.profile][1], totalCapacityKwp: 0 };
+    const line = existing ?? { productId: product.profile, productName: surface.productName, finishName: "Standard", surfaceNames: [], totalAreaM2: 0, unit: "m²" as const, peakPowerWpM2: profiles[product.profile][1], totalCapacityKwp: 0 };
     line.surfaceNames.push(surface.surfaceLabel);
     line.totalAreaM2 += surface.areaM2;
     line.totalCapacityKwp += surface.capacityKwp;

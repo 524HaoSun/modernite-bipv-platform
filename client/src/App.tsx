@@ -1058,6 +1058,16 @@ function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSn
   return { ...study, caseId: "MOD-DEMO-0001", createdAt: new Date().toISOString() };
 }
 
+const CONTROL_COPY: Record<StudioLanguage, { saveProject: string; approvedCatalogue: (n: number) => string; calculationUnavailable: string }> = {
+  en: { saveProject: "Save project / My projects", approvedCatalogue: (n) => `Approved product catalogue · ${n} products`, calculationUnavailable: "The calculation couldn't finish just now. Your design is kept — check the connection and try again." },
+  zh: { saveProject: "保存项目 / 我的项目", approvedCatalogue: (n) => `已批准产品目录 · ${n} 款`, calculationUnavailable: "这次计算没能完成，设计都还在。检查一下网络再试一次吧。" },
+  "zh-Hant": { saveProject: "儲存專案 / 我的專案", approvedCatalogue: (n) => `已核准產品目錄 · ${n} 款`, calculationUnavailable: "這次計算沒能完成，設計都還在。檢查一下網路再試一次吧。" },
+  fr: { saveProject: "Enregistrer / Mes projets", approvedCatalogue: (n) => `Catalogue approuvé · ${n} produits`, calculationUnavailable: "Le calcul n’a pas pu aboutir. Votre conception est conservée — vérifiez la connexion et réessayez." },
+  ja: { saveProject: "プロジェクトを保存 / マイプロジェクト", approvedCatalogue: (n) => `承認済み製品カタログ · ${n} 製品`, calculationUnavailable: "計算を完了できませんでした。設計はそのまま残っています。接続を確認してもう一度お試しください。" },
+  es: { saveProject: "Guardar proyecto / Mis proyectos", approvedCatalogue: (n) => `Catálogo aprobado · ${n} productos`, calculationUnavailable: "El cálculo no ha podido terminar. Tu diseño se conserva: revisa la conexión e inténtalo de nuevo." },
+  it: { saveProject: "Salva progetto / I miei progetti", approvedCatalogue: (n) => `Catalogo approvato · ${n} prodotti`, calculationUnavailable: "Il calcolo non è riuscito. Il progetto resta salvato: controlla la connessione e riprova." },
+};
+
 function GatewayHeader({
   route,
   language,
@@ -1109,6 +1119,7 @@ function GatewayHeader({
         </div>})}
       </nav>
       <div className="gateway-tools">
+        <a className="control-save-link" href="/account" onClick={() => window.dispatchEvent(new Event("modernite:save-project-request"))}>{CONTROL_COPY[language].saveProject}</a>
         <label className="studio-language-control">
           <Globe2 size={13} aria-hidden="true" />
           <span className="sr-only">{copy.workspace}</span>
@@ -1652,9 +1663,19 @@ function StudioPage({
   const [studioTab, setStudioTab] = useState(0);
   const [realSurfaceCount, setRealSurfaceCount] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
+  const [approvedProducts, setApprovedProducts] = useState<{ id: string; name: string }[]>([]);
   const guideRef = useRef<HTMLOListElement | null>(null);
   const guide = STUDIO_GUIDE_COPY[language];
   const [focusMode, setFocusMode] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    fetch("/api/control/catalogue")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data) => { if (!cancelled) setApprovedProducts(data.products || []); })
+      .catch(() => { if (!cancelled) setApprovedProducts([]); });
+    return () => { cancelled = true; };
+  }, [active]);
   const toggleFocus = useCallback(() => {
     const root = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
     const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
@@ -2086,6 +2107,10 @@ function StudioPage({
           <button type="button" className="studio-tour-button studio-fullscreen-button" onClick={toggleFocus}><Maximize2 size={15} /> {guide.fullscreen}</button>
         </div>
       </section>
+      {approvedProducts.length > 0 && <details className="studio-approved-catalogue">
+        <summary>{CONTROL_COPY[language].approvedCatalogue(approvedProducts.length)}</summary>
+        <div>{approvedProducts.map((product) => <span key={product.id}>{product.name}</span>)}</div>
+      </details>}
       <div className="customer-studio-stage">
         {focusMode && <div className="studio-focus-bar">
           <button type="button" onClick={toggleFocus}><Minimize2 size={14} /> {guide.exitFullscreen}</button>
@@ -2196,6 +2221,24 @@ export default function App() {
   const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy(loadContext()));
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
+  useEffect(() => {
+    const capture = () => {
+      if (!context.location) return;
+      const studio = document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame")?.contentWindow as StudioWindow | null;
+      const snapshot = studio?.ModerniteEnergyBridge?.snapshot?.();
+      if (!snapshot) return;
+      window.localStorage.setItem("modernite-private-project-input", JSON.stringify({
+        market: context.marketKey,
+        address: context.location.label,
+        coordinates: context.location.coordinates,
+        studioSnapshot: snapshot,
+        energySettings: context.energySettings,
+        buildingNorthDeg: studio?.ModerniteEnergyApp?.getOrientation?.() ?? 180,
+      }));
+    };
+    window.addEventListener("modernite:save-project-request", capture);
+    return () => window.removeEventListener("modernite:save-project-request", capture);
+  }, [context]);
   const copy = GATEWAY_COPY[studioLanguage];
   const market = useMemo(() => {
     const base = markets.find((item) => item.key === context.marketKey) ?? markets[0];
@@ -2316,6 +2359,14 @@ export default function App() {
     setCalculationError(null);
     navigate("calculation");
     try {
+      window.localStorage.setItem("modernite-private-project-input", JSON.stringify({
+        market: context.marketKey,
+        address: cleanAddressLabel(context.location.label, studioLanguage),
+        coordinates: context.location.coordinates,
+        ...extras,
+        studioSnapshot,
+        energySettings: context.energySettings,
+      }));
       const nextStudy = await runCalculation.mutateAsync({
         market: context.marketKey,
         address: cleanAddressLabel(context.location.label, studioLanguage),
@@ -2333,10 +2384,7 @@ export default function App() {
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
         setCalculationError(MISC_COPY[studioLanguage].addProduct);
       } else {
-        const demoStudy = createDemoStudy(context, studioSnapshot, extras);
-        setStudy(demoStudy);
-        setCalculationError(null);
-        navigate("results");
+        setCalculationError(message || CONTROL_COPY[studioLanguage].calculationUnavailable);
       }
     }
   }, [context, navigate, runCalculation, studioLanguage]);

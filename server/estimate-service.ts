@@ -1,3 +1,5 @@
+import { ControlError, controlStore } from "./control/store";
+import { calculationRuntime } from "./control/runtime";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { runCustomerStudy, syntheticWeatherFor, type CustomerEconomicsPlan, type CustomerStudy } from "../lib/customer-study";
@@ -24,6 +26,7 @@ export type { ProjectValidation } from "../lib/customer-study";
 export type ProjectCalculation = CustomerStudy & {
   caseId: string;
   createdAt: string;
+  parameterVersions?: { catalogue: string; technical: string };
 };
 
 type StoredStudy = ProjectCalculation & { expiresAt: number };
@@ -37,7 +40,21 @@ function purgeExpiredStudies() {
   }
 }
 
-export async function runProjectCalculation(input: ProjectCalculationInput): Promise<ProjectCalculation> {
+type CalculationOptions = { versions?: { catalogue: string; technical: string }; store?: ReturnType<typeof controlStore> };
+
+function resolveRuntime(input: ProjectCalculationInput, options?: CalculationOptions) {
+  try {
+    return calculationRuntime(options?.store ?? controlStore(), input.studioSnapshot, options?.versions);
+  } catch (error) {
+    // Pinned (private) calculations and product rule violations must not silently use other data.
+    if (options?.versions || error instanceof ControlError) throw error;
+    console.warn("[study] product administration unavailable, using built-in product data:", error instanceof Error ? error.message : String(error));
+    return { snapshot: input.studioSnapshot, productRuntime: undefined, versions: undefined };
+  }
+}
+
+export async function runProjectCalculation(input: ProjectCalculationInput, options?: CalculationOptions): Promise<ProjectCalculation> {
+  const runtime = resolveRuntime(input, options);
   if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && PROFILES[surface.profile])) {
     throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
   }
@@ -58,7 +75,8 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
     address: input.address,
     coordinates: input.coordinates,
     timezone,
-    snapshot: input.studioSnapshot,
+    snapshot: runtime.snapshot,
+    productRuntime: runtime.productRuntime,
     buildingNorthDeg: input.buildingNorthDeg,
     energySettings: input.energySettings,
     weather: weatherResult.weather,
@@ -72,7 +90,7 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
   const study = economicPlan ? runCustomerStudy({ ...baseStudyInput, economicPlan }) : preliminaryStudy;
   const caseId = `MOD-${randomUUID().slice(0, 8).toUpperCase()}`;
   study.result.caseNumber = caseId;
-  const stored: StoredStudy = { ...study, caseId, createdAt: new Date().toISOString(), expiresAt: Date.now() + STUDY_TTL_MS };
+  const stored: StoredStudy = { ...study, parameterVersions: runtime.versions, caseId, createdAt: new Date().toISOString(), expiresAt: Date.now() + STUDY_TTL_MS };
   purgeExpiredStudies();
   studies.set(caseId, stored);
   const { expiresAt: _expiresAt, ...response } = stored;

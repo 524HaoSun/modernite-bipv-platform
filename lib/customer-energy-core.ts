@@ -78,7 +78,10 @@ export type DeviceSettings = {
   heatingSchedule: { start: number; end: number };
 };
 
+export type ProductRuntime = { profiles: Readonly<Record<string, Profile>>; gamma: number; referenceTemperature: number; threshold: number; lowIntercept: number; lowSlope: number; highLog: number; highIntercept: number };
+
 export type Parameters = ReturnType<typeof defaults> & {
+  productRuntime?: ProductRuntime;
   devices?: Partial<{ [K in keyof DeviceSettings]: Partial<DeviceSettings[K]> }>;
   inverterMode?: "auto" | "manual";
   batteryEnabled?: boolean;
@@ -95,11 +98,13 @@ export function eta0(g: number): number {
   return g === 0 ? 0 : g <= 140 ? 0.2021 + 0.0000757142857 * g : -0.02458 * Math.log(g) + 0.33386;
 }
 
-export function pv(profile: string | Profile, area: number, ta: number, beam: number, diffuse: number, reflected: number, system = 0.9) {
-  const p = typeof profile === "string" ? PROFILES[profile] : profile;
+export function pv(profile: string | Profile, area: number, ta: number, beam: number, diffuse: number, reflected: number, system = 0.9, model?: ProductRuntime) {
+  const p = typeof profile === "string" ? (model?.profiles ?? PROFILES)[profile] : profile;
   if (!p || [area, beam, diffuse, reflected].some((x) => !Number.isFinite(x) || x < 0) || !Number.isFinite(ta) || system < 0 || system > 1) throw Error("Invalid PV input");
   const g = beam + diffuse + reflected, temp = ta + p[2] * beam + p[3] * (diffuse + reflected);
-  const efficiency = g ? Math.max(0, (p[1] / REF) * eta0(g) * (1 + GAMMA * (temp - 25))) : 0;
+  const reference = model ? 1000 * (model.highLog * Math.log(1000) + model.highIntercept) : REF;
+  const eta = model ? (g <= model.threshold ? model.lowIntercept + model.lowSlope * g : model.highLog * Math.log(g) + model.highIntercept) : eta0(g);
+  const efficiency = g ? Math.max(0, (p[1] / reference) * eta * (1 + (model?.gamma ?? GAMMA) * (temp - (model?.referenceTemperature ?? 25)))) : 0;
   const dc = area * g * efficiency;
   return { g, temp, efficiency, dc, ac: dc * system };
 }
@@ -235,7 +240,7 @@ export function validateParameters(p: Parameters, surfaces: Surface[]) {
   for (const k of ["wallArea", "windowArea", "roofArea", "groundArea", "wallU", "roofU", "floorU", "windowU", "windowG", "bridge", "ach", "base", "dhw", "gains", "inverter", "albedo", "system"]) if (!Number.isFinite(record[k]) || record[k] < 0) throw Error("Invalid parameter: " + k);
   if (p.heatSet >= p.coolSet || p.system > 1 || p.albedo > 1 || p.windowG > 1 || p.gasEff > 1) throw Error("Check setpoints and fractions (0–1)");
   if (![p.north, p.groundTemp, p.heatSet, p.coolSet].every(Number.isFinite)) throw Error("Invalid temperature or orientation");
-  for (const s of surfaces) if (!PROFILES[s.profile] || !Number.isFinite(s.area) || s.area < 0 || s.tilt < 0 || s.tilt > 90 || s.g! < 0 || s.g! > 1 || s.u! < 0 || ![s.tilt, s.az, s.u, s.g].every(Number.isFinite)) throw Error("Invalid PV surface: " + s.id);
+  for (const s of surfaces) if (!(p.productRuntime?.profiles ?? PROFILES)[s.profile] || !Number.isFinite(s.area) || s.area < 0 || s.tilt < 0 || s.tilt > 90 || s.g! < 0 || s.g! > 1 || s.u! < 0 || ![s.tilt, s.az, s.u, s.g].every(Number.isFinite)) throw Error("Invalid PV surface: " + s.id);
 }
 
 const TOTAL_KEYS = ["pv", "load", "heat", "cool", "heatElectric", "coolElectric", "base", "dhw", "gas", "self", "grid", "export", "baseline", "baselineGas", "baselineHeat", "baselineCool", "thermalSaving", "heatPump", "underfloor", "radiant", "infrared", "ev", "evUnserved", "underHeatHours", "overheatHours", "hours"] as const;
@@ -274,7 +279,7 @@ function simulateBase(p: Parameters, surfaces: Surface[], weather: Weather, loca
   }
   const az = (s: Surface) => (s.az + (s.linked ? p.north : 0) + 360) % 360;
   const totals = empty(), monthly = Array.from({ length: 12 }, () => empty());
-  const stats: ProductStat[] = active.map((s) => ({ id: s.id, profile: s.profile, area: s.area, kwp: (s.area * PROFILES[s.profile][1]) / 1000, dc: 0, ac: 0, tempMax: -Infinity, poa: 0, lowLight: 0, monthlyAc: Array(12).fill(0) }));
+  const stats: ProductStat[] = active.map((s) => ({ id: s.id, profile: s.profile, area: s.area, kwp: (s.area * (p.productRuntime?.profiles ?? PROFILES)[s.profile][1]) / 1000, dc: 0, ac: 0, tempMax: -Infinity, poa: 0, lowLight: 0, monthlyAc: Array(12).fill(0) }));
   const byId = new Map(stats.map((s) => [s.id, s])), hourly: HourlyRow[] = [], C = p.floorArea * p.mass * 1000;
   const timeIndex = new Map(rows.map((r, i) => [r.t, i]));
   if (shadows) for (const surface of active) if (!shadows.receivers[surface.id] || shadows.receivers[surface.id].beam.length !== rows.length) throw Error("Missing automatic shadow result: " + surface.id);
@@ -307,7 +312,7 @@ function simulateBase(p: Parameters, surfaces: Surface[], weather: Weather, loca
     for (const x of rooflights) { const q = radiation(w, s, x.tilt, az(x), x.id), g = q.beam + q.diffuse + q.reflected; gainBase += x.thermalArea * p.windowG * g; gainNew += x.thermalArea * x.g! * g; }
     const contributions: [Surface, ReturnType<typeof pv>, ReturnType<typeof radiation>][] = [];
     let beamBefore = 0, beamAfter = 0;
-    for (const x of active) { const q = radiation(w, s, x.tilt, az(x), x.id), v = pv(x.profile, x.area, w.ta, q.beam, q.diffuse, q.reflected, p.system); pvAC += v.ac / 1000; beamBefore += q.unshadedBeam * x.area; beamAfter += q.beam * x.area; contributions.push([x, v, q]); }
+    for (const x of active) { const q = radiation(w, s, x.tilt, az(x), x.id), v = pv(x.profile, x.area, w.ta, q.beam, q.diffuse, q.reflected, p.system, p.productRuntime); pvAC += v.ac / 1000; beamBefore += q.unshadedBeam * x.area; beamAfter += q.beam * x.area; contributions.push([x, v, q]); }
     const clipped = p.inverter > 0 ? Math.min(pvAC, p.inverter) : pvAC, ratio = pvAC ? clipped / pvAC : 1;
     const old = step(oldTemp, w.ta, p.groundTemp, gains + gainBase, Hbase, Hground, C, p.heatSet, p.coolSet, heatingOn, coolingOn);
     const cur = step(newTemp, w.ta, p.groundTemp, gains + gainNew, Hnew, Hground, C, p.heatSet, p.coolSet, heatingOn, coolingOn); oldTemp = old.temp; newTemp = cur.temp;
