@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeAreaByFamily, buildPlanningInput, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts } from "../lib/studio-calculation";
+import { buildPlanningInput, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts } from "../lib/studio-calculation";
 
 describe("Studio snapshot calculation mapping", () => {
   const snapshot = {
@@ -31,18 +31,16 @@ describe("Studio snapshot calculation mapping", () => {
     expect(input.surfaces).toHaveLength(2);
   });
 
-  it("prices the BIPV increment as PV product minus the conventional product plus PV-specific costs", () => {
+  it("prices the design from its product area in the market currency when no quote is entered", () => {
     const area = 26.5 + 9.2 + 4;
-    expect(planningCosts("UK", area)).toMatchObject({ pvProductPrice: 6600, conventionalPrice: 1400, pvSpecificPrice: 1500, incrementalPrice: 6700, projectPrice: 8100 });
-    expect(planningCosts("JP", area).projectPrice).toBe(1300000);
-    expect(planningCosts("UK", { roof: 20, facade: 10 }, undefined, 5)).toMatchObject({ pvProductPrice: 5500, conventionalPrice: 1600, pvSpecificPrice: 1700, incrementalPrice: 5600 });
-    const battery = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 7.5, projectPriceGbp: 18000, conventionalPriceGbp: 2000, batteryPriceGbp: null });
-    expect(battery).toMatchObject({ pvProductPrice: 18000, conventionalPrice: 2000, incrementalPrice: 17500, projectPriceSource: "user", conventionalPriceSource: "user", batteryPrice: 5800, batteryPriceSource: "estimate" });
+    expect(planningCosts("UK", area).projectPrice).toBe(12700);
+    expect(planningCosts("JP", area).projectPrice).toBe(2060000);
+    const battery = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 7.5, projectPriceGbp: 18000, batteryPriceGbp: null });
+    expect(battery).toEqual({ projectPrice: 18000, projectPriceSource: "user", batteryPrice: 5800, batteryPriceSource: "estimate" });
+    const noBatteryRecommended = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 0, projectPriceGbp: 18000, batteryPriceGbp: null });
+    expect(noBatteryRecommended).toMatchObject({ batteryPrice: null, batteryPriceSource: "estimate" });
     const input = buildPlanningInput({ region: "UK", label: "London", coordinates: { lat: 51.5, lng: -0.12 }, snapshot });
-    expect(activeAreaByFamily(snapshot)).toEqual({ roof: 26.5, facade: 9.2 });
-    const costs = planningCosts("UK", activeAreaByFamily(snapshot));
-    expect(input.costs.schemePriceGbp).toBe(costs.projectPrice);
-    expect(input.costs.conventionalMaterialGbp).toBe(costs.conventionalPrice);
+    expect(input.costs.schemePriceGbp).toBe(12700);
   });
 
   it("estimates household demand from people, daytime occupancy and electric loads", () => {

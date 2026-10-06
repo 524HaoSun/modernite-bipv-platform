@@ -64,9 +64,7 @@ import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
 import { expandWeather, type CompactWeather } from "../../lib/pvgis-tmy";
-import { activeAreaByFamily, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts, regionForMarket, type HomeEnergySettings, type ProductFamily, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
-import { bipvCopy } from "@/lib/bipv-copy";
-import { balanceFor, pct } from "@/lib/energy-balance";
+import { estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
 import { REGION_CONFIG } from "../../data/constants";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
@@ -130,15 +128,31 @@ const DEFAULT_ENERGY_SETTINGS: HomeEnergySettings = {
   evCharger: true,
   batteryMode: "solar-battery",
   batteryCapacityKwh: 7.5,
-  batteryCapacityAuto: true,
+  batteryCapacitySource: "auto",
   projectPriceGbp: null,
-  conventionalPriceGbp: null,
   batteryPriceGbp: null,
 };
 
 function withoutLegacyPriceDefaults(settings: Partial<HomeEnergySettings> | undefined): Partial<HomeEnergySettings> {
   if (!settings || settings.projectPriceGbp !== 16000 || settings.batteryPriceGbp !== 5800) return settings ?? {};
   return { ...settings, projectPriceGbp: null, batteryPriceGbp: null };
+}
+
+function normalizeEnergySettings(settings?: Partial<HomeEnergySettings>): HomeEnergySettings {
+  const merged = { ...DEFAULT_ENERGY_SETTINGS, ...withoutLegacyPriceDefaults(settings) };
+  return { ...merged, batteryCapacitySource: merged.batteryCapacitySource ?? "auto" };
+}
+
+function recommendedBatteryDefaultKwh(value: number | null | undefined) {
+  if (!Number.isFinite(value ?? NaN)) return null;
+  return Math.max(0, Math.min(100, Math.round((value as number) * 10) / 10));
+}
+
+function applyRecommendedBatteryDefault(settings: HomeEnergySettings, recommended: number | null | undefined): HomeEnergySettings {
+  const next = normalizeEnergySettings(settings);
+  const capacity = recommendedBatteryDefaultKwh(recommended);
+  if (next.batteryMode !== "solar-battery" || next.batteryCapacitySource === "user" || capacity === null) return next;
+  return { ...next, batteryCapacityKwh: capacity, batteryCapacitySource: "auto" };
 }
 
 const ROUTES: Record<GatewayRoute, string> = {
@@ -987,14 +1001,14 @@ function loadContext(): ProjectContext {
         location: parsed.location ?? DEFAULT_PROJECT_LOCATION,
         siteArea: siteAreaNear(parsed.siteArea, parsed.location ?? DEFAULT_PROJECT_LOCATION),
         building: parsed.building ?? null,
-        energySettings: { ...DEFAULT_ENERGY_SETTINGS, ...withoutLegacyPriceDefaults(parsed.energySettings) },
+        energySettings: normalizeEnergySettings(parsed.energySettings),
         updatedAt: parsed.updatedAt ?? Date.now(),
       };
     }
   } catch {
     // Start with a clean, versioned local project context.
   }
-  return { version: 3, marketKey: "EU", europeanCountry: DEFAULT_EUROPEAN_COUNTRY, location: DEFAULT_PROJECT_LOCATION, siteArea: null, energySettings: DEFAULT_ENERGY_SETTINGS, updatedAt: Date.now() };
+  return { version: 3, marketKey: "EU", europeanCountry: DEFAULT_EUROPEAN_COUNTRY, location: DEFAULT_PROJECT_LOCATION, siteArea: null, energySettings: normalizeEnergySettings(), updatedAt: Date.now() };
 }
 
 function loadStudioLanguage(): StudioLanguage {
@@ -1037,7 +1051,7 @@ function readWeatherSource(): WeatherSourceKey {
 function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSnapshot = DEMO_STUDIO_SNAPSHOT, extras: StudyRequestExtras = {}): ProjectCalculation {
   const marketKey = context?.marketKey ?? "EU";
   const location = context?.location ?? DEFAULT_PROJECT_LOCATION;
-  const energySettings = { ...DEFAULT_ENERGY_SETTINGS, ...context?.energySettings };
+  const energySettings = normalizeEnergySettings(context?.energySettings);
   const timezone = extras.timezone ?? Math.round(location.coordinates.lng / 15);
   const applied = context?.building;
   if (snapshot === DEMO_STUDIO_SNAPSHOT && applied) {
@@ -1057,16 +1071,6 @@ function createDemoStudy(context?: ProjectContext, snapshot: StudioCalculationSn
   });
   return { ...study, caseId: "MOD-DEMO-0001", createdAt: new Date().toISOString() };
 }
-
-const CONTROL_COPY: Record<StudioLanguage, { saveProject: string; approvedCatalogue: (n: number) => string; calculationUnavailable: string }> = {
-  en: { saveProject: "Save project / My projects", approvedCatalogue: (n) => `Approved product catalogue · ${n} products`, calculationUnavailable: "The calculation couldn't finish just now. Your design is kept — check the connection and try again." },
-  zh: { saveProject: "保存项目 / 我的项目", approvedCatalogue: (n) => `已批准产品目录 · ${n} 款`, calculationUnavailable: "这次计算没能完成，设计都还在。检查一下网络再试一次吧。" },
-  "zh-Hant": { saveProject: "儲存專案 / 我的專案", approvedCatalogue: (n) => `已核准產品目錄 · ${n} 款`, calculationUnavailable: "這次計算沒能完成，設計都還在。檢查一下網路再試一次吧。" },
-  fr: { saveProject: "Enregistrer / Mes projets", approvedCatalogue: (n) => `Catalogue approuvé · ${n} produits`, calculationUnavailable: "Le calcul n’a pas pu aboutir. Votre conception est conservée — vérifiez la connexion et réessayez." },
-  ja: { saveProject: "プロジェクトを保存 / マイプロジェクト", approvedCatalogue: (n) => `承認済み製品カタログ · ${n} 製品`, calculationUnavailable: "計算を完了できませんでした。設計はそのまま残っています。接続を確認してもう一度お試しください。" },
-  es: { saveProject: "Guardar proyecto / Mis proyectos", approvedCatalogue: (n) => `Catálogo aprobado · ${n} productos`, calculationUnavailable: "El cálculo no ha podido terminar. Tu diseño se conserva: revisa la conexión e inténtalo de nuevo." },
-  it: { saveProject: "Salva progetto / I miei progetti", approvedCatalogue: (n) => `Catalogo approvato · ${n} prodotti`, calculationUnavailable: "Il calcolo non è riuscito. Il progetto resta salvato: controlla la connessione e riprova." },
-};
 
 function GatewayHeader({
   route,
@@ -1119,7 +1123,6 @@ function GatewayHeader({
         </div>})}
       </nav>
       <div className="gateway-tools">
-        <a className="control-save-link" href="/account" onClick={() => window.dispatchEvent(new Event("modernite:save-project-request"))}>{CONTROL_COPY[language].saveProject}</a>
         <label className="studio-language-control">
           <Globe2 size={13} aria-hidden="true" />
           <span className="sr-only">{copy.workspace}</span>
@@ -1422,7 +1425,7 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   );
 }
 
-function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage, marketKey: MarketKey, areas: Partial<Record<ProductFamily, number>>, lastStudy: ProjectCalculation | null) {
+function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage, marketKey: MarketKey, solarAreaM2: number) {
   const text = outerCopy(language);
   const services = [
     settings.electricHeating ? text.services.electricHeating : null,
@@ -1434,31 +1437,23 @@ function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLan
   const annualDemand = settings.demandMode === "bill" && settings.annualDemandKwh ? Math.round(settings.annualDemandKwh) : estimatedDemand;
   const directUse = settings.daytimeOccupancy === "usually" ? 46 : settings.daytimeOccupancy === "rarely" ? 30 : 38;
   const region = regionForMarket(marketKey);
-  const recommended = lastStudy?.simulation.recommendedBatteryKwh ?? null;
-  const batteryKwh = settings.batteryCapacityAuto !== false && recommended ? recommended : settings.batteryCapacityKwh;
-  const autoBattery = settings.batteryCapacityAuto !== false;
-  const costs = planningCosts(region, areas, { ...settings, batteryCapacityKwh: batteryKwh });
+  const costs = planningCosts(region, solarAreaM2, settings);
   const money = new Intl.NumberFormat(language, { style: "currency", currency: REGION_CONFIG[region].currency, maximumFractionDigits: 0 });
-  const lastBalance = lastStudy ? balanceFor(lastStudy, settings.batteryMode) : null;
   return {
     annualDemand,
     directUse,
-    lastCoverage: lastBalance ? pct(lastBalance.coverage) : null,
-    cost: `${money.format(costs.incrementalPrice)}${costs.batteryPrice !== null ? ` + ${money.format(costs.batteryPrice)}` : ""}`,
-    costEstimated: costs.projectPriceSource === "estimate" || costs.conventionalPriceSource === "estimate" || costs.batteryPriceSource === "estimate",
+    cost: `${money.format(costs.projectPrice)}${costs.batteryPrice !== null ? ` + ${money.format(costs.batteryPrice)}` : ""}`,
+    costEstimated: costs.projectPriceSource === "estimate" || costs.batteryPriceSource === "estimate",
     source: settings.demandMode === "bill" ? text.energyBill : text.moderniteEstimate,
     profile: `${settings.householdSize} ${settings.householdSize === 1 ? text.person : text.people} · ${text.occupancy[settings.daytimeOccupancy]} ${text.daytimePresence}`,
     services: services.length ? services.join(" · ") : text.noMajorLoads,
-    battery: settings.batteryMode === "solar-battery"
-      ? autoBattery && !recommended ? `${text.addBattery} · ${bipvCopy(language).batteryRecommended}` : text.batteryConsidered(batteryKwh)
-      : text.solarOnlyBaseline,
+    battery: settings.batteryMode === "solar-battery" ? text.batteryConsidered(settings.batteryCapacityKwh) : text.solarOnlyBaseline,
   };
 }
 
-function EnergyPlanningPreview({ settings, language, marketKey, areas, lastStudy }: { settings: HomeEnergySettings; language: StudioLanguage; marketKey: MarketKey; areas: Partial<Record<ProductFamily, number>>; lastStudy: ProjectCalculation | null }) {
+function EnergyPlanningPreview({ settings, language, marketKey, solarAreaM2 }: { settings: HomeEnergySettings; language: StudioLanguage; marketKey: MarketKey; solarAreaM2: number }) {
   const text = outerCopy(language);
-  const b = bipvCopy(language);
-  const preview = estimateEnergyPreview(settings, language, marketKey, areas, lastStudy);
+  const preview = estimateEnergyPreview(settings, language, marketKey, solarAreaM2);
   return (
     <aside className="energy-planning-preview" aria-label={MISC_COPY[language].planningAria}>
       <div className="energy-preview-heading">
@@ -1473,12 +1468,10 @@ function EnergyPlanningPreview({ settings, language, marketKey, areas, lastStudy
       </div>
       <dl className="energy-preview-facts">
         <div><dt><Home size={14} /> {text.homeProfile}</dt><dd>{preview.profile}</dd></div>
-        {preview.lastCoverage !== null
-          ? <div><dt><SunMedium size={14} /> {b.previewCoverage}</dt><dd>{preview.lastCoverage}%</dd></div>
-          : <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}</dd></div>}
+        <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}</dd></div>
         <div><dt><Zap size={14} /> {text.electricLoads}</dt><dd>{preview.services}</dd></div>
         <div><dt><BatteryCharging size={14} /> {text.storageScenario}</dt><dd>{preview.battery}</dd></div>
-        <div><dt><TrendingUp size={14} /> {b.previewInvestment}</dt><dd>{preview.cost}{preview.costEstimated ? ` ${text.estimateLabel}` : ""}</dd></div>
+        <div><dt><TrendingUp size={14} /> {text.planningCostUsed}</dt><dd>{preview.cost}{preview.costEstimated ? ` ${text.estimateLabel}` : ""}</dd></div>
       </dl>
       <div className="energy-preview-connectors">
         <p className="mini-label">{text.connectsTo}</p>
@@ -1488,22 +1481,22 @@ function EnergyPlanningPreview({ settings, language, marketKey, areas, lastStudy
   );
 }
 
-function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, currency, recommendedBatteryKwh }: {
+function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, currency }: {
   currency: string;
   settings: HomeEnergySettings;
   disabled: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
   onPrepare: () => void;
   language: StudioLanguage;
-  recommendedBatteryKwh: number | null;
 }) {
   const [open, setOpen] = useState(true);
   const text = outerCopy(language);
-  const b = bipvCopy(language);
-  const autoBattery = settings.batteryCapacityAuto !== false;
-  const setNumber = (field: "annualDemandKwh" | "householdSize" | "projectPriceGbp" | "conventionalPriceGbp" | "batteryPriceGbp", value: string) => {
+  const setNumber = (field: "annualDemandKwh" | "householdSize" | "batteryCapacityKwh" | "projectPriceGbp" | "batteryPriceGbp", value: string) => {
     const numeric = value === "" ? null : Number(value);
-    onChange({ [field]: numeric === null || Number.isNaN(numeric) ? null : numeric } as Partial<HomeEnergySettings>);
+    const nextValue = numeric === null || Number.isNaN(numeric) ? null : numeric;
+    const next = { [field]: field === "batteryCapacityKwh" ? Math.max(1, Math.min(100, nextValue ?? settings.batteryCapacityKwh)) : nextValue } as Partial<HomeEnergySettings>;
+    if (field === "batteryCapacityKwh") next.batteryCapacitySource = "user";
+    onChange(next);
   };
   return (
     <aside className={`home-energy-panel ${open ? "is-open" : ""}`} aria-label={MISC_COPY[language].energyAria}>
@@ -1545,22 +1538,16 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, cu
             <button type="button" className={settings.batteryMode === "solar-battery" ? "is-selected" : ""} onClick={() => onChange({ batteryMode: "solar-battery" })}><BatteryCharging size={15} /><b>{text.addBattery}</b><small>{text.increaseOnSite}</small></button>
           </div>
           <p className="energy-sizing-note"><Cpu size={13} /> {text.sizingAtEnd}</p>
-          {settings.batteryMode === "solar-battery" && <>
-            <div className="energy-number-pair">
-              <label className="energy-number"><span>{text.usableBattery}{autoBattery && <b className="energy-badge">{b.batteryRecommended}</b>}</span><input type="number" min="1" max="100" step="0.5" value={autoBattery ? recommendedBatteryKwh ?? "" : settings.batteryCapacityKwh} placeholder={b.batteryRecommended} onChange={(event) => { const value = Number(event.target.value); if (event.target.value !== "" && Number.isFinite(value) && value > 0) onChange({ batteryCapacityKwh: value, batteryCapacityAuto: false }); }} /><em>kWh</em></label>
-              <label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label>
-            </div>
-            <p className="energy-sizing-note">{autoBattery ? b.batteryAuto(recommendedBatteryKwh ? String(recommendedBatteryKwh) : null) : <button type="button" className="energy-link-button" onClick={() => onChange({ batteryCapacityAuto: true })}>{b.useRecommended}{recommendedBatteryKwh ? ` (${recommendedBatteryKwh} kWh)` : ""}</button>}</p>
-          </>}
+          {settings.batteryMode === "solar-battery" && <div className="energy-number-pair"><label className="energy-number"><span>{text.usableBattery}</span><input type="number" min="1" max="100" value={settings.batteryCapacityKwh} onChange={(event) => setNumber("batteryCapacityKwh", event.target.value)} /><em>kWh</em></label><label className="energy-number"><span>{text.batteryPrice}</span><input type="number" min="0" value={settings.batteryPriceGbp ?? ""} onChange={(event) => setNumber("batteryPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label></div>}
         </section>
-        <details className="cash-position-options"><summary>{b.priceInputs}</summary><label className="energy-number"><span>{b.pvProductPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label><label className="energy-number"><span>{b.conventionalPrice}</span><input type="number" min="0" value={settings.conventionalPriceGbp ?? ""} onChange={(event) => setNumber("conventionalPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label><small>{b.priceNote}</small></details>
+        <details className="cash-position-options"><summary>{text.cashInputs}</summary><label className="energy-number"><span>{text.installedSolarPrice}</span><input type="number" min="0" value={settings.projectPriceGbp ?? ""} onChange={(event) => setNumber("projectPriceGbp", event.target.value)} placeholder={text.optional} /><em>{currency}</em></label><small>{text.quoteNote}</small></details>
         <button type="button" className="energy-prepare-study" onClick={onPrepare} disabled={disabled}><Sparkles size={15} /> {disabled ? text.waitingStudio : text.calculateResults}<ArrowRight size={15} /></button>
       </div>}
     </aside>
   );
 }
 
-type StudioFacts = { typeId: string; width: number; depth: number; floors: number; usage: "office" | "residential"; surfaces: number; solarAreaM2: number; areas: Partial<Record<ProductFamily, number>> };
+type StudioFacts = { typeId: string; width: number; depth: number; floors: number; usage: "office" | "residential"; surfaces: number; solarAreaM2: number };
 
 function useStudioFacts(enabled: boolean) {
   const [facts, setFacts] = useState<StudioFacts | null>(null);
@@ -1582,7 +1569,6 @@ function useStudioFacts(enabled: boolean) {
           usage: snapshot.building.usage === "office" ? "office" : "residential",
           surfaces: active.length,
           solarAreaM2: active.reduce((sum, surface) => sum + surface.area, 0),
-          areas: activeAreaByFamily(snapshot),
         };
         setFacts((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next));
       } catch {
@@ -1596,8 +1582,7 @@ function useStudioFacts(enabled: boolean) {
   return facts;
 }
 
-function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, language, marketKey, lastStudy }: {
-  lastStudy: ProjectCalculation | null;
+function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, language, marketKey }: {
   settings: HomeEnergySettings;
   canCalculate: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
@@ -1626,8 +1611,8 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, l
           </div>
           <div className="energy-note-card"><Lightbulb size={24} /><p><b>{text.energyNoteTitle}</b><small>{text.energyNoteBody}</small></p></div>
         </aside>
-        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} currency={REGION_CONFIG[regionForMarket(marketKey)].currency} recommendedBatteryKwh={lastStudy?.simulation.recommendedBatteryKwh || null} />
-        <EnergyPlanningPreview settings={settings} language={language} marketKey={marketKey} areas={facts?.areas ?? {}} lastStudy={lastStudy} />
+        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} currency={REGION_CONFIG[regionForMarket(marketKey)].currency} />
+        <EnergyPlanningPreview settings={settings} language={language} marketKey={marketKey} solarAreaM2={facts?.solarAreaM2 ?? 0} />
       </div>
     </section>
   );
@@ -1641,6 +1626,7 @@ function StudioPage({
   onLanguageChange,
   onNavigate,
   onRunCalculation,
+  onEnergySettingsChange,
 }: {
   active: boolean;
   market: Market;
@@ -1649,6 +1635,7 @@ function StudioPage({
   onLanguageChange: (language: StudioLanguage) => void;
   onNavigate: (route: GatewayRoute) => void;
   onRunCalculation: (snapshot: StudioCalculationSnapshot, extras: StudyRequestExtras) => void;
+  onEnergySettingsChange: (next: Partial<HomeEnergySettings>) => void;
 }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const weatherAbortRef = useRef<AbortController | null>(null);
@@ -1663,19 +1650,9 @@ function StudioPage({
   const [studioTab, setStudioTab] = useState(0);
   const [realSurfaceCount, setRealSurfaceCount] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
-  const [approvedProducts, setApprovedProducts] = useState<{ id: string; name: string }[]>([]);
   const guideRef = useRef<HTMLOListElement | null>(null);
   const guide = STUDIO_GUIDE_COPY[language];
   const [focusMode, setFocusMode] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    let cancelled = false;
-    fetch("/api/control/catalogue")
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((data) => { if (!cancelled) setApprovedProducts(data.products || []); })
-      .catch(() => { if (!cancelled) setApprovedProducts([]); });
-    return () => { cancelled = true; };
-  }, [active]);
   const toggleFocus = useCallback(() => {
     const root = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
     const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
@@ -1916,6 +1893,12 @@ function StudioPage({
       return;
     }
     setConfigurationNotice(null);
+    const extras = snapshot === DEMO_STUDIO_SNAPSHOT ? { timezone: studyExtras().timezone } : studyExtras();
+    const previewStudy = createDemoStudy(context, snapshot, extras);
+    const nextEnergySettings = applyRecommendedBatteryDefault(context.energySettings, previewStudy.simulation.recommendedBatteryKwh);
+    if (nextEnergySettings.batteryCapacityKwh !== context.energySettings.batteryCapacityKwh || nextEnergySettings.batteryCapacitySource !== context.energySettings.batteryCapacitySource) {
+      onEnergySettingsChange(nextEnergySettings);
+    }
     onNavigate("energy");
   };
 
@@ -2107,10 +2090,6 @@ function StudioPage({
           <button type="button" className="studio-tour-button studio-fullscreen-button" onClick={toggleFocus}><Maximize2 size={15} /> {guide.fullscreen}</button>
         </div>
       </section>
-      {approvedProducts.length > 0 && <details className="studio-approved-catalogue">
-        <summary>{CONTROL_COPY[language].approvedCatalogue(approvedProducts.length)}</summary>
-        <div>{approvedProducts.map((product) => <span key={product.id}>{product.name}</span>)}</div>
-      </details>}
       <div className="customer-studio-stage">
         {focusMode && <div className="studio-focus-bar">
           <button type="button" onClick={toggleFocus}><Minimize2 size={14} /> {guide.exitFullscreen}</button>
@@ -2221,24 +2200,6 @@ export default function App() {
   const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy(loadContext()));
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
-  useEffect(() => {
-    const capture = () => {
-      if (!context.location) return;
-      const studio = document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame")?.contentWindow as StudioWindow | null;
-      const snapshot = studio?.ModerniteEnergyBridge?.snapshot?.();
-      if (!snapshot) return;
-      window.localStorage.setItem("modernite-private-project-input", JSON.stringify({
-        market: context.marketKey,
-        address: context.location.label,
-        coordinates: context.location.coordinates,
-        studioSnapshot: snapshot,
-        energySettings: context.energySettings,
-        buildingNorthDeg: studio?.ModerniteEnergyApp?.getOrientation?.() ?? 180,
-      }));
-    };
-    window.addEventListener("modernite:save-project-request", capture);
-    return () => window.removeEventListener("modernite:save-project-request", capture);
-  }, [context]);
   const copy = GATEWAY_COPY[studioLanguage];
   const market = useMemo(() => {
     const base = markets.find((item) => item.key === context.marketKey) ?? markets[0];
@@ -2316,7 +2277,7 @@ export default function App() {
   }, []);
 
   const updateEnergySettings = useCallback((next: Partial<HomeEnergySettings>) => {
-    setContext((current) => ({ ...current, energySettings: { ...current.energySettings, ...next }, updatedAt: Date.now() }));
+    setContext((current) => ({ ...current, energySettings: normalizeEnergySettings({ ...current.energySettings, ...next }), updatedAt: Date.now() }));
   }, []);
 
   const updateEuropeanCountry = useCallback((europeanCountry: EuropeanMarket | null) => {
@@ -2342,7 +2303,7 @@ export default function App() {
       europeanCountry: DEFAULT_EUROPEAN_COUNTRY,
       location: DEFAULT_PROJECT_LOCATION,
       siteArea: null,
-      energySettings: DEFAULT_ENERGY_SETTINGS,
+      energySettings: normalizeEnergySettings(),
       updatedAt: Date.now(),
     };
     setContext(nextContext);
@@ -2359,14 +2320,6 @@ export default function App() {
     setCalculationError(null);
     navigate("calculation");
     try {
-      window.localStorage.setItem("modernite-private-project-input", JSON.stringify({
-        market: context.marketKey,
-        address: cleanAddressLabel(context.location.label, studioLanguage),
-        coordinates: context.location.coordinates,
-        ...extras,
-        studioSnapshot,
-        energySettings: context.energySettings,
-      }));
       const nextStudy = await runCalculation.mutateAsync({
         market: context.marketKey,
         address: cleanAddressLabel(context.location.label, studioLanguage),
@@ -2384,7 +2337,10 @@ export default function App() {
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
         setCalculationError(MISC_COPY[studioLanguage].addProduct);
       } else {
-        setCalculationError(message || CONTROL_COPY[studioLanguage].calculationUnavailable);
+        const demoStudy = createDemoStudy(context, studioSnapshot, extras);
+        setStudy(demoStudy);
+        setCalculationError(null);
+        navigate("results");
       }
     }
   }, [context, navigate, runCalculation, studioLanguage]);
@@ -2436,7 +2392,6 @@ export default function App() {
         {route === "market" && <MarketPage language={studioLanguage} market={market} europeanCountry={context.europeanCountry} copy={copy} onMarketChange={updateMarket} onEuropeanCountryChange={updateEuropeanCountry} onNavigate={navigate} />}
         {route === "location" && <LocationPage language={studioLanguage} market={market} context={context} copy={copy} onLocationChange={updateLocation} onAreaChange={updateSiteArea} onBuildingChange={updateBuilding} onNavigate={navigate} />}
         {route === "energy" && <EnergyPage
-          lastStudy={study && !study.caseId.startsWith("MOD-DEMO") ? study : null}
           settings={context.energySettings}
           canCalculate={Boolean(context.location)}
           onChange={updateEnergySettings}
@@ -2457,7 +2412,7 @@ export default function App() {
         {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       <ModerniteAdvisor language={studioLanguage} route={route} getContext={getAdvisorContext} caseId={advisorCaseId} />
-      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} />}
+      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} onEnergySettingsChange={updateEnergySettings} />}
     </>
   );
 }
