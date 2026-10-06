@@ -11308,14 +11308,14 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .calculation-page.calculation-page--cinematic::before {
   content: "" !important;
   position: absolute !important;
-  inset: -34px !important;
+  inset: -28px !important;
   z-index: 0 !important;
   background:
-    linear-gradient(180deg, rgba(246, 251, 247, .12), rgba(232, 244, 236, .28)),
+    linear-gradient(180deg, rgba(246, 251, 247, .10), rgba(232, 244, 236, .30)),
     var(--modernite-loading-bg-image) center center / cover no-repeat !important;
-  filter: blur(14px) saturate(1.04) contrast(1.02) !important;
-  opacity: .76 !important;
-  transform: scale(1.04) !important;
+  filter: blur(12px) saturate(1.03) contrast(1.02) !important;
+  opacity: .92 !important;
+  transform: scale(1.025) !important;
   backdrop-filter: none !important;
 }
 
@@ -11325,10 +11325,10 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   inset: 0 !important;
   z-index: 1 !important;
   background:
-    radial-gradient(circle at 50% 50%, rgba(242, 252, 246, .05) 0 18%, rgba(242, 252, 246, .18) 34%, rgba(242, 252, 246, .38) 72%, rgba(242, 252, 246, .5) 100%),
-    var(--modernite-loading-bg-image) center center / cover no-repeat !important;
-  filter: blur(2.8px) saturate(1.01) contrast(1.01) !important;
-  opacity: .9 !important;
+    radial-gradient(circle at 50% 50%, rgba(242, 252, 246, .02) 0 22%, rgba(242, 252, 246, .12) 42%, rgba(242, 252, 246, .34) 78%, rgba(242, 252, 246, .48) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(238, 247, 239, .32)) !important;
+  filter: none !important;
+  opacity: 1 !important;
   transform: none !important;
   mask-image: none !important;
   pointer-events: none !important;
