@@ -5,12 +5,8 @@ import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/clien
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { lazy, Suspense } from "react";
-const Admin = lazy(() => import("./control/Admin"));
-const Account = lazy(() => import("./control/Account"));
 import { startLogin } from "./const";
 import "./index.css";
-import "./styles/bipv-home-background.css";
 
 const queryClient = new QueryClient();
 
@@ -90,7 +86,7 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <Suspense fallback={<div style={{ padding: 40 }}>Opening Modernité…</div>}>{window.location.pathname.replace(/\/$/, "") === "/admin" ? <Admin /> : window.location.pathname.replace(/\/$/, "") === "/account" ? <Account /> : <App />}</Suspense>
+      <App />
     </QueryClientProvider>
   </trpc.Provider>
 );
