@@ -11556,3 +11556,114 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Deployment QA guard: keep the shared header from colliding with the workflow
+   rail on 100% browser zoom, smaller laptops, Chinese labels, and mobile. */
+@media (max-width: 1520px) {
+  .gateway-header {
+    grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) auto !important;
+    gap: clamp(8px, 1.2vw, 16px) !important;
+    padding-inline: clamp(18px, 2.2vw, 32px) !important;
+  }
+
+  .gateway-header .brand-lockup {
+    min-width: 0 !important;
+  }
+
+  .gateway-header .brand-logo-image {
+    max-width: min(100%, 210px) !important;
+    height: auto !important;
+  }
+
+  .gateway-header .journey-rail {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .gateway-header .journey-rail button:not(.is-current) .journey-rail__label {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+  }
+
+  .gateway-header .journey-rail button.is-current .journey-rail__label {
+    display: inline-block !important;
+    max-width: 104px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .gateway-header .journey-rail__segment > i {
+    width: clamp(8px, 1.1vw, 18px) !important;
+    margin-inline: 2px !important;
+  }
+
+  .gateway-header .gateway-tools {
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    gap: 8px !important;
+  }
+
+  .gateway-header .gateway-status {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  .gateway-header {
+    grid-template-columns: minmax(170px, 1fr) auto !important;
+    height: auto !important;
+    min-height: 76px !important;
+    row-gap: 8px !important;
+    padding-block: 10px !important;
+  }
+
+  .gateway-header .journey-rail {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    justify-content: center !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(216, 225, 221, .82) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .gateway-header {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+    padding: 10px 14px 12px !important;
+  }
+
+  .gateway-header .brand-lockup,
+  .gateway-header .gateway-tools,
+  .gateway-header .journey-rail {
+    grid-column: 1 !important;
+  }
+
+  .gateway-header .gateway-tools {
+    grid-row: 2 !important;
+    justify-content: start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .gateway-header .journey-rail {
+    grid-row: 3 !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+  }
+
+  .gateway-header .journey-rail::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .gateway-header .journey-rail button.is-current .journey-rail__label {
+    max-width: 128px !important;
+  }
+}

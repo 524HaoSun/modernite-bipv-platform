@@ -1775,3 +1775,106 @@
     inset 0 1px 0 rgba(255,255,255,.8) !important;
   backdrop-filter: blur(14px) !important;
 }
+
+/* Live deployment QA: final compass alignment and text clearance. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  overflow: visible !important;
+  contain: layout paint !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-compass-image {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: .82 !important;
+  filter:
+    drop-shadow(0 18px 34px rgba(22, 76, 58, .12))
+    saturate(1.02)
+    contrast(.98) !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels {
+  z-index: 8 !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i {
+  min-width: 34px !important;
+  height: 24px !important;
+  padding: 0 8px !important;
+  color: #064739 !important;
+  background: rgba(255,255,255,.94) !important;
+  border: 1px solid rgba(205, 225, 211, .88) !important;
+  box-shadow:
+    0 8px 18px rgba(18, 70, 52, .1),
+    0 0 0 4px rgba(255,255,255,.38) !important;
+  font-size: clamp(12px, .92vw, 15px) !important;
+  font-weight: 760 !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i[data-pos="0"] {
+  left: 24% !important;
+  top: 65% !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i[data-pos="25"] {
+  left: 31% !important;
+  top: 28% !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i[data-pos="50"] {
+  left: 50% !important;
+  top: 17% !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i[data-pos="75"] {
+  left: 69% !important;
+  top: 28% !important;
+}
+
+.gateway-shell--results .results-hero-stage .coverage-scale-labels i[data-pos="100"] {
+  left: 76% !important;
+  top: 65% !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-needle-live {
+  z-index: 7 !important;
+  width: 34% !important;
+  height: 9px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 228, .96), rgba(255, 251, 228, 0) 48%),
+    linear-gradient(90deg, rgba(132, 83, 5, .12) 0 11%, #986507 12%, #d4a027 58%, #ffe48b 100%) !important;
+  box-shadow:
+    0 5px 17px rgba(123, 80, 7, .42),
+    0 0 22px rgba(239, 183, 47, .38),
+    0 0 0 1px rgba(255,255,255,.58) inset !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value {
+  width: 45% !important;
+  min-width: 150px !important;
+  gap: 11px !important;
+  transform: translateY(-8px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value strong {
+  font-size: clamp(54px, 4.8vw, 74px) !important;
+  line-height: .82 !important;
+  letter-spacing: -3px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value small {
+  max-width: 170px !important;
+  letter-spacing: .36em !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value b {
+  margin-top: 6px !important;
+  letter-spacing: .46em !important;
+  transform: translateX(.22em) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value b::before,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value b::after {
+  top: calc(100% + 7px) !important;
+  width: 34px !important;
+}
