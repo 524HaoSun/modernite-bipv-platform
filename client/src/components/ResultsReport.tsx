@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
   Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TowerControl, TrendingUp,
@@ -37,6 +37,126 @@ type Fmt = {
   month: (index: number) => string;
   compass: (deg: number) => string;
 };
+
+const GAUGE_CENTER = 500;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function useAnimatedGaugeValue(value: number, animate: boolean) {
+  const target = clamp(Math.round(value), 0, 100);
+  const [displayValue, setDisplayValue] = useState(animate ? 0 : target);
+
+  useEffect(() => {
+    if (!animate) {
+      setDisplayValue(target);
+      return;
+    }
+    let frame = 0;
+    const from = displayValue;
+    const duration = 980;
+    const started = performance.now();
+    const tick = (now: number) => {
+      const progress = clamp((now - started) / duration, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(from + (target - from) * eased));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [animate, target]);
+
+  return displayValue;
+}
+
+function GaugeNeedle({ value, visible = false }: { value: number; visible?: boolean }) {
+  if (!visible) return null;
+  const angle = -65 + (clamp(value, 0, 100) / 100) * 130;
+  return <g className="solar-coverage-gauge__needle" transform={`rotate(${angle} ${GAUGE_CENTER} ${GAUGE_CENTER})`} aria-hidden="true">
+    <path d="M 492 510 L 500 230 L 508 510 Z" />
+    <circle cx={GAUGE_CENTER} cy={GAUGE_CENTER} r="9" />
+  </g>;
+}
+
+function SolarCoverageGauge({ value, showNeedle = false, animate = true, className = "" }: {
+  value: number;
+  showNeedle?: boolean;
+  animate?: boolean;
+  className?: string;
+}) {
+  const percentage = clamp(Math.round(value), 0, 100);
+  const displayValue = useAnimatedGaugeValue(percentage, animate);
+
+  return <div className={`solar-coverage-gauge ${className}`.trim()}>
+    <svg className="solar-coverage-gauge__svg" viewBox="0 0 1000 1000" role="img" aria-label={`Solar Coverage ${percentage}%`}>
+      <defs>
+        <linearGradient id="coverageNeedleGold" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#b88a28" />
+          <stop offset="55%" stopColor="#d9b454" />
+          <stop offset="100%" stopColor="#f1d481" />
+        </linearGradient>
+        <clipPath id="coverageReferenceCrop">
+          <circle cx="500" cy="500" r="482" />
+        </clipPath>
+      </defs>
+      <rect className="solar-coverage-gauge__reference-backplate" x="0" y="0" width="1000" height="1000" />
+      <image className="solar-coverage-gauge__reference" href="/assets/modernite-solar-coverage-gauge-final-cutout-v2.png" x="12" y="12" width="976" height="976" preserveAspectRatio="xMidYMid meet" clipPath="url(#coverageReferenceCrop)" />
+      <GaugeNeedle value={percentage} visible={showNeedle} />
+      <text className="solar-coverage-gauge__percent" x="500" y="444" textAnchor="middle">{displayValue}%</text>
+      <g className="solar-coverage-gauge__crisp-brand" aria-hidden="true">
+        <rect className="solar-coverage-gauge__crisp-brand-cover" x="338" y="692" width="324" height="128" rx="54" />
+        <line x1="304" y1="609" x2="384" y2="609" />
+        <line x1="616" y1="609" x2="696" y2="609" />
+        <text className="solar-coverage-gauge__crisp-brand-label" x="500" y="622" textAnchor="middle">SOLAR COVERAGE</text>
+        <text className="solar-coverage-gauge__crisp-brand-bipv" x="500" y="684" textAnchor="middle">BIPV</text>
+        <line x1="472" y1="716" x2="528" y2="716" />
+        <text className="solar-coverage-gauge__crisp-brand-name" x="500" y="758" textAnchor="middle">Modernité</text>
+        <text className="solar-coverage-gauge__crisp-brand-group" x="500" y="786" textAnchor="middle">By CarbonFutureX Group</text>
+      </g>
+    </svg>
+  </div>;
+}
+
+function EnergyGlyph({ type }: { type: "generated" | "used" | "exported" | "capacity" }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  return <svg className={`energy-glyph energy-glyph--${type}`} viewBox="0 0 48 48" aria-hidden="true">
+    {type === "generated" && <>
+      <circle {...common} cx="24" cy="24" r="7.2" strokeWidth="2.5" />
+      <circle cx="24" cy="24" r="2" fill="currentColor" opacity=".82" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) =>
+        <line {...common} key={angle} x1="24" y1="8.5" x2="24" y2="12.7" strokeWidth="2.2" transform={`rotate(${angle} 24 24)`} />,
+      )}
+      <path {...common} d="M15.2 33.6c3.1 2.1 6.6 2.8 10.5 2.1 3.9-.7 6.8-2.7 8.7-5.9" strokeWidth="1.7" opacity=".64" />
+    </>}
+    {type === "used" && <>
+      <path {...common} d="M11 25.2 24 14.5l13 10.7" strokeWidth="2.7" />
+      <path {...common} d="M15.2 24.4v12h17.6v-12" strokeWidth="2.4" />
+      <path {...common} d="M24 36.4v-7.2" strokeWidth="2.2" />
+      <path {...common} d="M19 29.1h10" strokeWidth="1.9" opacity=".62" />
+      <path {...common} d="M35.8 17.5c-3.3-3.1-7.3-4.7-11.8-4.7s-8.4 1.5-11.7 4.5" strokeWidth="1.6" opacity=".5" />
+    </>}
+    {type === "exported" && <>
+      <path {...common} d="M24 10.5v27" strokeWidth="2.5" />
+      <path {...common} d="M14.5 37.5 24 10.5l9.5 27" strokeWidth="2.2" />
+      <path {...common} d="M17.7 23.2h12.6M15.8 29.2h16.4" strokeWidth="2" />
+      <path {...common} d="M8.8 18.5c4.2-2.7 8.2-2.7 12.1 0 2.3 1.6 4.6 2.4 7 2.4 3.6 0 7.4-1.5 11.3-4.4" strokeWidth="1.7" opacity=".62" />
+      <circle cx="24" cy="10.5" r="2.3" fill="currentColor" />
+    </>}
+    {type === "capacity" && <>
+      <path {...common} d="M12 35.6h24" strokeWidth="2.3" />
+      <path {...common} d="M15.4 31.8V20.7M24 31.8V14.4M32.6 31.8V24.1" strokeWidth="3.3" />
+      <path {...common} d="M13.5 12.5h21" strokeWidth="1.8" opacity=".55" />
+      <path {...common} d="m18 12.5-3.8 8.2M25.4 12.5l-3.8 8.2M32.8 12.5 29 20.7" strokeWidth="1.4" opacity=".46" />
+      <path {...common} d="M13.5 20.7h21" strokeWidth="1.8" opacity=".55" />
+    </>}
+  </svg>;
+}
 
 function weatherSourceLabel(kind: string, source: string, name: string | null | undefined, t: ResultsCopy) {
   if (kind !== "customer-synthetic") return source;
@@ -90,22 +210,22 @@ function useFormatters(language: string, currency: string): Fmt {
   }, [language, currency]);
 }
 
-function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }) {
+function GenerationRangeCard({ study, f, useBatteryCoverage }: { study: ProjectCalculation; f: Fmt; useBatteryCoverage: boolean }) {
   const { t } = f;
   const range = study.result.range;
   const position = ((range.representative - range.low) / Math.max(1, range.high - range.low)) * 100;
   const generated = range.representative;
   const demand = Math.max(1, study.energy.annualDemandKwh);
-  const selfUsed = study.simulation.selfConsumedKwh;
-  const exportKwh = study.simulation.exportKwh;
+  const solarOnlySelfUsed = study.simulation.selfConsumedKwh;
+  const selfUsed = useBatteryCoverage ? study.simulation.battery.selfConsumedKwh : solarOnlySelfUsed;
+  const exportKwh = useBatteryCoverage ? study.simulation.battery.exportKwh : study.simulation.exportKwh;
   const demandCoverage = Math.round(Math.min(100, (selfUsed / demand) * 100));
-  const needleAngle = 218 + demandCoverage * 1.12;
   const selfUseShare = Math.round((selfUsed / Math.max(1, generated)) * 100);
   const flowCards = [
-    { key: "generated", icon: <SunMedium size={28} />, label: t.generated, value: f.n(generated), unit: t.perYear, note: t.heroBody(study.result.surfaces.length) },
-    { key: "used", icon: <Home size={28} />, label: t.usedHome, value: f.n(selfUsed), unit: t.perYear, note: `${demandCoverage}% ${t.demandLabel.toLowerCase()}` },
-    { key: "exported", icon: <TowerControl size={28} />, label: t.exported, value: f.n(exportKwh), unit: t.perYear, note: t.exportedDetail },
-    { key: "capacity", icon: <BarChart3 size={28} />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
+    { key: "generated", icon: <EnergyGlyph type="generated" />, label: t.generated, value: f.n(generated), unit: t.perYear, note: t.heroLabel },
+    { key: "used", icon: <EnergyGlyph type="used" />, label: t.usedHome, value: f.n(selfUsed), unit: t.perYear, note: `${demandCoverage}% ${t.demandLabel.toLowerCase()}` },
+    { key: "exported", icon: <EnergyGlyph type="exported" />, label: t.exported, value: f.n(exportKwh), unit: t.perYear, note: t.exportedDetail },
+    { key: "capacity", icon: <EnergyGlyph type="capacity" />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
   ];
   return <section className="result-section generation-range-card generation-hero-card">
     <img className="modernite-client-home-visual" src="/assets/modernite-results-client-bg.png" alt="" aria-hidden="true" />
@@ -120,28 +240,20 @@ function GenerationRangeCard({ study, f }: { study: ProjectCalculation; f: Fmt }
           <li><TrendingUp size={16} /> {t.view25}</li>
         </ul>
       </div>
-      <div className="generation-outlook-dial" aria-label={`${t.demandLabel} ${demandCoverage}%`}>
-        <img className="coverage-compass-image" src="/assets/modernite-coverage-compass-reference.svg" alt="" aria-hidden="true" />
-        <span className="coverage-scale-labels" aria-hidden="true">
-          <i data-pos="0">0</i>
-          <i data-pos="25">25</i>
-          <i data-pos="50">50</i>
-          <i data-pos="75">75</i>
-          <i data-pos="100">100</i>
-        </span>
-        <span className="coverage-needle-live" style={{ "--coverage-angle": `${needleAngle}deg` } as CSSProperties} aria-hidden="true" />
-        <span className="coverage-value"><strong>{demandCoverage}%</strong><small>{t.demandLabel}</small><b>MODERNITÉ <i>BIPV</i></b></span>
+      <div className="generation-outlook-dial" aria-label={`Solar Coverage ${demandCoverage}%`}>
+        <SolarCoverageGauge value={demandCoverage} showNeedle={false} />
       </div>
     </div>
     <div className="generation-range-flow">
       <div className="range-window">
         <div className="range-window-head"><span>{t.rangeTitle}</span><b>{f.n(range.low)} – {f.n(range.high)} {t.perYear}</b></div>
         <div className="range-points"><span><i>{t.low}</i><b>{f.n(range.low)}</b></span><span className="is-main"><i>{t.representative}</i><b>{f.n(range.representative)}</b></span><span><i>{t.high}</i><b>{f.n(range.high)}</b></span></div>
+        <div className="range-energy-path" aria-hidden="true"><span /><span /><span /></div>
         <div className="range-track"><em style={{ left: "0%" }} /><strong style={{ left: `${position}%` }} /><em style={{ left: "100%" }} /></div>
         <p>{t.rangeNote}</p>
       </div>
       <div className="result-story-strip generation-flow-cards">
-        {flowCards.map((card) => <article key={card.key}>
+        {flowCards.map((card) => <article className={`generation-flow-card generation-flow-card--${card.key}`} key={card.key}>
           <span>{card.icon}</span>
           <small>{card.label}</small>
           <b>{card.value} <i>{card.unit}</i></b>
@@ -514,7 +626,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
-      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} /></div>
+      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} useBatteryCoverage={scenario.id === "solar-battery"} /></div>
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
         <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">

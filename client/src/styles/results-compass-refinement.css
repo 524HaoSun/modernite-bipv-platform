@@ -1878,3 +1878,1171 @@
   top: calc(100% + 7px) !important;
   width: 34px !important;
 }
+
+/* Final Solar Coverage gauge: SVG reconstruction from the approved visual reference. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(420px, 36vw, 620px) !important;
+  aspect-ratio: 1 / 1 !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  contain: layout paint !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial::before,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial::after,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-compass-image,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-scale-labels,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-needle-live,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .coverage-value {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge {
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 3 !important;
+  opacity: 0;
+  transform: scale(.972);
+  animation: solarCoverageGaugeIn 780ms cubic-bezier(.16, 1, .3, 1) 120ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+  filter:
+    drop-shadow(0 22px 42px rgba(13, 76, 55, .13))
+    drop-shadow(0 0 28px rgba(219, 247, 221, .22)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__aura {
+  fill: url(#solarCoverageAura) !important;
+  stroke: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__edge,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__glass-ring,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__inner-line {
+  fill: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__edge--mint {
+  stroke: rgba(118, 175, 145, .2) !important;
+  stroke-width: 2px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__edge--gold {
+  stroke: rgba(217, 180, 84, .72) !important;
+  stroke-width: 1.8px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__glass-ring {
+  stroke: url(#coverageMintRing) !important;
+  stroke-width: 48px !important;
+  opacity: .74 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__inner-line {
+  stroke: rgba(108, 162, 132, .2) !important;
+  stroke-width: 1.5px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-glow,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-arc,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__gold-arc,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__progress {
+  fill: none !important;
+  stroke-linecap: round !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-glow--left {
+  stroke: rgba(195, 239, 197, .62) !important;
+  stroke-width: 68px !important;
+  filter: url(#coverageSoftGlow) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-glow--right {
+  stroke: rgba(152, 220, 172, .58) !important;
+  stroke-width: 70px !important;
+  filter: url(#coverageSoftGlow) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-arc--left {
+  stroke: url(#coverageLeftGreen) !important;
+  stroke-width: 45px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__side-arc--right {
+  stroke: url(#coverageRightGreen) !important;
+  stroke-width: 45px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__gold-arc {
+  stroke: url(#coverageGoldArc) !important;
+  stroke-width: 10px !important;
+  opacity: .92 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__gold-arc--inner {
+  stroke-width: 3px !important;
+  opacity: .62 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__progress {
+  stroke: url(#coverageProgressStroke) !important;
+  stroke-width: 8px !important;
+  opacity: .54 !important;
+  filter: drop-shadow(0 0 9px rgba(158, 217, 170, .34)) !important;
+  stroke-dasharray: 640;
+  stroke-dashoffset: 640;
+  animation: solarCoverageProgressDraw 900ms cubic-bezier(.16, 1, .3, 1) 420ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__tick {
+  stroke: rgba(14, 96, 75, .62) !important;
+  stroke-width: 3px !important;
+  stroke-linecap: round !important;
+  opacity: 0;
+  animation: solarCoverageTickIn 520ms ease-out 520ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__tick--major {
+  stroke: #0a5d46 !important;
+  stroke-width: 8px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__labels text {
+  fill: #083f32 !important;
+  stroke: none !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 45px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  opacity: 0;
+  animation: solarCoverageLabelIn 480ms ease-out 660ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__branding text,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__branding line,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__branding rect {
+  opacity: 0;
+  animation: solarCoverageLabelIn 560ms ease-out 760ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__percent {
+  fill: #064c3d !important;
+  stroke: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 118px !important;
+  font-weight: 780 !important;
+  letter-spacing: -3px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__solar-label {
+  fill: #113f34 !important;
+  stroke: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 33px !important;
+  font-weight: 720 !important;
+  letter-spacing: 14px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__bipv {
+  fill: #073f32 !important;
+  stroke: none !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 82px !important;
+  font-weight: 720 !important;
+  letter-spacing: 27px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__modernite {
+  fill: #073f32 !important;
+  stroke: none !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 43px !important;
+  font-weight: 520 !important;
+  letter-spacing: .01em !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__carbon {
+  fill: #152f2a !important;
+  stroke: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 540 !important;
+  letter-spacing: .1em !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__brand-rule,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__tiny-rule {
+  stroke: #cda743 !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__diamond {
+  fill: #d1ad45 !important;
+  stroke: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__needle path {
+  fill: url(#coverageNeedleGold) !important;
+  stroke: rgba(142, 98, 24, .36) !important;
+  stroke-width: 1px !important;
+  filter: drop-shadow(0 5px 10px rgba(111, 71, 12, .2)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__needle circle {
+  fill: #d6b256 !important;
+  stroke: rgba(255, 247, 209, .92) !important;
+  stroke-width: 4px !important;
+}
+
+@keyframes solarCoverageGaugeIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes solarCoverageProgressDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes solarCoverageTickIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes solarCoverageLabelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    width: min(520px, 88vw) !important;
+  }
+}
+
+/* Final gauge layout guard: keep the reference dial fully inside the hero card. */
+.gateway-shell--results .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(520px, .96fr) minmax(400px, 520px) !important;
+  align-items: center !important;
+  gap: clamp(24px, 3vw, 52px) !important;
+  min-height: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(400px, 31vw, 510px) !important;
+  max-width: 100% !important;
+  justify-self: end !important;
+  transform: translateX(-8px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card {
+  overflow: hidden !important;
+}
+
+@media (max-width: 1180px) {
+  .gateway-shell--results .results-hero-stage .generation-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    width: min(500px, 82vw) !important;
+    justify-self: center !important;
+    transform: none !important;
+  }
+}
+
+/* Benchmark image implementation: preserve the supplied dial exactly, then overlay data. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference-backplate {
+  fill: #f4fbf5 !important;
+  opacity: 0 !important;
+  stroke: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference {
+  display: block !important;
+  opacity: .96 !important;
+  filter:
+    saturate(1.02)
+    contrast(1.01)
+    drop-shadow(0 16px 34px rgba(12, 72, 52, .12)) !important;
+  mix-blend-mode: normal !important;
+  transform: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__svg {
+  border-radius: 50% !important;
+  clip-path: circle(49.4% at 50% 50%) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__percent {
+  fill: #064c3d !important;
+  stroke: rgba(248, 255, 250, .78) !important;
+  stroke-width: 5px !important;
+  paint-order: stroke fill !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 112px !important;
+  font-weight: 780 !important;
+  letter-spacing: -3px !important;
+  filter: drop-shadow(0 10px 22px rgba(255,255,255,.54)) !important;
+  opacity: 0;
+  animation: solarCoverageLabelIn 560ms ease-out 780ms forwards;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__needle {
+  transform-origin: 500px 500px !important;
+}
+
+/* Refinement pass: no cropped dial, stronger hierarchy, and clean lower metrics. */
+.gateway-shell--results .results-hero-stage .generation-hero-card {
+  overflow: hidden !important;
+  padding: clamp(34px, 4vw, 54px) clamp(38px, 4.2vw, 64px) clamp(36px, 4.2vw, 58px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(560px, .96fr) minmax(430px, 500px) !important;
+  gap: clamp(34px, 4vw, 64px) !important;
+  align-items: center !important;
+  margin-bottom: clamp(24px, 3vw, 38px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy {
+  max-width: 760px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > strong {
+  font-size: clamp(82px, 7.1vw, 112px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > strong small {
+  font-size: clamp(30px, 2.5vw, 40px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 720px !important;
+  font-size: clamp(17px, 1.18vw, 20px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(420px, 30vw, 480px) !important;
+  justify-self: end !important;
+  transform: translateX(-4px) !important;
+  overflow: visible !important;
+  border-radius: 34px !important;
+  padding: 16px !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.62), rgba(234,248,238,.34)),
+    radial-gradient(circle at 50% 48%, rgba(248,255,249,.72) 0 58%, rgba(231,248,234,.28) 72%, rgba(231,248,234,0) 100%) !important;
+  border: 1px solid rgba(229, 243, 231, .74) !important;
+  box-shadow:
+    0 24px 68px rgba(12, 54, 42, .14),
+    inset 0 1px 0 rgba(255,255,255,.78) !important;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__svg {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference-backplate {
+  fill: #f4fbf5 !important;
+  opacity: .34 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference {
+  opacity: .98 !important;
+  filter:
+    saturate(1.03)
+    contrast(1.02)
+    drop-shadow(0 16px 34px rgba(9, 67, 48, .12)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__percent {
+  font-size: 104px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-range-flow {
+  display: grid !important;
+  grid-template-columns: minmax(560px, .78fr) minmax(620px, 1fr) !important;
+  gap: clamp(18px, 2.3vw, 28px) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+  width: 100% !important;
+  min-height: 180px !important;
+  padding: 24px 30px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head {
+  gap: 18px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head b {
+  white-space: nowrap !important;
+  font-size: clamp(20px, 1.5vw, 26px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(140px, 1fr)) !important;
+  gap: clamp(14px, 1.5vw, 20px) !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article {
+  min-width: 0 !important;
+  min-height: 180px !important;
+  padding: 20px 18px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 9px !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article small {
+  font-size: clamp(11px, .82vw, 13px) !important;
+  line-height: 1.22 !important;
+  letter-spacing: .22em !important;
+  max-width: 100% !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article b {
+  font-size: clamp(24px, 1.9vw, 34px) !important;
+  line-height: .98 !important;
+  letter-spacing: -.03em !important;
+  max-width: 100% !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article b i,
+.gateway-shell--results .results-hero-stage .generation-flow-cards article em {
+  font-size: clamp(12px, .9vw, 14px) !important;
+  line-height: 1.28 !important;
+  max-width: 100% !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article em {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 1320px) {
+  .gateway-shell--results .results-hero-stage .generation-dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(400px, 460px) !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    width: min(460px, 36vw) !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-range-flow {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .gateway-shell--results .results-hero-stage .generation-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    width: min(560px, 88vw) !important;
+    justify-self: center !important;
+    transform: none !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(2, minmax(180px, 1fr)) !important;
+  }
+}
+
+/* Final QA pass: one complete first-screen hero with an uncut compass. */
+.gateway-shell--results .results-hero-stage .generation-hero-card {
+  padding: clamp(26px, 3vw, 40px) clamp(34px, 4vw, 58px) clamp(26px, 3vw, 40px) !important;
+  min-height: min(820px, calc(100vh - 116px)) !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: clamp(18px, 2vw, 26px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(520px, 1fr) minmax(380px, 430px) !important;
+  gap: clamp(26px, 4vw, 62px) !important;
+  margin-bottom: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > strong {
+  font-size: clamp(76px, 6.7vw, 104px) !important;
+  line-height: .84 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > strong small {
+  font-size: clamp(28px, 2.35vw, 36px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > p {
+  max-width: 690px !important;
+  font-size: clamp(16px, 1.08vw, 18px) !important;
+  line-height: 1.48 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-benefit-list {
+  gap: clamp(10px, 1.6vw, 18px) !important;
+  flex-wrap: wrap !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-benefit-list li {
+  min-height: 58px !important;
+  padding: 9px 16px 9px 10px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(366px, 26.4vw, 420px) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  filter:
+    drop-shadow(0 22px 48px rgba(9, 61, 45, .2))
+    drop-shadow(0 4px 12px rgba(255, 255, 255, .7)) !important;
+  transform: translateX(-28px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge,
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__svg {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  height: auto !important;
+  clip-path: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference-backplate {
+  opacity: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference {
+  opacity: .99 !important;
+  filter: saturate(1.04) contrast(1.02) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__percent {
+  font-size: 88px !important;
+  fill: #0a5646 !important;
+  stroke-width: 6px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-range-flow {
+  grid-template-columns: minmax(520px, .86fr) minmax(560px, 1fr) !important;
+  gap: clamp(16px, 2vw, 24px) !important;
+  align-items: stretch !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+  min-height: 150px !important;
+  padding: 20px 26px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head {
+  margin-bottom: 20px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window .range-points {
+  margin-bottom: 12px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window p {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards {
+  grid-template-columns: repeat(4, minmax(126px, 1fr)) !important;
+  gap: clamp(16px, 1.7vw, 24px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article {
+  min-height: 150px !important;
+  padding: 17px 16px 15px !important;
+  gap: 8px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article > span {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article small {
+  font-size: clamp(10px, .74vw, 12px) !important;
+  letter-spacing: .18em !important;
+  min-height: 28px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article b {
+  font-size: clamp(22px, 1.68vw, 30px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards article em {
+  font-size: clamp(11px, .78vw, 13px) !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+@media (max-width: 1320px) {
+  .gateway-shell--results .results-hero-stage .generation-hero-card {
+    min-height: auto !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-dashboard,
+  .gateway-shell--results .results-hero-stage .generation-range-flow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    justify-self: center !important;
+    transform: none !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(2, minmax(180px, 1fr)) !important;
+  }
+}
+
+/* Premium energy-flow refinement: larger compass, flowing range, and bespoke icon badges. */
+.gateway-shell--results .results-hero-stage .generation-dashboard {
+  grid-template-columns: minmax(500px, 1fr) minmax(410px, 458px) !important;
+  gap: clamp(24px, 3.4vw, 54px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(380px, 27.2vw, 438px) !important;
+  transform: translateX(-48px) !important;
+  filter:
+    drop-shadow(0 26px 58px rgba(7, 54, 40, .24))
+    drop-shadow(0 5px 14px rgba(255, 255, 255, .78)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__percent {
+  font-size: 96px !important;
+  font-weight: 820 !important;
+  fill: #064d3f !important;
+  stroke-width: 6.5px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand line {
+  stroke: rgba(205, 160, 44, .82) !important;
+  stroke-width: 2.2px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-label {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 28px !important;
+  letter-spacing: 12px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-bipv {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 68px !important;
+  font-weight: 700 !important;
+  letter-spacing: 18px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-name {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 34px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-group {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 17px !important;
+  letter-spacing: .02em !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+  position: relative !important;
+  min-height: 176px !important;
+  padding: 22px 28px 28px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 42% 82%, rgba(213, 164, 33, .18), transparent 24%),
+    linear-gradient(135deg, rgba(255,255,255,.78), rgba(242,249,239,.54)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 28px !important;
+  right: 28px !important;
+  bottom: 39px !important;
+  height: 58px !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 224, 117, .26), transparent 10%),
+    linear-gradient(90deg, rgba(8, 113, 85, .12), rgba(8, 113, 85, .2) 42%, rgba(215, 164, 40, .22) 58%, rgba(255,255,255,0)) !important;
+  filter: blur(9px) !important;
+  opacity: .86 !important;
+  pointer-events: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path {
+  position: absolute !important;
+  left: 44px !important;
+  right: 44px !important;
+  bottom: 45px !important;
+  height: 52px !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::before,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  border-top: 1.5px solid rgba(255,255,255,.64) !important;
+  border-bottom: 0 !important;
+  opacity: .72 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::before {
+  top: 8px !important;
+  transform: scaleY(.36) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::after {
+  top: 19px !important;
+  border-top-color: rgba(214, 164, 38, .42) !important;
+  transform: scaleY(.24) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span {
+  position: absolute !important;
+  top: 21px !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+  background: #fff9d9 !important;
+  box-shadow: 0 0 18px rgba(243, 202, 86, .72), 0 0 34px rgba(8, 118, 89, .22) !important;
+  opacity: .86 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span:nth-child(1) {
+  left: 18% !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span:nth-child(2) {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span:nth-child(3) {
+  right: 18% !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window::after {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window p {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head {
+  align-items: baseline !important;
+  margin-bottom: 18px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head span {
+  color: rgba(16, 79, 64, .74) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head b {
+  color: #064d3f !important;
+  text-shadow: 0 8px 22px rgba(255,255,255,.55) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points {
+  margin-bottom: 10px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points span {
+  position: relative !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points span::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  bottom: -25px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #087659 !important;
+  box-shadow: 0 0 0 7px rgba(8, 118, 89, .12), 0 0 20px rgba(8, 118, 89, .34) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points span:nth-child(2)::after {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: #d4a328 !important;
+  box-shadow: 0 0 0 9px rgba(212, 163, 40, .18), 0 0 28px rgba(212, 163, 40, .5) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points span:nth-child(3)::after {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track {
+  height: 10px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(90deg, #0b8765 0%, #087257 43%, #d6a326 58%, #f0d57c 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.58),
+    0 12px 24px rgba(15, 91, 70, .18),
+    0 0 28px rgba(214, 163, 38, .14) !important;
+  overflow: visible !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -4px 0 !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.64), transparent) !important;
+  transform: translateX(-18%) !important;
+  opacity: .36 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track strong {
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: -4.5px !important;
+  border: 3px solid rgba(255,255,255,.82) !important;
+  background: #d3a127 !important;
+  box-shadow:
+    0 0 0 10px rgba(211, 161, 39, .15),
+    0 6px 18px rgba(143, 104, 18, .28) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track em {
+  width: 13px !important;
+  height: 13px !important;
+  margin-top: -2px !important;
+  border: 3px solid rgba(236, 249, 241, .88) !important;
+  box-shadow: 0 0 0 7px rgba(8, 114, 87, .11) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card {
+  position: relative !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.77), rgba(232,244,228,.56)),
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.52), transparent 46%) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.58), transparent 42%, rgba(8, 105, 78, .08)) !important;
+  pointer-events: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card > span {
+  position: relative !important;
+  z-index: 1 !important;
+  border: 1px solid rgba(255,255,255,.7) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.72),
+    0 14px 28px rgba(10, 70, 52, .16) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card > span::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 8px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.5) !important;
+  pointer-events: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--generated > span {
+  color: #0a6a51 !important;
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255,255,255,.9), transparent 28%),
+    linear-gradient(135deg, rgba(255, 234, 150, .9), rgba(145, 215, 178, .72)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--used > span {
+  color: #007a5f !important;
+  background: radial-gradient(circle at 30% 24%, #ecfff6, #93dec2 54%, rgba(5, 121, 91, .22)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--exported > span {
+  color: #006f80 !important;
+  background: radial-gradient(circle at 30% 24%, #effcff, #9ddff0 54%, rgba(0, 111, 128, .2)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--capacity > span {
+  color: #0a6a51 !important;
+  background: radial-gradient(circle at 30% 24%, #f2fff4, #b7dfb4 54%, rgba(60, 139, 87, .22)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card small,
+.gateway-shell--results .results-hero-stage .generation-flow-card b,
+.gateway-shell--results .results-hero-stage .generation-flow-card em {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+@media (max-width: 1320px) {
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    transform: none !important;
+  }
+}
+
+/* Final QA correction: remove visible patching and unify KPI icon badges. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-cover {
+  fill: rgba(242, 250, 245, .34) !important;
+  stroke: none !important;
+  filter: blur(18px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card > span {
+  color: #0a6a51 !important;
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255,255,255,.92), transparent 28%),
+    linear-gradient(135deg, rgba(238, 255, 245, .94), rgba(158, 222, 190, .72) 58%, rgba(223, 187, 79, .22)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card > span svg {
+  stroke-width: 2 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--generated > span,
+.gateway-shell--results .results-hero-stage .generation-flow-card--used > span,
+.gateway-shell--results .results-hero-stage .generation-flow-card--exported > span,
+.gateway-shell--results .results-hero-stage .generation-flow-card--capacity > span {
+  color: #0a6a51 !important;
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255,255,255,.92), transparent 28%),
+    linear-gradient(135deg, rgba(238, 255, 245, .94), rgba(158, 222, 190, .72) 58%, rgba(223, 187, 79, .22)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card .energy-glyph {
+  width: 31px !important;
+  height: 31px !important;
+  display: block !important;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.72)) drop-shadow(0 8px 13px rgba(5, 72, 54, .12)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--generated .energy-glyph {
+  color: #9a7414 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--used .energy-glyph,
+.gateway-shell--results .results-hero-stage .generation-flow-card--capacity .energy-glyph {
+  color: #08765a !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card--exported .energy-glyph {
+  color: #0a6b70 !important;
+}
+
+/* Absolute final guard: keep the baked-in reference dial branding only. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Final requested spacing/readability pass. */
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy .mini-label {
+  color: rgba(7, 66, 53, .92) !important;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.76),
+    0 6px 16px rgba(0, 42, 32, .2),
+    0 0 18px rgba(255,255,255,.28) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard-copy > p {
+  color: rgba(7, 66, 53, .9) !important;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.78),
+    0 8px 20px rgba(0, 42, 32, .22),
+    0 0 18px rgba(255,255,255,.24) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+  padding-top: 24px !important;
+  padding-bottom: 32px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head {
+  margin-bottom: 24px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points {
+  margin-bottom: 16px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points span::after {
+  display: none !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track strong {
+  box-shadow:
+    0 0 0 7px rgba(211, 161, 39, .12),
+    0 5px 14px rgba(143, 104, 18, .2) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track em {
+  box-shadow: 0 0 0 5px rgba(8, 114, 87, .08) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand {
+  display: none !important;
+}
+
+/* QA polish: softer compass halo, readable dial branding, and calmer energy flow. */
+.gateway-shell--results .results-hero-stage .generation-outlook-dial {
+  width: clamp(376px, 26.8vw, 430px) !important;
+  transform: translateX(-52px) !important;
+  filter: drop-shadow(0 20px 42px rgba(7, 54, 40, .15)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__reference {
+  filter: saturate(1.02) contrast(1.015) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand {
+  display: block !important;
+  fill: #0b453b !important;
+  stroke: none !important;
+  filter: drop-shadow(0 2px 5px rgba(255,255,255,.72)) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-outlook-dial .solar-coverage-gauge__crisp-brand-cover {
+  fill: rgba(239, 249, 243, .9) !important;
+  stroke: rgba(255,255,255,.5) !important;
+  stroke-width: 1px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window::before {
+  background: linear-gradient(90deg, rgba(8, 113, 85, .07), rgba(8, 113, 85, .13) 44%, rgba(215, 164, 40, .12) 64%, rgba(255,255,255,0)) !important;
+  filter: blur(14px) !important;
+  opacity: .52 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::before,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::after {
+  opacity: .38 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path::after {
+  border-top-color: rgba(214, 164, 38, .24) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span {
+  width: 7px !important;
+  height: 7px !important;
+  background: rgba(255, 246, 201, .72) !important;
+  box-shadow: 0 0 10px rgba(243, 202, 86, .28), 0 0 18px rgba(8, 118, 89, .1) !important;
+  opacity: .5 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-energy-path span:nth-child(2) {
+  width: 9px !important;
+  height: 9px !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.58),
+    0 10px 20px rgba(15, 91, 70, .13) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track::before {
+  opacity: .18 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track strong {
+  box-shadow:
+    0 0 0 6px rgba(211, 161, 39, .1),
+    0 5px 14px rgba(143, 104, 18, .18) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-track em {
+  box-shadow: 0 0 0 5px rgba(8, 114, 87, .08) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-card small {
+  letter-spacing: .14em !important;
+  line-height: 1.18 !important;
+}
+
+@media (max-width: 1320px) {
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    transform: none !important;
+  }
+}
