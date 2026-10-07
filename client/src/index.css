@@ -11416,6 +11416,86 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   }
 }
 
+/* Loading page final QA fix: keep the customer image continuous across the
+   whole interstitial and simplify the spinner into a clean energy dial. */
+.calculation-page.calculation-page--cinematic {
+  background: #edf5ef !important;
+}
+
+.calculation-page.calculation-page--cinematic::before {
+  inset: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(245, 251, 247, .10), rgba(238, 247, 240, .10)),
+    url("/assets/modernite-loading-client-bg.png") center center / 100% 100% no-repeat !important;
+  filter: blur(7px) saturate(.98) contrast(.98) !important;
+  opacity: .88 !important;
+  transform: scale(1.012) !important;
+}
+
+.calculation-page.calculation-page--cinematic::after {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(240, 253, 247, .20) 0 18%, rgba(240, 253, 247, .08) 19% 42%, transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(246, 251, 247, .16)) !important;
+  opacity: 1 !important;
+}
+
+.calculation-page--cinematic .calculation-radar {
+  width: clamp(250px, 23vw, 340px) !important;
+  height: clamp(250px, 23vw, 340px) !important;
+  filter:
+    drop-shadow(0 26px 66px rgba(24, 75, 55, .20))
+    drop-shadow(0 0 42px rgba(174, 244, 199, .30)) !important;
+}
+
+.calculation-radar::before {
+  background:
+    conic-gradient(from -28deg, transparent 0 20%, rgba(7, 102, 73, .48) 23% 31%, transparent 34% 56%, rgba(186, 236, 199, .34) 60% 69%, transparent 73% 100%),
+    repeating-conic-gradient(from 0deg, rgba(17, 95, 73, .10) 0 1deg, transparent 1deg 5deg) !important;
+  mask-image: radial-gradient(circle, transparent 0 35%, black 36% 65%, transparent 66%) !important;
+  opacity: .82 !important;
+}
+
+.calculation-radar::after {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .96) 0 17%, rgba(221, 248, 232, .58) 18% 29%, transparent 30%),
+    radial-gradient(circle, transparent 0 40%, rgba(255, 255, 255, .50) 41% 42%, transparent 43%),
+    radial-gradient(circle, transparent 0 57%, rgba(255, 255, 255, .42) 58% 59%, transparent 60%) !important;
+  opacity: .76 !important;
+}
+
+.calculation-radar__arc,
+.calculation-radar__spark {
+  display: none !important;
+}
+
+.calculation-radar__ring {
+  border-color: rgba(255, 255, 255, .42) !important;
+  box-shadow: inset 0 0 38px rgba(255, 255, 255, .22), 0 0 26px rgba(183, 239, 204, .18) !important;
+}
+
+.calculation-radar__ring--one {
+  background: radial-gradient(circle, transparent 0 62%, rgba(107, 218, 154, .16) 63% 65%, transparent 66%) !important;
+}
+
+.calculation-radar__ring--two {
+  background: none !important;
+  border-color: rgba(8, 88, 66, .13) !important;
+}
+
+.calculation-radar__ring--three {
+  border-color: rgba(255, 255, 255, .50) !important;
+}
+
+.calculation-radar__disc {
+  color: #0b5c46 !important;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, .98), rgba(224, 248, 235, .92) 58%, rgba(184, 230, 202, .72)) !important;
+  box-shadow:
+    0 0 0 13px rgba(255, 255, 255, .74),
+    0 0 0 15px rgba(9, 79, 59, .10),
+    0 0 50px rgba(151, 231, 181, .72),
+    inset 0 0 18px rgba(132, 239, 175, .24) !important;
+}
+
 /* Result hero customer image pass: keep the full photo inside the card, not the whole page. */
 .gateway-shell--results .results-hero-stage .generation-hero-card {
   --modernite-results-card-image: url("/assets/modernite-results-client-bg.png");
