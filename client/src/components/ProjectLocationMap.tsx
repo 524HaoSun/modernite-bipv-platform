@@ -920,6 +920,7 @@ export function ProjectLocationMap({
   const [draftPath, setDraftPath] = useState<LatLng[]>([]);
   const [drawingActive, setDrawingActive] = useState(false);
   const [closeReady, setCloseReady] = useState(false);
+  const [markerLabelOpen, setMarkerLabelOpen] = useState(false);
   const [hoverPoint, setHoverPoint] = useState<LatLng | null>(null);
   const [status, setStatus] = useState(text.ready);
 
@@ -939,6 +940,7 @@ export function ProjectLocationMap({
   useEffect(() => {
     const locationKey = initialLocation ? `${initialLocation.coordinates.lat.toFixed(6)},${initialLocation.coordinates.lng.toFixed(6)}` : "";
     setMarker(initialLocation ? { ...initialLocation, label: cleanAddressLabel(initialLocation.label, language) } : null);
+    setMarkerLabelOpen(false);
     if (locationKey && locationKey === emittedLocationKeyRef.current) return;
     stopAnimation();
     setCenter(initialLocation?.coordinates ?? market.coordinates);
@@ -1133,6 +1135,7 @@ export function ProjectLocationMap({
     const selection = { coordinates, label: displayLabel };
     emittedLocationKeyRef.current = `${coordinates.lat.toFixed(6)},${coordinates.lng.toFixed(6)}`;
     setMarker(selection);
+    setMarkerLabelOpen(false);
     stopAnimation();
     setCenter(coordinates);
     setZoom((current) => Math.max(Math.round(current), 18));
@@ -1217,6 +1220,7 @@ export function ProjectLocationMap({
   }
 
   const zoomStep = useCallback((direction: 1 | -1) => {
+    setMarkerLabelOpen(false);
     const base = animationRef.current !== null ? wheelRef.current.target : viewRef.current.zoom;
     const target = clamp(Math.round(base) + direction, MIN_ZOOM, MAX_ZOOM);
     wheelRef.current.target = target;
@@ -1228,6 +1232,7 @@ export function ProjectLocationMap({
     if (!element) return;
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
+      setMarkerLabelOpen(false);
       const rect = element.getBoundingClientRect();
       const anchor = { x: event.clientX - rect.left, y: event.clientY - rect.top };
       const pixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * rect.height : event.deltaY;
@@ -1257,6 +1262,7 @@ export function ProjectLocationMap({
     };
     const onGestureStart = (event: Event) => {
       event.preventDefault();
+      setMarkerLabelOpen(false);
       gestureStartZoom = viewRef.current.zoom;
     };
     const onGestureChange = (event: Event) => {
@@ -1284,6 +1290,7 @@ export function ProjectLocationMap({
   }, [zoomTo]);
 
   const focusDetailView = useCallback(() => {
+    setMarkerLabelOpen(false);
     if (area?.path.length) {
       const centroid = area.path.reduce((sum, point) => ({ lat: sum.lat + point.lat, lng: sum.lng + point.lng }), { lat: 0, lng: 0 });
       stopAnimation();
@@ -1302,6 +1309,7 @@ export function ProjectLocationMap({
   }, [area, marker, market.coordinates, market.zoom]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    setMarkerLabelOpen(false);
     if (drawingActive) {
       if (!event.isPrimary) return;
       event.preventDefault();
@@ -1433,6 +1441,17 @@ export function ProjectLocationMap({
     releasePointer(event);
   };
 
+  const handleMarkerPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMarkerLabelOpen((open) => !open);
+  };
+
+  const handleMarkerClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (event.detail === 0) setMarkerLabelOpen((open) => !open);
+  };
+
   const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (drawingActive || performance.now() - lastTapRef.current.zoomedAt < 600) return;
     const rect = shellRef.current?.getBoundingClientRect();
@@ -1556,9 +1575,11 @@ export function ProjectLocationMap({
             return houseNumber && candidate.id !== buildingPicker?.selectedId ? <span key={candidate.id} style={{ left: label.x, top: label.y }}>{houseNumber}</span> : null;
           })}
         </div>}
-        {marker && <div className="osm-site-marker" key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
-          <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true"><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
-          <span>{cleanAddressLabel(marker.label, language)}</span>
+        {marker && <div className={`osm-site-marker ${markerLabelOpen ? "is-open" : ""}`} key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
+          <button type="button" className="osm-site-pin-button" aria-label={cleanAddressLabel(marker.label, language)} aria-expanded={markerLabelOpen} onPointerDown={handleMarkerPointerDown} onClick={handleMarkerClick}>
+            <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true"><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
+          </button>
+          {markerLabelOpen && <span>{cleanAddressLabel(marker.label, language)}</span>}
         </div>}
         <div className="osm-control-stack" aria-label={text.zoomControls} onPointerDown={stopMapGesture} onPointerUp={stopMapGesture} onDoubleClick={stopMapGesture}>
           <button type="button" aria-label={text.zoomIn} onClick={() => zoomStep(1)} disabled={zoom >= MAX_ZOOM}>+</button>
