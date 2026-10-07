@@ -20,6 +20,14 @@ describe("Financial model (§14.10)", () => {
     expect(solar?.annualCashFlows.at(-1)?.year).toBe(25);
   });
 
+  it("uses BIPV incremental investment, not total scheme price, for solar payback", () => {
+    const solar = calculateFinancialScenarios({ annualGenerationKwh: 4500, energy, costs, unitPriceDivisor: 100 }).find((scenario) => scenario.id === "solar-only");
+    const battery = calculateFinancialScenarios({ annualGenerationKwh: 4500, energy, costs, unitPriceDivisor: 100 }).find((scenario) => scenario.id === "solar-battery");
+    expect(solar?.upfrontGbp).toBe(5000);
+    expect(solar?.annualCashFlows[0].cumulativeNetGbp).toBeGreaterThan(-costs.schemePriceGbp!);
+    expect(battery?.upfrontGbp).toBe(9000);
+  });
+
   it("uses hourly export shares instead of treating battery losses as exported energy", () => {
     const scenarios = calculateFinancialScenarios({
       annualGenerationKwh: 1000,

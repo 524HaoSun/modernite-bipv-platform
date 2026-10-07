@@ -121,7 +121,7 @@ describe("project study calculation service", () => {
     const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings: settings });
     expect(study.energy.source).toBe("household");
     expect(study.energy.annualDemandKwh).toBeCloseTo(estimateAnnualDemandKwh(settings), -1);
-    expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.upfrontGbp).toBe(7700);
+    expect(study.result.scenarios.find((scenario) => scenario.id === "solar-only")?.upfrontGbp).toBe(4200);
     expect(study.result.ledger.find((entry) => entry.id === "costs")?.params).toMatchObject({ currency: "GBP", estimated: 1 });
   });
 

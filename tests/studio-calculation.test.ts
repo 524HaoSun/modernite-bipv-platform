@@ -34,13 +34,15 @@ describe("Studio snapshot calculation mapping", () => {
   it("prices the design from its product area in the market currency when no quote is entered", () => {
     const area = 26.5 + 9.2 + 4;
     expect(planningCosts("UK", area).projectPrice).toBe(12700);
+    expect(planningCosts("UK", area)).toMatchObject({ conventionalMaterial: 3200, conventionalLabour: 2600, incrementalInvestment: 6900 });
     expect(planningCosts("JP", area).projectPrice).toBe(2060000);
     const battery = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 7.5, projectPriceGbp: 18000, batteryPriceGbp: null });
-    expect(battery).toEqual({ projectPrice: 18000, projectPriceSource: "user", batteryPrice: 5800, batteryPriceSource: "estimate" });
+    expect(battery).toEqual({ projectPrice: 18000, projectPriceSource: "user", conventionalMaterial: 3200, conventionalLabour: 2600, incrementalInvestment: 12200, batteryPrice: 5800, batteryPriceSource: "estimate" });
     const noBatteryRecommended = planningCosts("UK", area, { batteryMode: "solar-battery", batteryCapacityKwh: 0, projectPriceGbp: 18000, batteryPriceGbp: null });
     expect(noBatteryRecommended).toMatchObject({ batteryPrice: null, batteryPriceSource: "estimate" });
     const input = buildPlanningInput({ region: "UK", label: "London", coordinates: { lat: 51.5, lng: -0.12 }, snapshot });
     expect(input.costs.schemePriceGbp).toBe(12700);
+    expect(input.costs).toMatchObject({ conventionalMaterialGbp: 3200, conventionalLabourGbp: 2600 });
   });
 
   it("estimates household demand from people, daytime occupancy and electric loads", () => {

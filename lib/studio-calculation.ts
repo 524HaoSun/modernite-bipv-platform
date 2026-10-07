@@ -58,21 +58,44 @@ export const PLANNING_COST_RATES: Record<Region, { perM2: number; batteryPerKwh:
   JP: { perM2: 52000, batteryPerKwh: 160000 },
 };
 
+/** Indicative displaced conventional roof finish cost per m², used only for BIPV incremental payback. */
+export const CONVENTIONAL_ROOF_COST_RATES: Record<Region, { materialPerM2: number; labourPerM2: number }> = {
+  UK: { materialPerM2: 80, labourPerM2: 65 },
+  EU: { materialPerM2: 85, labourPerM2: 70 },
+  CA: { materialPerM2: 120, labourPerM2: 95 },
+  JP: { materialPerM2: 14000, labourPerM2: 10000 },
+};
+
 export function activeSolarAreaM2(snapshot: Pick<StudioCalculationSnapshot, "surfaces">): number {
   return snapshot.surfaces.filter((surface) => surface.enabled !== false && surface.area > 0).reduce((sum, surface) => sum + surface.area, 0);
 }
 
-export type PlanningCosts = { projectPrice: number; projectPriceSource: "user" | "estimate"; batteryPrice: number | null; batteryPriceSource: "user" | "estimate" | null };
+export type PlanningCosts = {
+  projectPrice: number;
+  projectPriceSource: "user" | "estimate";
+  conventionalMaterial: number;
+  conventionalLabour: number;
+  incrementalInvestment: number;
+  batteryPrice: number | null;
+  batteryPriceSource: "user" | "estimate" | null;
+};
 
 export function planningCosts(region: Region, solarAreaM2: number, settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">): PlanningCosts {
   const rates = PLANNING_COST_RATES[region];
+  const conventionalRates = CONVENTIONAL_ROOF_COST_RATES[region];
   const round = (value: number) => Math.round(value / (region === "JP" ? 10000 : 100)) * (region === "JP" ? 10000 : 100);
   const userProject = settings?.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : null;
   const battery = settings?.batteryMode === "solar-battery";
   const userBattery = battery && settings?.batteryPriceGbp && settings.batteryPriceGbp > 0 ? settings.batteryPriceGbp : null;
+  const projectPrice = userProject ?? round(Math.max(0, solarAreaM2) * rates.perM2);
+  const conventionalMaterial = round(Math.max(0, solarAreaM2) * conventionalRates.materialPerM2);
+  const conventionalLabour = round(Math.max(0, solarAreaM2) * conventionalRates.labourPerM2);
   return {
-    projectPrice: userProject ?? round(Math.max(0, solarAreaM2) * rates.perM2),
+    projectPrice,
     projectPriceSource: userProject ? "user" : "estimate",
+    conventionalMaterial,
+    conventionalLabour,
+    incrementalInvestment: Math.max(0, projectPrice - conventionalMaterial - conventionalLabour),
     batteryPrice: battery ? userBattery ?? ((settings?.batteryCapacityKwh ?? 0) > 0 ? round((settings?.batteryCapacityKwh ?? 0) * rates.batteryPerKwh) : null) : null,
     batteryPriceSource: battery ? (userBattery ? "user" : "estimate") : null,
   };
@@ -216,8 +239,8 @@ export function buildPlanningInput(input: {
     },
     costs: {
       schemePriceGbp: prices.projectPrice > 0 ? prices.projectPrice : null,
-      conventionalMaterialGbp: null,
-      conventionalLabourGbp: null,
+      conventionalMaterialGbp: prices.conventionalMaterial,
+      conventionalLabourGbp: prices.conventionalLabour,
       batteryInterest: settings?.batteryMode === "solar-battery" ? "yes" : "no",
       batteryCapacityKwh: settings?.batteryMode === "solar-battery" ? Math.max(0, settings.batteryCapacityKwh) : 0,
       batteryPriceGbp: prices.batteryPrice,
