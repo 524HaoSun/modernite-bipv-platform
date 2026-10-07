@@ -73,7 +73,7 @@ describe("platform wiring", () => {
   it("wires the client features", () => {
     expect(read("client/src/components/AddressGate.tsx")).toContain("placesAutocomplete(");
     expect(read("client/src/components/ProjectLocationMap.tsx")).toContain("osm-sun-layer");
-    expect(read("client/src/components/BuildingProfileCard.tsx")).toContain("roofReference");
+    expect(read("client/src/components/BuildingProfileCard.tsx")).toContain("potentialNote");
     const results = read("client/src/components/ResultsReport.tsx");
     expect(results).toContain("ShareActions");
     expect(results).toContain("/report.pdf");
