@@ -48,7 +48,7 @@ async function renderHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
   const layers = (await response.json()) as { annualFluxUrl?: string; maskUrl?: string; imageryQuality?: string; imageryDate?: { year?: number; month?: number; day?: number }; error?: { code?: number; status?: string; message?: string } };
   if (layers.error || !layers.annualFluxUrl || !layers.maskUrl) {
     const notFound = layers.error?.code === 404 || layers.error?.status === "NOT_FOUND";
-    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "Google Solar has no roof imagery here." : `Google Solar data layers failed (${layers.error?.status ?? response.status}).` };
+    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "External solar heatmap has no roof imagery here." : `External solar heatmap data layers failed (${layers.error?.status ?? response.status}).` };
   }
   const [flux, mask] = await Promise.all([readTiff(layers.annualFluxUrl), readTiff(layers.maskUrl)]);
   const zone = utmZoneFromEpsg(Number(flux.image.getGeoKeys()?.ProjectedCSTypeGeoKey));
@@ -60,7 +60,7 @@ async function renderHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
     const v = flux.raster[y * width + x]!;
     if (maskAt(x, y) > 0 && v > 0) roofValues.push(v);
   }
-  if (roofValues.length < 20) return { status: "not-found", note: "No roof pixels in the Google Solar mask." };
+  if (roofValues.length < 20) return { status: "not-found", note: "No roof pixels in the external solar mask." };
   roofValues.sort((a, b) => a - b);
   const lo = quantile(roofValues, 0.03), hi = quantile(roofValues, 0.98);
   const png = new PNG({ width, height });
@@ -87,13 +87,13 @@ async function renderHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
 
 /** Billed per call, so it is only requested on demand and persisted for a year. */
 export async function getSolarHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
-  if (!ENV.googleSolarApiKey) return { status: "disabled", note: "Google Solar is not configured." };
+  if (!ENV.googleSolarApiKey) return { status: "disabled", note: "External solar heatmap is not configured." };
   const key = `${lat.toFixed(5)}:${lng.toFixed(5)}`;
   return cachedValue("solar-heatmap", key, TTL_MS, async () => {
     try {
       return await renderHeatmap(lat, lng);
     } catch (error) {
-      return { status: "unavailable" as const, note: error instanceof Error ? error.message : "Google Solar data layers failed." };
+      return { status: "unavailable" as const, note: error instanceof Error ? error.message : "External solar heatmap data layers failed." };
     }
   }, (value) => value.status !== "unavailable");
 }

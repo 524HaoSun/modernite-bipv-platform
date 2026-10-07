@@ -43,7 +43,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "How do I place the pin accurately?", answer: "Search the address, then zoom in and click the roof of your building. Use the + / − buttons or the mouse wheel to zoom; clicking the map moves the pin, zooming never does." },
-        { id: "data", question: "What does building detection read?", answer: "Only after you press “Confirm pin & read building”, the platform reads the footprint from OpenStreetMap, roof planes from Google Solar and ground elevation from Google, then suggests building type, size, storeys, roof and orientation. Nothing is fetched while you are still moving the pin." },
+        { id: "data", question: "What does building detection read?", answer: "Only after you press “Confirm pin & read building”, the platform reads the footprint from OpenStreetMap, external roof geometry where available and ground elevation from Google, then suggests building type, size, storeys, roof and orientation. Nothing is fetched while you are still moving the pin." },
         { id: "missing", question: "My building isn’t detected — what now?", answer: "Choose “Enter manually”, pick the closest building type and type the front width, depth and storeys. You can also trace the site outline on the map; the Design Studio uses whichever values you apply." },
       ],
       studio: [],
@@ -53,7 +53,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "When are the inverter and battery sized?", answer: "When you press “Calculate project results”. The hourly model then sizes the inverter (≤1% clipping) and the battery from your final building, products and demand, so changing the design beforehand costs nothing." },
       ],
       results: [
-        { id: "reliable", question: "How reliable are these figures?", answer: "They come from a deterministic hourly model using site weather (PVGIS or NASA POWER), your Studio geometry and Google Solar roof data where available. Treat them as planning estimates — a site survey and installer design confirm the final system." },
+        { id: "reliable", question: "How reliable are these figures?", answer: "They come from a deterministic hourly model using site weather (PVGIS or NASA POWER), your Studio geometry and external roof benchmark data where available. Treat them as planning estimates — a site survey and installer design confirm the final system." },
         { id: "payback", question: "How is payback calculated?", answer: "Each year’s benefit is the electricity you no longer buy plus export income, minus the system cost spread over the 25-year view with panel degradation. Payback is the first year the cumulative position turns positive." },
         { id: "next", question: "What should I do next?", answer: "Download the PDF report or save the configuration, then share it with Modernité for a site survey and a firm quotation. You can return to the Design Studio or energy inputs at any time and recalculate." },
       ],
@@ -81,7 +81,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "怎么把图钉放准？", answer: "先搜索地址，再放大并点击你家屋顶。用 + / − 按钮或滚轮缩放；点击地图才会移动图钉，缩放不会改变位置。" },
-        { id: "data", question: "识别建筑会读取哪些数据？", answer: "只有在你点击“确认位置并识别建筑”后，平台才会读取 OpenStreetMap 轮廓、谷歌 Solar 屋面和谷歌高程，并据此推荐房型、尺寸、层数、屋顶和朝向。移动图钉的过程中不会调用任何接口。" },
+        { id: "data", question: "识别建筑会读取哪些数据？", answer: "只有在你点击“确认位置并识别建筑”后，平台才会读取 OpenStreetMap 轮廓、可用的外部屋顶几何和谷歌高程，并据此推荐房型、尺寸、层数、屋顶和朝向。移动图钉的过程中不会调用任何接口。" },
         { id: "missing", question: "识别不到我的房子怎么办？", answer: "点击“手动填写”，选择最接近的房型，填写正面宽度、进深和层数即可；也可以在地图上描出场地轮廓。设计工作室会使用你应用的参数。" },
       ],
       studio: [],
@@ -91,7 +91,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "逆变器和电池什么时候计算？", answer: "在你点击“计算项目结果”时。逐时模型会根据最终的建筑、产品和用电情况匹配逆变器（削峰损失 ≤1%）和电池，所以之前反复调整设计不会产生额外计算。" },
       ],
       results: [
-        { id: "reliable", question: "这些数字可靠吗？", answer: "结果来自确定性的逐时模型：使用场地气象（PVGIS 或 NASA POWER）、设计工作室的几何参数，以及可用时的谷歌 Solar 屋面数据。请把它当作规划估算，最终系统以现场勘测和安装方设计为准。" },
+        { id: "reliable", question: "这些数字可靠吗？", answer: "结果来自确定性的逐时模型：使用场地气象（PVGIS 或 NASA POWER）、设计工作室的几何参数，以及可用时的外部屋顶基准数据。请把它当作规划估算，最终系统以现场勘测和安装方设计为准。" },
         { id: "payback", question: "回本年限是怎么算的？", answer: "每年收益 = 少买的电费 + 上网收入，在 25 年周期内扣除系统投入并计入组件衰减；累计现金流首次转正的年份即为回本年。" },
         { id: "next", question: "接下来做什么？", answer: "下载 PDF 报告或保存配置，发给 Modernité 安排现场勘测和正式报价。你也可以随时回到设计工作室或能耗输入，修改后重新计算。" },
       ],
@@ -119,7 +119,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "怎麼把圖釘放準？", answer: "先搜尋地址，再放大並點擊你家屋頂。用 + / − 按鈕或滾輪縮放；點擊地圖才會移動圖釘，縮放不會改變位置。" },
-        { id: "data", question: "識別建築會讀取哪些資料？", answer: "只有在你點擊「確認位置並識別建築」後，平台才會讀取 OpenStreetMap 輪廓、Google Solar 屋面與 Google 高程，並據此建議房型、尺寸、層數、屋頂與朝向。移動圖釘的過程中不會呼叫任何介面。" },
+        { id: "data", question: "識別建築會讀取哪些資料？", answer: "只有在你點擊「確認位置並識別建築」後，平台才會讀取 OpenStreetMap 輪廓、可用的外部屋頂幾何與 Google 高程，並據此建議房型、尺寸、層數、屋頂與朝向。移動圖釘的過程中不會呼叫任何介面。" },
         { id: "missing", question: "識別不到我的房子怎麼辦？", answer: "點擊「手動填寫」，選擇最接近的房型，填寫正面寬度、進深與層數即可；也可以在地圖上描出場地輪廓。設計工作室會使用你套用的參數。" },
       ],
       studio: [],
@@ -129,7 +129,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "逆變器與電池什麼時候計算？", answer: "在你點擊「計算專案結果」時。逐時模型會依最終的建築、產品與用電情況匹配逆變器（削峰損失 ≤1%）與電池，因此之前反覆調整設計不會產生額外計算。" },
       ],
       results: [
-        { id: "reliable", question: "這些數字可靠嗎？", answer: "結果來自確定性的逐時模型：使用場地氣象（PVGIS 或 NASA POWER）、設計工作室的幾何參數，以及可用時的 Google Solar 屋面資料。請視為規劃估算，最終系統以現場勘查與安裝商設計為準。" },
+        { id: "reliable", question: "這些數字可靠嗎？", answer: "結果來自確定性的逐時模型：使用場地氣象（PVGIS 或 NASA POWER）、設計工作室的幾何參數，以及可用時的外部屋頂基準資料。請視為規劃估算，最終系統以現場勘查與安裝商設計為準。" },
         { id: "payback", question: "回本年限是怎麼算的？", answer: "每年收益 = 少買的電費 + 售電收入，在 25 年週期內扣除系統投入並計入模組衰減；累計現金流首次轉正的年份即為回本年。" },
         { id: "next", question: "接下來做什麼？", answer: "下載 PDF 報告或儲存配置，交給 Modernité 安排現場勘查與正式報價。你也可以隨時回到設計工作室或能耗輸入，修改後重新計算。" },
       ],
@@ -157,7 +157,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "Comment placer l’épingle précisément ?", answer: "Recherchez l’adresse, zoomez puis cliquez sur le toit de votre bâtiment. Zoomez avec + / − ou la molette : seul un clic sur la carte déplace l’épingle, jamais le zoom." },
-        { id: "data", question: "Quelles données la détection lit-elle ?", answer: "Uniquement après « Confirmer et lire le bâtiment » : l’emprise OpenStreetMap, les pans de toiture Google Solar et l’altitude Google, pour proposer type, dimensions, niveaux, toiture et orientation. Rien n’est interrogé tant que vous déplacez l’épingle." },
+        { id: "data", question: "Quelles données la détection lit-elle ?", answer: "Uniquement après « Confirmer et lire le bâtiment » : l’emprise OpenStreetMap, la géométrie de toiture externe disponible et l’altitude Google, pour proposer type, dimensions, niveaux, toiture et orientation. Rien n’est interrogé tant que vous déplacez l’épingle." },
         { id: "missing", question: "Mon bâtiment n’est pas détecté", answer: "Choisissez « Saisir manuellement », sélectionnez le type le plus proche et saisissez largeur, profondeur et niveaux. Vous pouvez aussi tracer le contour du site ; le Studio utilise les valeurs appliquées." },
       ],
       studio: [],
@@ -167,7 +167,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "Quand l’onduleur et la batterie sont-ils dimensionnés ?", answer: "Lorsque vous cliquez sur « Calculer les résultats ». Le modèle horaire dimensionne alors l’onduleur (écrêtage ≤ 1 %) et la batterie à partir du bâtiment, des produits et de la demande définitifs." },
       ],
       results: [
-        { id: "reliable", question: "Ces chiffres sont-ils fiables ?", answer: "Ils proviennent d’un modèle horaire déterministe utilisant la météo du site (PVGIS ou NASA POWER), la géométrie du Studio et, si disponibles, les données de toiture Google Solar. Ce sont des estimations de planification ; une visite technique confirme le système final." },
+        { id: "reliable", question: "Ces chiffres sont-ils fiables ?", answer: "Ils proviennent d’un modèle horaire déterministe utilisant la météo du site (PVGIS ou NASA POWER), la géométrie du Studio et, si disponible, le benchmark toiture externe. Ce sont des estimations de planification ; une visite technique confirme le système final." },
         { id: "payback", question: "Comment le retour sur investissement est-il calculé ?", answer: "Le gain annuel correspond à l’électricité non achetée plus les revenus d’export, moins le coût du système sur 25 ans avec la dégradation des modules. Le retour est la première année où le cumul devient positif." },
         { id: "next", question: "Quelle est la prochaine étape ?", answer: "Téléchargez le rapport PDF ou enregistrez la configuration, puis transmettez-la à Modernité pour une visite technique et un devis ferme. Vous pouvez revenir au Studio ou aux données d’énergie et recalculer à tout moment." },
       ],
@@ -195,7 +195,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "ピンを正確に置くには？", answer: "住所を検索してから拡大し、ご自宅の屋根をクリックします。+ / − ボタンやホイールで拡大縮小しても位置は変わらず、地図をクリックしたときだけピンが移動します。" },
-        { id: "data", question: "建物の読み取りで使うデータは？", answer: "「位置を確定して建物を読み取る」を押した後にのみ、OpenStreetMap の輪郭、Google Solar の屋根面、Google の標高を取得し、建物タイプ・寸法・階数・屋根・向きを提案します。ピンを動かしている間は通信しません。" },
+        { id: "data", question: "建物の読み取りで使うデータは？", answer: "「位置を確定して建物を読み取る」を押した後にのみ、OpenStreetMap の輪郭、利用可能な外部屋根形状、Google の標高を取得し、建物タイプ・寸法・階数・屋根・向きを提案します。ピンを動かしている間は通信しません。" },
         { id: "missing", question: "建物が検出されない場合は？", answer: "「手動で入力」を選び、近い建物タイプを選んで間口・奥行・階数を入力してください。地図上で敷地の輪郭を描くこともできます。デザインスタジオは反映した値を使います。" },
       ],
       studio: [],
@@ -205,7 +205,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "インバーターと蓄電池はいつ選定される？", answer: "「検討結果を計算」を押したときです。時間別モデルが最終的な建物・製品・需要からインバーター（クリッピング 1% 以下）と蓄電池を選定するため、それまで設計を何度変更しても計算は発生しません。" },
       ],
       results: [
-        { id: "reliable", question: "この数値はどの程度信頼できる？", answer: "敷地の気象（PVGIS または NASA POWER）、スタジオの形状、利用可能な場合は Google Solar の屋根データを用いた確定的な時間別モデルの結果です。計画上の推定値であり、最終システムは現地調査と施工設計で確定します。" },
+        { id: "reliable", question: "この数値はどの程度信頼できる？", answer: "敷地の気象（PVGIS または NASA POWER）、スタジオの形状、利用可能な場合は外部屋根ベンチマークを用いた確定的な時間別モデルの結果です。計画上の推定値であり、最終システムは現地調査と施工設計で確定します。" },
         { id: "payback", question: "回収年数の計算方法は？", answer: "毎年の便益 = 購入しなくて済む電気代 + 売電収入。25 年間でモジュール劣化を考慮しつつシステム費用を差し引き、累積がプラスに転じる最初の年が回収年です。" },
         { id: "next", question: "次に何をすればいい？", answer: "PDF レポートをダウンロードするか構成を保存し、Modernité に送って現地調査と正式見積もりを依頼してください。デザインスタジオやエネルギー入力に戻って再計算することもできます。" },
       ],
@@ -233,7 +233,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "¿Cómo coloco el pin con precisión?", answer: "Busca la dirección, acerca el mapa y haz clic en el tejado de tu edificio. Usa + / − o la rueda para el zoom: solo un clic en el mapa mueve el pin, el zoom nunca." },
-        { id: "data", question: "¿Qué datos lee la detección?", answer: "Solo después de pulsar «Confirmar y leer el edificio»: la planta de OpenStreetMap, los faldones de Google Solar y la elevación de Google, para proponer tipo, medidas, plantas, cubierta y orientación. Mientras mueves el pin no se consulta nada." },
+        { id: "data", question: "¿Qué datos lee la detección?", answer: "Solo después de pulsar «Confirmar y leer el edificio»: la planta de OpenStreetMap, la geometría externa de cubierta disponible y la elevación de Google, para proponer tipo, medidas, plantas, cubierta y orientación. Mientras mueves el pin no se consulta nada." },
         { id: "missing", question: "No se detecta mi edificio", answer: "Elige «Introducir a mano», selecciona el tipo más parecido e indica ancho, fondo y plantas. También puedes trazar el contorno del sitio; el Estudio usa los valores que apliques." },
       ],
       studio: [],
@@ -243,7 +243,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "¿Cuándo se dimensionan el inversor y la batería?", answer: "Al pulsar «Calcular resultados». El modelo horario dimensiona entonces el inversor (recorte ≤1 %) y la batería con el edificio, los productos y la demanda definitivos." },
       ],
       results: [
-        { id: "reliable", question: "¿Qué fiabilidad tienen estas cifras?", answer: "Proceden de un modelo horario determinista con el clima del sitio (PVGIS o NASA POWER), la geometría del Estudio y, si existen, datos de cubierta de Google Solar. Son estimaciones de planificación; una visita técnica confirma el sistema final." },
+        { id: "reliable", question: "¿Qué fiabilidad tienen estas cifras?", answer: "Proceden de un modelo horario determinista con el clima del sitio (PVGIS o NASA POWER), la geometría del Estudio y, si existe, el benchmark externo de cubierta. Son estimaciones de planificación; una visita técnica confirma el sistema final." },
         { id: "payback", question: "¿Cómo se calcula la amortización?", answer: "El beneficio anual es la electricidad que dejas de comprar más los ingresos por excedentes, menos el coste del sistema en 25 años con degradación de módulos. La amortización es el primer año en que el acumulado es positivo." },
         { id: "next", question: "¿Qué hago ahora?", answer: "Descarga el informe PDF o guarda la configuración y envíala a Modernité para una visita técnica y un presupuesto firme. Puedes volver al Estudio o a los datos de energía y recalcular cuando quieras." },
       ],
@@ -271,7 +271,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       ],
       location: [
         { id: "pin", question: "Come posiziono il segnaposto con precisione?", answer: "Cerca l’indirizzo, ingrandisci e fai clic sul tetto dell’edificio. Usa + / − o la rotella per lo zoom: solo il clic sulla mappa sposta il segnaposto, lo zoom mai." },
-        { id: "data", question: "Quali dati legge il rilevamento?", answer: "Solo dopo «Conferma e leggi l’edificio»: l’impronta da OpenStreetMap, le falde da Google Solar e la quota da Google, per proporre tipo, misure, piani, copertura e orientamento. Mentre sposti il segnaposto non viene interrogato nulla." },
+        { id: "data", question: "Quali dati legge il rilevamento?", answer: "Solo dopo «Conferma e leggi l’edificio»: l’impronta da OpenStreetMap, la geometria esterna del tetto disponibile e la quota da Google, per proporre tipo, misure, piani, copertura e orientamento. Mentre sposti il segnaposto non viene interrogato nulla." },
         { id: "missing", question: "Il mio edificio non viene rilevato", answer: "Scegli «Inserisci a mano», seleziona il tipo più simile e inserisci larghezza, profondità e piani. Puoi anche tracciare il contorno del sito; lo Studio usa i valori applicati." },
       ],
       studio: [],
@@ -281,7 +281,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
         { id: "sizing", question: "Quando vengono dimensionati inverter e batteria?", answer: "Quando premi «Calcola i risultati». Il modello orario dimensiona allora l’inverter (clipping ≤1%) e la batteria in base a edificio, prodotti e consumi definitivi." },
       ],
       results: [
-        { id: "reliable", question: "Quanto sono affidabili questi numeri?", answer: "Derivano da un modello orario deterministico con il clima del sito (PVGIS o NASA POWER), la geometria dello Studio e, se disponibili, i dati di copertura Google Solar. Sono stime di pianificazione; un sopralluogo conferma l’impianto finale." },
+        { id: "reliable", question: "Quanto sono affidabili questi numeri?", answer: "Derivano da un modello orario deterministico con il clima del sito (PVGIS o NASA POWER), la geometria dello Studio e, se disponibile, il benchmark esterno del tetto. Sono stime di pianificazione; un sopralluogo conferma l’impianto finale." },
         { id: "payback", question: "Come si calcola il rientro?", answer: "Il beneficio annuo è l’energia non acquistata più i ricavi dell’energia ceduta, meno il costo dell’impianto sui 25 anni con il degrado dei moduli. Il rientro è il primo anno in cui il cumulato diventa positivo." },
         { id: "next", question: "Qual è il prossimo passo?", answer: "Scarica il report PDF o salva la configurazione e inviala a Modernité per un sopralluogo e un preventivo definitivo. Puoi tornare allo Studio o ai dati energetici e ricalcolare in qualsiasi momento." },
       ],

@@ -72,7 +72,7 @@ const round = (value: number | undefined, digits = 1) => (Number.isFinite(value)
 export function parseBuildingInsights(payload: BuildingInsights, requested: { lat: number; lng: number }): GoogleSolarReference {
   if (payload.error) {
     const notFound = payload.error.code === 404 || payload.error.status === "NOT_FOUND";
-    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "Google Solar has no building model at this location." : `Google Solar request failed (${payload.error.status ?? payload.error.code ?? "error"}).` };
+    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "The external roof benchmark has no building model at this location." : `External roof benchmark request failed (${payload.error.status ?? payload.error.code ?? "error"}).` };
   }
   const potential = payload.solarPotential;
   const center = payload.center?.latitude !== undefined && payload.center?.longitude !== undefined ? { lat: payload.center.latitude, lng: payload.center.longitude } : undefined;
@@ -112,7 +112,7 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
     panelConfigs,
     roofSegments: segments,
     boundingBox: toLatLng(payload.boundingBox?.sw) && toLatLng(payload.boundingBox?.ne) ? { sw: toLatLng(payload.boundingBox?.sw)!, ne: toLatLng(payload.boundingBox?.ne)! } : undefined,
-    note: "Google Solar roof model (aerial imagery and DSM). Used as a roof-geometry reference only; generation follows the customer empirical model.",
+    note: "External roof geometry reference from aerial imagery and DSM; Modernité generation follows the configured Design Studio BIPV model.",
   };
 }
 
@@ -129,7 +129,7 @@ export async function fetchBuildingInsights(input: { lat: number; lng: number; a
     const payload = (await response.json()) as BuildingInsights;
     return parseBuildingInsights(payload, input);
   } catch (error) {
-    return { status: "unavailable", note: `Google Solar is temporarily unavailable${error instanceof Error && !/abort/i.test(error.message) ? ` (${error.message})` : ""}.` };
+    return { status: "unavailable", note: `External roof benchmark is temporarily unavailable${error instanceof Error && !/abort/i.test(error.message) ? ` (${error.message})` : ""}.` };
   } finally {
     clearTimeout(timer);
   }

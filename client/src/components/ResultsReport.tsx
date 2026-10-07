@@ -685,7 +685,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
               <div><span>{t.roofSegments}</span><strong>{solar.roofSegments?.length ?? 0}</strong></div>
               <div><span>{t.usableArea}</span><strong>{solar.maxArrayAreaM2 ?? "—"} m²</strong></div>
               <div><span>{t.peakSunshine}</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} {t.hoursYear}</strong></div>
-              {solar.maxArrayPanelsCount ? <div><span>{sc.googleLayout}</span><strong>{sc.googleLayoutValue(solar.maxArrayPanelsCount, f.n(solar.maxArrayCapacityKwp ?? 0, 1))}</strong></div> : null}
+              {solar.maxArrayCapacityKwp ? <div><span>{sc.googleLayout}</span><strong>{sc.googleLayoutValue(solar.maxArrayPanelsCount ?? 0, f.n(solar.maxArrayCapacityKwp, 1))}</strong></div> : null}
               {solar.maxArrayYearlyDcKwh ? <div><span>{sc.googleYearly}</span><strong>{f.n(solar.maxArrayYearlyDcKwh)} {t.perYear}</strong></div> : null}
             </div>
             {solar.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp && study.result.totalCapacityKwp > 0 ? <p className="result-note result-crosscheck">{sc.crossCheck(f.n(study.result.range.representative / study.result.totalCapacityKwp), f.n(solar.maxArrayYearlyDcKwh / solar.maxArrayCapacityKwp))}</p> : null}

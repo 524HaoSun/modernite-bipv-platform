@@ -917,7 +917,6 @@ export function ProjectLocationMap({
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [marker, setMarker] = useState<ProjectLocationSelection | null>(initialLocation ?? null);
   const [area, setArea] = useState<SiteAreaSelection | null>(isUsablePath(initialArea?.path) ? initialArea ?? null : null);
-  const [pinLabelOpen, setPinLabelOpen] = useState(false);
   const [draftPath, setDraftPath] = useState<LatLng[]>([]);
   const [drawingActive, setDrawingActive] = useState(false);
   const [closeReady, setCloseReady] = useState(false);
@@ -1557,8 +1556,8 @@ export function ProjectLocationMap({
             return houseNumber && candidate.id !== buildingPicker?.selectedId ? <span key={candidate.id} style={{ left: label.x, top: label.y }}>{houseNumber}</span> : null;
           })}
         </div>}
-        {marker && <div className={`osm-site-marker ${area ? "is-compact" : ""} ${area && pinLabelOpen ? "is-open" : ""}`} key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
-          <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true" onPointerDown={area ? stopMapGesture : undefined} onClick={area ? () => setPinLabelOpen((open) => !open) : undefined}><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
+        {marker && <div className="osm-site-marker" key={`${marker.coordinates.lat},${marker.coordinates.lng}`} style={{ left: projectToScreen(marker.coordinates).x, top: projectToScreen(marker.coordinates).y }}>
+          <svg className="osm-site-pin" viewBox="0 0 26 37" width="34" height="48" aria-hidden="true"><path d="M13 .6C6.15.6.6 6.15.6 13c0 9.3 12.4 23.4 12.4 23.4S25.4 22.3 25.4 13C25.4 6.15 19.85.6 13 .6Z" /><circle cx="13" cy="13" r="4.6" /></svg>
           <span>{cleanAddressLabel(marker.label, language)}</span>
         </div>}
         <div className="osm-control-stack" aria-label={text.zoomControls} onPointerDown={stopMapGesture} onPointerUp={stopMapGesture} onDoubleClick={stopMapGesture}>
@@ -1590,7 +1589,7 @@ export function ProjectLocationMap({
       {sunHeatmap?.visible && sunHeatmap.state !== "idle" && <div className="site-sun-legend" aria-live="polite">
         {sunHeatmap.state === "loading" ? <span>{text.sunLoading}</span>
           : sunHeatmap.state === "none" || !sunHeatmap.data ? <span>{text.sunNone}</span>
-          : <><i aria-hidden="true" /><span><b>{sunHeatmap.data.minKwhPerKw}</b><b>{sunHeatmap.data.maxKwhPerKw}</b></span><small>{text.sunLegend} · Google Solar{sunHeatmap.data.imageryDate ? ` ${sunHeatmap.data.imageryDate}` : ""}</small></>}
+          : <><i aria-hidden="true" /><span><b>{sunHeatmap.data.minKwhPerKw}</b><b>{sunHeatmap.data.maxKwhPerKw}</b></span><small>{text.sunLegend} · External solar heatmap{sunHeatmap.data.imageryDate ? ` ${sunHeatmap.data.imageryDate}` : ""}</small></>}
       </div>}
 
       {showReference && <div className="site-map-reference" aria-live="polite"><span><MapPin size={14} /></span><div><small>{text.openData}</small><b>{referenceLabel}</b><p>{text.ready}</p></div></div>}
