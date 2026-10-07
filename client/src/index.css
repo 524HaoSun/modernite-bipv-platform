@@ -11425,18 +11425,17 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .calculation-page.calculation-page--cinematic::before {
   inset: 0 !important;
   background:
-    linear-gradient(180deg, rgba(245, 251, 247, .10), rgba(238, 247, 240, .10)),
+    linear-gradient(180deg, rgba(245, 251, 247, .04), rgba(238, 247, 240, .04)),
     url("/assets/modernite-loading-client-bg.png") center center / 100% 100% no-repeat !important;
-  filter: blur(7px) saturate(.98) contrast(.98) !important;
-  opacity: .88 !important;
-  transform: scale(1.012) !important;
+  filter: blur(4px) saturate(1.02) contrast(.98) !important;
+  opacity: 1 !important;
+  transform: scale(1.008) !important;
 }
 
 .calculation-page.calculation-page--cinematic::after {
   background:
-    radial-gradient(circle at 50% 50%, rgba(240, 253, 247, .20) 0 18%, rgba(240, 253, 247, .08) 19% 42%, transparent 62%),
-    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(246, 251, 247, .16)) !important;
-  opacity: 1 !important;
+    radial-gradient(circle at 50% 50%, rgba(240, 253, 247, .18) 0 16%, rgba(240, 253, 247, .05) 17% 34%, transparent 58%) !important;
+  opacity: .55 !important;
 }
 
 .calculation-page--cinematic .calculation-radar {
