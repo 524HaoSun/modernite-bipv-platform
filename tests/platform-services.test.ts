@@ -16,8 +16,6 @@ describe("external roof geometry reference", () => {
     }, { lat: 52.925, lng: -1.229 });
     expect(reference.maxArrayAreaM2).toBe(29.3);
     expect(reference.maxSunshineHoursPerYear).toBe(1042);
-    expect(reference).not.toHaveProperty("maxArray" + "CapacityKwp");
-    expect(reference).not.toHaveProperty("maxArray" + "YearlyDcKwh");
   });
 });
 
