@@ -140,6 +140,20 @@ describe("project study calculation service", () => {
     expect(manualStudy.result.ledger.find((entry) => entry.id === "battery")?.params).toMatchObject({ kwh: 3, recommended: manualStudy.simulation.recommendedBatteryKwh });
   });
 
+  it("publishes one KPI basis for solar coverage, PV self-consumption and export rate", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const settings = { ...energySettings, batteryMode: "solar-battery" as const, batteryCapacitySource: "auto" as const, batteryPriceGbp: null };
+    const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings: settings });
+    const solarOnly = study.simulation.kpis.solarOnly;
+    const solarBattery = study.simulation.kpis.solarBattery;
+    expect(solarOnly.solarCoverage).toBeCloseTo(study.simulation.selfConsumedKwh / study.energy.annualDemandKwh, 6);
+    expect(solarOnly.pvSelfConsumption).toBeCloseTo(study.simulation.selfConsumedKwh / study.simulation.annualGenerationKwh, 6);
+    expect(solarOnly.exportRate).toBeCloseTo(study.simulation.exportKwh / study.simulation.annualGenerationKwh, 6);
+    expect(solarBattery.solarCoverage).toBeCloseTo(study.simulation.battery.selfConsumedKwh / study.energy.annualDemandKwh, 6);
+    expect(solarBattery.pvSelfConsumption).toBeCloseTo(study.simulation.battery.selfConsumedKwh / study.simulation.annualGenerationKwh, 6);
+    expect(solarBattery.exportRate).toBeCloseTo(study.simulation.battery.exportKwh / study.simulation.annualGenerationKwh, 6);
+  });
+
   it("falls back to the customer synthetic climate when no site weather is reachable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     const study = await runProjectCalculation({ market: "JP", address: "Tokyo", coordinates: { lat: 35.68, lng: 139.69 }, timezone: 9, studioSnapshot: snapshot });

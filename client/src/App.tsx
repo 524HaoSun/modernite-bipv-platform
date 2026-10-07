@@ -347,7 +347,7 @@ const OUTER_UI_COPY = {
     livePreview: "Live preview",
     estimatedAnnualUse: "Estimated annual household use",
     homeProfile: "Home profile",
-    directSolarUse: "Expected direct solar use",
+    directSolarUse: "Pre-calculation solar use estimate",
     aboutPercent: (value: number) => `About ${value}%`,
     electricLoads: "Electric home loads",
     storageScenario: "Storage scenario",
@@ -362,7 +362,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `${kwh} kWh battery considered`,
     solarOnlyBaseline: "Solar-only baseline",
     connectsTo: "These answers connect to",
-    connectors: ["Direct solar coverage", "Bill saving", "Export income", "Solar vs battery", "25-year cash flow", "Result explanation"],
+    connectors: ["Solar coverage estimate", "Bill saving", "Export income", "Solar vs battery", "25-year cash flow", "Result explanation"],
     calculationEyebrow: "Calculating project study",
     calculationTitle: "Preparing your personalised project outlook.",
     calculationErrorTitle: "The study needs another look.",
@@ -445,7 +445,7 @@ const OUTER_UI_COPY = {
     livePreview: "实时预览",
     estimatedAnnualUse: "预估年度家庭用电",
     homeProfile: "家庭画像",
-    directSolarUse: "预计光伏直接自用",
+    directSolarUse: "计算前光伏自用预估",
     aboutPercent: (value: number) => `约 ${value}%`,
     electricLoads: "家庭电力负载",
     storageScenario: "储能场景",
@@ -460,7 +460,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `考虑 ${kwh} kWh 电池`,
     solarOnlyBaseline: "仅光伏基准",
     connectsTo: "这些答案会连接到",
-    connectors: ["光伏直接覆盖", "电费节省", "上网收益", "光伏与电池对比", "25 年现金流", "结果解释"],
+    connectors: ["光伏覆盖预估", "电费节省", "上网收益", "光伏与电池对比", "25 年现金流", "结果解释"],
     calculationEyebrow: "正在计算项目研究",
     calculationTitle: "正在准备你的个性化项目展望。",
     calculationErrorTitle: "该研究需要再次检查。",
@@ -543,7 +543,7 @@ const OUTER_UI_COPY = {
     livePreview: "即時預覽",
     estimatedAnnualUse: "預估年度家庭用電",
     homeProfile: "家庭畫像",
-    directSolarUse: "預計光伏直接自用",
+    directSolarUse: "計算前光電自用預估",
     aboutPercent: (value: number) => `約 ${value}%`,
     electricLoads: "家庭電力負載",
     storageScenario: "儲能場景",
@@ -558,7 +558,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `考慮 ${kwh} kWh 電池`,
     solarOnlyBaseline: "僅光伏基準",
     connectsTo: "這些答案會連接到",
-    connectors: ["光伏直接覆蓋", "電費節省", "上網收益", "光伏與電池對比", "25 年現金流", "結果解釋"],
+    connectors: ["光電覆蓋預估", "電費節省", "售電收益", "光伏與電池對比", "25 年現金流", "結果解釋"],
     calculationEyebrow: "正在計算專案研究",
     calculationTitle: "正在準備你的個性化專案展望。",
     calculationErrorTitle: "該研究需要再次檢查。",
@@ -641,7 +641,7 @@ const OUTER_UI_COPY = {
     livePreview: "Aperçu en direct",
     estimatedAnnualUse: "Consommation annuelle estimée",
     homeProfile: "Profil du foyer",
-    directSolarUse: "Autoconsommation directe attendue",
+    directSolarUse: "Estimation solaire avant calcul",
     aboutPercent: (value: number) => `Environ ${value} %`,
     electricLoads: "Charges électriques",
     storageScenario: "Scénario de stockage",
@@ -656,7 +656,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `Batterie de ${kwh} kWh envisagée`,
     solarOnlyBaseline: "Référence solaire seul",
     connectsTo: "Ces réponses alimentent",
-    connectors: ["Couverture solaire directe", "Économies sur facture", "Revenus d'injection", "Solaire ou batterie", "Trésorerie sur 25 ans", "Explication des résultats"],
+    connectors: ["Estimation de couverture solaire", "Économies sur facture", "Revenus d'injection", "Solaire ou batterie", "Trésorerie sur 25 ans", "Explication des résultats"],
     calculationEyebrow: "Calcul de l'étude",
     calculationTitle: "Préparation de votre étude personnalisée.",
     calculationErrorTitle: "L'étude doit être revue.",
@@ -754,7 +754,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `${kwh} kWh 蓄電池を検討`,
     solarOnlyBaseline: "太陽光のみの基準",
     connectsTo: "この回答が反映される項目",
-    connectors: ["太陽光の直接充足", "電気代削減", "売電収入", "太陽光と蓄電池", "25 年収支", "結果の解説"],
+    connectors: ["太陽光カバー率の推定", "電気代削減", "売電収入", "太陽光と蓄電池", "25 年収支", "結果の解説"],
     calculationEyebrow: "検討を計算中",
     calculationTitle: "パーソナライズした検討を準備しています。",
     calculationErrorTitle: "検討の見直しが必要です。",
@@ -837,7 +837,7 @@ const OUTER_UI_COPY = {
     livePreview: "Vista previa",
     estimatedAnnualUse: "Consumo anual estimado",
     homeProfile: "Perfil del hogar",
-    directSolarUse: "Autoconsumo directo esperado",
+    directSolarUse: "Estimación solar previa al cálculo",
     aboutPercent: (value: number) => `Aprox. ${value} %`,
     electricLoads: "Cargas eléctricas",
     storageScenario: "Escenario de almacenamiento",
@@ -852,7 +852,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `Batería de ${kwh} kWh considerada`,
     solarOnlyBaseline: "Referencia solo solar",
     connectsTo: "Estas respuestas alimentan",
-    connectors: ["Cobertura solar directa", "Ahorro en factura", "Ingresos por excedentes", "Solar o batería", "Caja a 25 años", "Explicación del resultado"],
+    connectors: ["Estimación de cobertura solar", "Ahorro en factura", "Ingresos por excedentes", "Solar o batería", "Caja a 25 años", "Explicación del resultado"],
     calculationEyebrow: "Calculando el estudio",
     calculationTitle: "Preparando su estudio personalizado.",
     calculationErrorTitle: "El estudio necesita revisión.",
@@ -935,7 +935,7 @@ const OUTER_UI_COPY = {
     livePreview: "Anteprima",
     estimatedAnnualUse: "Consumo annuo stimato",
     homeProfile: "Profilo domestico",
-    directSolarUse: "Autoconsumo diretto atteso",
+    directSolarUse: "Stima solare pre-calcolo",
     aboutPercent: (value: number) => `Circa ${value}%`,
     electricLoads: "Carichi elettrici",
     storageScenario: "Scenario di accumulo",
@@ -950,7 +950,7 @@ const OUTER_UI_COPY = {
     batteryConsidered: (kwh: number) => `Batteria da ${kwh} kWh considerata`,
     solarOnlyBaseline: "Riferimento solo solare",
     connectsTo: "Queste risposte alimentano",
-    connectors: ["Copertura solare diretta", "Risparmio in bolletta", "Ricavi da immissione", "Solare o batteria", "Cassa a 25 anni", "Spiegazione del risultato"],
+    connectors: ["Stima di copertura solare", "Risparmio in bolletta", "Ricavi da immissione", "Solare o batteria", "Cassa a 25 anni", "Spiegazione del risultato"],
     calculationEyebrow: "Calcolo dello studio",
     calculationTitle: "Stiamo preparando il tuo studio personalizzato.",
     calculationErrorTitle: "Lo studio va rivisto.",
@@ -2362,7 +2362,12 @@ export default function App() {
     } catch {
       /* Studio not loaded */
     }
-    if (study && advisorCaseId) lines.push("", `A project study has been calculated (reference ${study.caseId}); annual generation ≈ ${Math.round(study.result.range.representative)} kWh from ${study.result.totalCapacityKwp.toFixed(2)} kWp.`);
+    if (study && advisorCaseId) {
+      const selectedScenario = context.energySettings.batteryMode === "solar-battery" ? "solarBattery" : "solarOnly";
+      const kpis = study.simulation.kpis?.[selectedScenario];
+      lines.push("", `A project study has been calculated (reference ${study.caseId}); annual generation ≈ ${Math.round(study.result.range.representative)} kWh from ${study.result.totalCapacityKwp.toFixed(2)} kWp.`);
+      if (kpis) lines.push(`Selected KPI basis: ${selectedScenario}; Solar Coverage ${Math.round(kpis.solarCoverage * 100)}%, PV self-consumption ${Math.round(kpis.pvSelfConsumption * 100)}%, Export Rate ${Math.round(kpis.exportRate * 100)}%.`);
+    }
     else lines.push("", "No project study has been calculated yet; inverter and battery sizing happens when the customer confirms the calculation.");
     return lines.join("\n");
   }, [advisorCaseId, context, market.name, route, study]);

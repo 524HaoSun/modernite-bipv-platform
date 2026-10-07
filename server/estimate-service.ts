@@ -131,6 +131,7 @@ async function estimateProjectEconomics(input: ProjectCalculationInput, study: C
       annualDemandKwh: study.energy.annualDemandKwh,
       selfConsumedKwh: Math.round(study.simulation.selfConsumedKwh),
       exportKwh: Math.round(study.simulation.exportKwh),
+      kpis: study.simulation.kpis,
       recommendedBatteryKwh: study.simulation.recommendedBatteryKwh,
     },
   };
@@ -210,6 +211,8 @@ function factPack(study: StoredStudy) {
     surfaces: study.result.surfaces.map((surface) => ({ label: surface.surfaceLabel, product: surface.productName, areaM2: Number(surface.areaM2.toFixed(1)), annualKwh: Math.round(surface.annualKwh) })),
     weather: study.weather,
     simulation: study.simulation,
+    selectedScenarioId: study.result.recommendedScenarioId,
+    scenarioKpis: study.simulation.kpis,
     googleSolar: study.googleSolar,
     validation: study.validation,
     householdDemand: study.energy,
@@ -224,7 +227,7 @@ export function studyFactsFor(caseId: string) {
   if (!study) return null;
   const { simulation, ...facts } = factPack(study);
   const { hourly: _hourly, monthly: _monthly, ...simulationSummary } = simulation as typeof simulation & { hourly?: unknown; monthly?: unknown };
-  return JSON.stringify({ ...facts, simulation: simulationSummary, scenarios: study.result.scenarios.map((item) => ({ id: item.id, available: item.available, breakEvenYear: item.breakEvenYear, firstYearBenefit: item.firstYearBenefitGbp, net25Year: item.net25YearGbp })), recommendation: study.result.recommendation }).slice(0, 14_000);
+  return JSON.stringify({ ...facts, selectedScenarioId: study.result.recommendedScenarioId, simulation: simulationSummary, scenarios: study.result.scenarios.map((item) => ({ id: item.id, available: item.available, breakEvenYear: item.breakEvenYear, firstYearBenefit: item.firstYearBenefitGbp, net25Year: item.net25YearGbp })), recommendation: study.result.recommendation }).slice(0, 14_000);
 }
 
 export async function askProjectAssistant(caseId: string, question: string, language = "en") {

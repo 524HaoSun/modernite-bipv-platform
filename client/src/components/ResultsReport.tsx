@@ -44,6 +44,47 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+type ScenarioKpiKey = "solarOnly" | "solarBattery";
+
+type ResultsKpis = {
+  solarCoveragePercent: number;
+  pvSelfConsumptionPercent: number;
+  exportRatePercent: number;
+  selfConsumedKwh: number;
+  directSolarKwh: number;
+  batteryToLoadKwh: number;
+  exportKwh: number;
+  gridImportKwh: number;
+};
+
+function selectedKpiKey(scenarioId: FinancialScenario["id"]): ScenarioKpiKey {
+  return scenarioId === "solar-battery" ? "solarBattery" : "solarOnly";
+}
+
+function deriveResultsKpis(study: ProjectCalculation, scenarioId: FinancialScenario["id"]): ResultsKpis {
+  const key = selectedKpiKey(scenarioId);
+  const simWithKpis = study.simulation as ProjectCalculation["simulation"] & {
+    kpis?: ProjectCalculation["simulation"]["kpis"];
+  };
+  const canonical = simWithKpis.kpis?.[key];
+  const generated = Math.max(1, study.result.range.representative);
+  const demand = Math.max(1, study.energy.annualDemandKwh);
+  const selfConsumedKwh = canonical?.selfConsumedKwh ?? (key === "solarBattery" ? study.simulation.battery.selfConsumedKwh : study.simulation.selfConsumedKwh);
+  const exportKwh = canonical?.exportKwh ?? (key === "solarBattery" ? study.simulation.battery.exportKwh : study.simulation.exportKwh);
+  const gridImportKwh = canonical?.gridImportKwh ?? (key === "solarBattery" ? study.simulation.battery.gridImportKwh : study.simulation.gridImportKwh);
+  const solarOnlySelf = study.simulation.selfConsumedKwh;
+  return {
+    solarCoveragePercent: Math.round(clamp(canonical?.solarCoverage ?? selfConsumedKwh / demand, 0, 1) * 100),
+    pvSelfConsumptionPercent: Math.round(clamp(canonical?.pvSelfConsumption ?? selfConsumedKwh / generated, 0, 1) * 100),
+    exportRatePercent: Math.round(clamp(canonical?.exportRate ?? exportKwh / generated, 0, 1) * 100),
+    selfConsumedKwh,
+    directSolarKwh: Math.min(selfConsumedKwh, solarOnlySelf),
+    batteryToLoadKwh: key === "solarBattery" ? Math.max(0, selfConsumedKwh - solarOnlySelf) : 0,
+    exportKwh,
+    gridImportKwh,
+  };
+}
+
 function useAnimatedGaugeValue(value: number, animate: boolean) {
   const target = clamp(Math.round(value), 0, 100);
   const [displayValue, setDisplayValue] = useState(animate ? 0 : target);
@@ -210,21 +251,16 @@ function useFormatters(language: string, currency: string): Fmt {
   }, [language, currency]);
 }
 
-function GenerationRangeCard({ study, f, useBatteryCoverage }: { study: ProjectCalculation; f: Fmt; useBatteryCoverage: boolean }) {
+function GenerationRangeCard({ study, f, scenarioId }: { study: ProjectCalculation; f: Fmt; scenarioId: FinancialScenario["id"] }) {
   const { t } = f;
   const range = study.result.range;
   const position = ((range.representative - range.low) / Math.max(1, range.high - range.low)) * 100;
   const generated = range.representative;
-  const demand = Math.max(1, study.energy.annualDemandKwh);
-  const solarOnlySelfUsed = study.simulation.selfConsumedKwh;
-  const selfUsed = useBatteryCoverage ? study.simulation.battery.selfConsumedKwh : solarOnlySelfUsed;
-  const exportKwh = useBatteryCoverage ? study.simulation.battery.exportKwh : study.simulation.exportKwh;
-  const demandCoverage = Math.round(Math.min(100, (selfUsed / demand) * 100));
-  const selfUseShare = Math.round((selfUsed / Math.max(1, generated)) * 100);
+  const kpis = deriveResultsKpis(study, scenarioId);
   const flowCards = [
     { key: "generated", icon: <EnergyGlyph type="generated" />, label: t.generated, value: f.n(generated), unit: t.perYear, note: t.heroLabel },
-    { key: "used", icon: <EnergyGlyph type="used" />, label: t.usedHome, value: f.n(selfUsed), unit: t.perYear, note: `${demandCoverage}% ${t.demandLabel.toLowerCase()}` },
-    { key: "exported", icon: <EnergyGlyph type="exported" />, label: t.exported, value: f.n(exportKwh), unit: t.perYear, note: t.exportedDetail },
+    { key: "used", icon: <EnergyGlyph type="used" />, label: t.usedHome, value: f.n(kpis.selfConsumedKwh), unit: t.perYear, note: `${kpis.solarCoveragePercent}% ${t.demandLabel.toLowerCase()}` },
+    { key: "exported", icon: <EnergyGlyph type="exported" />, label: t.exported, value: f.n(kpis.exportKwh), unit: t.perYear, note: t.exportedDetail },
     { key: "capacity", icon: <EnergyGlyph type="capacity" />, label: t.capacity, value: f.n(study.result.totalCapacityKwp, 2), unit: "kWp", note: t.activeSurfaces(study.result.surfaces.length) },
   ];
   return <section className="result-section generation-range-card generation-hero-card">
@@ -233,15 +269,15 @@ function GenerationRangeCard({ study, f, useBatteryCoverage }: { study: ProjectC
       <div className="generation-dashboard-copy">
         <p className="mini-label">Design Studio · {t.heroLabel}</p>
         <strong>{f.n(range.representative)} <small>{t.perYear}</small></strong>
-        <p>{t.heroBody(study.result.surfaces.length)} {t.chainDetail(demandCoverage, selfUseShare)}</p>
+        <p>{t.heroBody(study.result.surfaces.length)} {t.chainDetail(kpis.solarCoveragePercent, kpis.pvSelfConsumptionPercent)}</p>
         <ul className="generation-benefit-list" aria-label={t.flowTitle}>
           <li><Leaf size={16} /> {t.usedHomeDetail}</li>
           <li><Home size={16} /> {t.demandLabel}: {f.n(study.energy.annualDemandKwh)} {t.perYear}</li>
           <li><TrendingUp size={16} /> {t.view25}</li>
         </ul>
       </div>
-      <div className="generation-outlook-dial" aria-label={`Solar Coverage ${demandCoverage}%`}>
-        <SolarCoverageGauge value={demandCoverage} showNeedle={false} />
+      <div className="generation-outlook-dial" aria-label={`Solar Coverage ${kpis.solarCoveragePercent}%`}>
+        <SolarCoverageGauge value={kpis.solarCoveragePercent} showNeedle={false} />
       </div>
     </div>
     <div className="generation-range-flow">
@@ -267,11 +303,10 @@ function GenerationRangeCard({ study, f, useBatteryCoverage }: { study: ProjectC
 function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
   const { t } = f;
   const firstYear = scenario.annualCashFlows[0];
-  const selfUse = firstYear?.directUseKwh ?? study.simulation.selfConsumedKwh;
-  const exportKwh = firstYear?.exportKwh ?? study.simulation.exportKwh;
+  const kpis = deriveResultsKpis(study, scenario.id);
+  const selfUse = kpis.selfConsumedKwh;
+  const exportKwh = kpis.exportKwh;
   const annualValue = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
-  const selfUseShare = Math.round((selfUse / Math.max(1, study.result.range.representative)) * 100);
-  const exportShare = Math.max(0, 100 - selfUseShare);
   return <section className="result-section executive-outcome-panel">
     <div className="executive-outcome-main">
       <p className="mini-label">{t.estimatedValue}</p>
@@ -284,8 +319,8 @@ function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculati
       <article><span>{t.scenario}</span><strong>{t.scenarioTitles[scenario.id]}</strong><small>{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.planningComparison}</small></article>
     </div>
     <div className="executive-flow-strip" aria-label={t.flowTitle}>
-      <span style={{ ["--w" as string]: `${Math.max(8, selfUseShare)}%` }}><b>{t.usedHome}</b><i>{f.n(selfUse)} kWh</i></span>
-      <span style={{ ["--w" as string]: `${Math.max(8, exportShare)}%` }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
+      <span style={{ ["--w" as string]: `${Math.max(8, kpis.pvSelfConsumptionPercent)}%` }}><b>{t.usedHome}</b><i>{f.n(selfUse)} kWh</i></span>
+      <span style={{ ["--w" as string]: `${Math.max(8, kpis.exportRatePercent)}%` }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
     </div>
   </section>;
 }
@@ -293,17 +328,16 @@ function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculati
 function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: Route) => void; f: Fmt }) {
   const { t } = f;
   const firstYear = scenario.annualCashFlows[0];
-  const directUse = firstYear?.directUseKwh ?? study.simulation.selfConsumedKwh;
-  const exported = firstYear?.exportKwh ?? study.simulation.exportKwh;
+  const kpis = deriveResultsKpis(study, scenario.id);
+  const directUse = kpis.selfConsumedKwh;
+  const exported = kpis.exportKwh;
   const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
-  const directPercent = Math.round((directUse / Math.max(1, study.energy.annualDemandKwh)) * 100);
-  const keptPercent = Math.round((directUse / Math.max(1, study.result.range.representative)) * 100);
   return <section className="result-section energy-applied-chain">
     <div className="result-section-heading"><div><p className="mini-label">{t.chainLabel}</p><h2>{t.chainTitle}</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> {t.editEnergy}</button></div>
     <div className="applied-chain-grid">
       <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(study.energy.annualDemandKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</small></article>
       <i><ArrowRight size={18} /></i>
-      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(directUse), f.n(exported))}</strong><small>{t.chainDetail(directPercent, keptPercent)}</small></article>
+      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(directUse), f.n(exported))}</strong><small>{t.chainDetail(kpis.solarCoveragePercent, kpis.pvSelfConsumptionPercent)}</small></article>
       <i><ArrowRight size={18} /></i>
       <article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · {t.estimatedValue}</p><strong>{f.money(value)} {t.perYearMoney}</strong><small>{scenario.breakEvenYear ? t.breakEvenSimple(scenario.breakEvenYear) : t.longTerm} {t.onCost(f.money(scenario.upfrontGbp))}</small></article>
     </div>
@@ -314,14 +348,14 @@ function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: Project
 function EnergyFlowPanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
   const { t } = f;
   const generation = study.result.range.representative;
-  const withBattery = scenario.id === "solar-battery";
-  const directUse = study.simulation.selfConsumedKwh;
-  const batteryUse = withBattery ? Math.max(0, study.simulation.battery.selfConsumedKwh - study.simulation.selfConsumedKwh) : 0;
-  const exported = withBattery ? study.simulation.battery.exportKwh : study.simulation.exportKwh;
+  const kpis = deriveResultsKpis(study, scenario.id);
+  const directUse = kpis.directSolarKwh;
+  const batteryUse = kpis.batteryToLoadKwh;
+  const exported = kpis.exportKwh;
   const total = Math.max(1, directUse + batteryUse + exported);
   const flows = [
     { key: "home", label: t.usedHome, value: directUse, color: "#0b6047", detail: t.usedHomeDetail },
-    { key: "battery", label: t.batteryShift, value: batteryUse, color: "#efba45", detail: withBattery ? t.batteryShiftOn : t.batteryShiftOff },
+    { key: "battery", label: t.batteryShift, value: batteryUse, color: "#efba45", detail: scenario.id === "solar-battery" ? t.batteryShiftOn : t.batteryShiftOff },
     { key: "export", label: t.exported, value: exported, color: "#8fbf79", detail: t.exportedDetail },
   ];
   return <section className="result-section energy-flow-panel">
@@ -609,6 +643,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const isDemo = study.caseId.startsWith("MOD-DEMO");
   const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
+  const selectedKpis = deriveResultsKpis(study, scenario.id);
   const surfaces = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh);
   const sim = study.simulation;
   const solar = study.googleSolar;
@@ -626,7 +661,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         aside={<div className="result-case-chip"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{new Date(study.createdAt).toLocaleDateString(t.locale, { day: "2-digit", month: "short", year: "numeric" })}</small></div>}
       />
       {isDemo && <p className="results-demo-banner"><CircleHelp size={15} /> {t.demo}</p>}
-      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} useBatteryCoverage={scenario.id === "solar-battery"} /></div>
+      <div className={`results-hero-stage ${ready ? "is-ready" : ""}`}><GenerationRangeCard study={study} f={f} scenarioId={scenario.id} /></div>
       <div className="results-layout"><main className={`results-report ${ready ? "is-ready" : ""}`}>
         <ExecutiveOutcomePanel study={study} scenario={scenario} f={f} />
         <div className="result-main-grid">
@@ -672,7 +707,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><span>{t.annualGeneration}</span><strong>{f.n(study.validation.empiricalAnnualKwh)} {t.perYear}</strong></div>
             <div><span>{t.hourlyWeather}</span><strong>{weatherSourceLabel(study.weather.kind, study.weather.source, study.weather.name, t)}</strong></div>
             <div><span>{t.irradiation}</span><strong>GHI {f.n(study.weather.annualGhiKwhM2)} · DNI {f.n(study.weather.annualDniKwhM2)} · DHI {f.n(study.weather.annualDhiKwhM2)} kWh/m²</strong></div>
-            <div><span>{t.solarOnSite}</span><strong>{t.selfUse(Math.round(sim.selfConsumption * 100), Math.round(sim.selfSufficiency * 100))}</strong></div>
+            <div><span>{t.solarOnSite}</span><strong>{t.selfUse(selectedKpis.pvSelfConsumptionPercent, selectedKpis.solarCoveragePercent)}</strong></div>
             <div><span>{t.withBattery(sim.battery.nominalKwh)}</span><strong>{t.usedOnSite(f.n(sim.battery.selfConsumedKwh))}</strong></div>
             <div><span>{t.meanTemp}</span><strong>{f.n(study.weather.meanAirTemperatureC, 1)} °C</strong></div>
           </div>

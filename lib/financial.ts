@@ -68,7 +68,7 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
     const replacementCostGbp = inverterReplacement + batteryReplacement;
     const netBenefit = billSaving + exportIncome + monetizableValue - maintenance - replacementCostGbp;
     cumulative += netBenefit;
-    return { year, solarGenerationKwh: generation, directUseKwh: directUse, exportKwh, billSavingGbp: billSaving, exportIncomeGbp: exportIncome, monetizableValueGbp: monetizableValue, arbitrageIncomeGbp: arbitrage, maintenanceCostGbp: maintenance, replacementCostGbp, netBenefitGbp: netBenefit, cumulativeNetGbp: cumulative };
+    return { year, solarGenerationKwh: generation, selfConsumedKwh: directUse, directUseKwh: directUse, exportKwh, billSavingGbp: billSaving, exportIncomeGbp: exportIncome, monetizableValueGbp: monetizableValue, arbitrageIncomeGbp: arbitrage, maintenanceCostGbp: maintenance, replacementCostGbp, netBenefitGbp: netBenefit, cumulativeNetGbp: cumulative };
   });
   const breakEven = flows.find((flow) => flow.cumulativeNetGbp >= 0)?.year ?? null;
   const labels: Record<FinancialScenario["id"], string> = { "solar-only": "Solar only", "battery-only": "Battery only", "solar-battery": "Solar + battery" };

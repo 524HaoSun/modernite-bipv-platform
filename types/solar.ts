@@ -170,6 +170,7 @@ export type FinancialScenario = {
   annualCashFlows: {
     year: number;
     solarGenerationKwh: number;
+    selfConsumedKwh: number;
     directUseKwh: number;
     exportKwh: number;
     billSavingGbp: number;

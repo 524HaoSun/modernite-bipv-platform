@@ -45,9 +45,22 @@ export type SimulationSummary = {
   clippingKwh: number;
   recommendedBatteryKwh: number;
   battery: { nominalKwh: number; powerKw: number; selfConsumedKwh: number; exportKwh: number; gridImportKwh: number };
+  kpis: {
+    solarOnly: ScenarioKpis;
+    solarBattery: ScenarioKpis;
+  };
   buildingNorthDeg: number;
   demandCalibration: "bill" | "household" | "model";
   irradiationWarnings: number;
+};
+
+export type ScenarioKpis = {
+  solarCoverage: number;
+  pvSelfConsumption: number;
+  exportRate: number;
+  selfConsumedKwh: number;
+  exportKwh: number;
+  gridImportKwh: number;
 };
 
 export type ProjectEnergy = {
@@ -177,6 +190,19 @@ function weatherProvenance(weather: core.Weather): WeatherProvenance {
   };
 }
 
+function scenarioKpis(annualGeneration: number, annualDemand: number, selfConsumedKwh: number, exportKwh: number, gridImportKwh: number): ScenarioKpis {
+  const generation = Math.max(0, annualGeneration);
+  const demand = Math.max(0, annualDemand);
+  return {
+    solarCoverage: demand > 0 ? selfConsumedKwh / demand : 0,
+    pvSelfConsumption: generation > 0 ? selfConsumedKwh / generation : 0,
+    exportRate: generation > 0 ? exportKwh / generation : 0,
+    selfConsumedKwh,
+    exportKwh,
+    gridImportKwh,
+  };
+}
+
 export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const region = regionForMarket(input.market);
   const surfaces = surfacesFromSnapshot(input.snapshot);
@@ -219,6 +245,10 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
 
   const annualGeneration = t.pv;
   const annualDemand = t.load;
+  const kpis = {
+    solarOnly: scenarioKpis(annualGeneration, annualDemand, t.self, t.export, t.grid),
+    solarBattery: scenarioKpis(annualGeneration, annualDemand, batterySums.self, batterySums.export, batterySums.grid),
+  };
   const planning = buildPlanningInput({
     region,
     label: input.address,
@@ -401,6 +431,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       clippingKwh: sizing.clippingKWh,
       recommendedBatteryKwh: sizing.recommendedBatteryKWh,
       battery: { nominalKwh: batteryNominal, powerKw: batteryPower, selfConsumedKwh: batterySums.self, exportKwh: batterySums.export, gridImportKwh: batterySums.grid },
+      kpis,
       buildingNorthDeg: north,
       demandCalibration: bill !== null ? "bill" : household !== null ? "household" : "model",
       irradiationWarnings: sim.irradiationWarnings,
