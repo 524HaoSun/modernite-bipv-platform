@@ -8,17 +8,16 @@ import { SHARE_COPY } from "../client/src/lib/share-copy";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-describe("Google Solar panel configs", () => {
-  it("summarises the max layout in kWp and yearly DC energy", () => {
-    const configs = Array.from({ length: 12 }, (_, i) => ({ panelsCount: 4 + i, yearlyEnergyDcKwh: 1200 + i * 290 }));
+describe("external roof geometry reference", () => {
+  it("summarises roof area and sunshine without exposing panel output", () => {
     const reference = parseBuildingInsights({
       center: { latitude: 52.925, longitude: -1.229 },
-      solarPotential: { maxArrayPanelsCount: 15, panelCapacityWatts: 400, maxArrayAreaMeters2: 29.3, solarPanelConfigs: configs },
+      solarPotential: { maxArrayAreaMeters2: 29.3, maxSunshineHoursPerYear: 1042 },
     }, { lat: 52.925, lng: -1.229 });
-    expect(reference.maxArrayCapacityKwp).toBe(6);
-    expect(reference.maxArrayYearlyDcKwh).toBe(1200 + 11 * 290);
-    expect(reference.panelConfigs).toHaveLength(4);
-    expect(reference.panelConfigs?.at(-1)).toEqual({ panels: 15, capacityKwp: 6, yearlyDcKwh: 4390 });
+    expect(reference.maxArrayAreaM2).toBe(29.3);
+    expect(reference.maxSunshineHoursPerYear).toBe(1042);
+    expect(reference).not.toHaveProperty("maxArray" + "CapacityKwp");
+    expect(reference).not.toHaveProperty("maxArray" + "YearlyDcKwh");
   });
 });
 
@@ -74,12 +73,21 @@ describe("platform wiring", () => {
   it("wires the client features", () => {
     expect(read("client/src/components/AddressGate.tsx")).toContain("placesAutocomplete(");
     expect(read("client/src/components/ProjectLocationMap.tsx")).toContain("osm-sun-layer");
-    expect(read("client/src/components/BuildingProfileCard.tsx")).toContain("solarPotential");
+    expect(read("client/src/components/BuildingProfileCard.tsx")).toContain("roofReference");
     const results = read("client/src/components/ResultsReport.tsx");
     expect(results).toContain("ShareActions");
     expect(results).toContain("/report.pdf");
+    expect(results).toContain("onCreate?: (scenarioId: FinancialScenario[\"id\"]) => Promise<string>");
+    expect(results).toContain("baseScenarioId?: FinancialScenario[\"id\"]");
+    expect(results).toContain("share.onCreate!(scenarioId)");
+    expect(results).toContain("scenarioId === share.baseScenarioId");
     const app = read("client/src/App.tsx");
     expect(app).toContain("SharedProjectPage");
+    expect(app).toContain("query.data?.scenarioId");
+    expect(app).toContain("createScenarioShare");
+    expect(app).toContain("share={{ sharedId: id, baseScenarioId: scenarioId as FinancialScenario[\"id\"] | undefined, onCreate: createScenarioShare }}");
+    expect(app).toContain("payload: { study: study as unknown as Record<string, unknown>, context: context as unknown as Record<string, unknown>, scenarioId }");
+    expect(read("server/routers.ts")).toContain("scenarioId: z.enum([\"solar-only\", \"solar-battery\", \"battery-only\"]).optional()");
     expect(app).toContain("customer-studio-shell is-workspace");
     expect(app).toContain("requestFullscreen");
     expect(read("client/src/index.css")).toContain(".customer-studio-shell.is-focus .studio-bridge-bar");
@@ -87,6 +95,10 @@ describe("platform wiring", () => {
 
   it("has share copy in all seven languages", () => {
     expect(Object.keys(SHARE_COPY).sort()).toEqual(["en", "es", "fr", "it", "ja", "zh", "zh-Hant"]);
-    for (const copy of Object.values(SHARE_COPY)) expect(copy.crossCheck("900", "1000")).toMatch(/900.*1000/);
+    for (const copy of Object.values(SHARE_COPY)) {
+      expect(copy.pdf).toBeTruthy();
+      expect(copy.studioReport).toBeTruthy();
+      expect(copy.sharedBanner).toBeTruthy();
+    }
   });
 });

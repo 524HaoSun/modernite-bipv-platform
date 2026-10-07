@@ -2276,6 +2276,20 @@ function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }:
   const c = shareCopy(language);
   const study = (query.data?.study ?? null) as ProjectCalculation | null;
   const context = (query.data?.context ?? null) as ProjectContext | null;
+  const scenarioId = query.data?.scenarioId === "solar-battery" || query.data?.scenarioId === "solar-only" || query.data?.scenarioId === "battery-only" ? query.data.scenarioId : context?.energySettings?.batteryMode;
+  const saveSharedProject = trpc.sharedProject.save.useMutation();
+  const createScenarioShare = useCallback(async (nextScenarioId: FinancialScenario["id"]) => {
+    if (!study) throw new Error("No study");
+    const result = await saveSharedProject.mutateAsync({
+      language,
+      payload: {
+        study: study as unknown as Record<string, unknown>,
+        context: context as unknown as Record<string, unknown>,
+        scenarioId: nextScenarioId,
+      },
+    });
+    return result.id;
+  }, [context, language, saveSharedProject, study]);
   useEffect(() => {
     document.documentElement.classList.toggle("is-print-render", printing);
   }, [printing]);
@@ -2288,11 +2302,11 @@ function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }:
       {query.isError && <section className="results-page gateway-page shared-project-state"><p>{c.missing}</p><button type="button" className="button-primary" onClick={() => continueTo("entry")}>{c.backHome}</button></section>}
       {study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage
         study={study}
-        preferredBatteryMode={context?.energySettings?.batteryMode ?? "solar-only"}
+        preferredBatteryMode={scenarioId ?? "solar-only"}
         onNavigate={continueTo}
         language={language}
         marketKey={context?.marketKey ?? (study.project?.market as MarketKey | undefined) ?? "GB"}
-        share={{ sharedId: id }}
+        share={{ sharedId: id, baseScenarioId: scenarioId as FinancialScenario["id"] | undefined, onCreate: createScenarioShare }}
       /></Suspense>}
     </main>
   );
@@ -2512,10 +2526,10 @@ export default function App() {
   }, [advisorCaseId, context, market.name, route, study]);
 
   const saveSharedProject = trpc.sharedProject.save.useMutation();
-  const createShare = useCallback(async () => {
+  const createShare = useCallback(async (scenarioId: FinancialScenario["id"]) => {
     if (!study) throw new Error("No study");
     if (!study.caseId.startsWith("MOD-DEMO") && !isStudyInputCurrent(studyContextSignature, currentContextSignature, latestStudioSignature)) throw new Error("Project inputs changed; recalculate the study before sharing.");
-    const { id } = await saveSharedProject.mutateAsync({ language: studioLanguage, payload: { study: study as unknown as Record<string, unknown>, context: context as unknown as Record<string, unknown> } });
+    const { id } = await saveSharedProject.mutateAsync({ language: studioLanguage, payload: { study: study as unknown as Record<string, unknown>, context: context as unknown as Record<string, unknown>, scenarioId } });
     return id;
   }, [context, currentContextSignature, latestStudioSignature, saveSharedProject, study, studyContextSignature, studioLanguage]);
   const continueFromShared = useCallback((sharedStudy: ProjectCalculation | null, sharedContext: ProjectContext | null, nextRoute: GatewayRoute) => {

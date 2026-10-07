@@ -57,7 +57,7 @@ export const appRouter = router({
 
   sharedProject: router({
     save: publicProcedure
-      .input(z.object({ language: z.string().max(10), payload: z.object({ study: z.record(z.string(), z.unknown()), context: z.record(z.string(), z.unknown()).nullable() }) }))
+      .input(z.object({ language: z.string().max(10), payload: z.object({ study: z.record(z.string(), z.unknown()), context: z.record(z.string(), z.unknown()).nullable(), scenarioId: z.enum(["solar-only", "solar-battery", "battery-only"]).optional() }) }))
       .mutation(({ input }) => {
         if (JSON.stringify(input.payload).length > 1_500_000) throw new Error("Project is too large to share");
         return saveProject(input.payload, input.language);
@@ -67,7 +67,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const payload = await loadProject(input.id);
         if (!payload) throw new Error("Project not found");
-        return payload as { study: Record<string, unknown>; context: Record<string, unknown> | null };
+        return payload as { study: Record<string, unknown>; context: Record<string, unknown> | null; scenarioId?: "solar-only" | "solar-battery" | "battery-only" };
       }),
   }),
   projectStudy: router({

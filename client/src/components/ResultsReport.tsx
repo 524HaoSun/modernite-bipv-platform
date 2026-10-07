@@ -410,7 +410,7 @@ function MonthlyProfileChart({ study, f }: { study: ProjectCalculation; f: Fmt }
   </section>;
 }
 
-function ScenarioComparisonPanel({ scenarios, scenario, onSelect, f }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; onSelect: (id: string) => void; f: Fmt }) {
+function ScenarioComparisonPanel({ scenarios, scenario, onSelect, f }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; onSelect: (id: FinancialScenario["id"]) => void; f: Fmt }) {
   const { t } = f;
   const visible = scenarios.filter((item) => item.id !== "battery-only");
   return <section className="result-section scenario-comparison-panel scenario-premium-panel">
@@ -566,19 +566,26 @@ function ResultAdvisor({ isDemo, t }: { isDemo: boolean; t: ResultsCopy }) {
 export type ResultsShare = {
   /** Set when viewing a shared project: the id is reused for the PDF and actions are read-only. */
   sharedId?: string;
-  onCreate?: () => Promise<string>;
+  /** Scenario captured by sharedId; switching scenario should mint a new share/PDF id. */
+  baseScenarioId?: FinancialScenario["id"];
+  onCreate?: (scenarioId: FinancialScenario["id"]) => Promise<string>;
 };
 
 const APP_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function ShareActions({ share, language }: { share: ResultsShare; language: string }) {
+function ShareActions({ share, language, scenarioId }: { share: ResultsShare; language: string; scenarioId: FinancialScenario["id"] }) {
   const c = shareCopy(language);
   const [id, setId] = useState(share.sharedId);
   const [busy, setBusy] = useState<"link" | "pdf" | null>(null);
   const [message, setMessage] = useState<{ text: string; url?: string; error?: boolean } | null>(null);
+  useEffect(() => {
+    setId(share.sharedId && scenarioId === share.baseScenarioId ? share.sharedId : undefined);
+    setMessage(null);
+  }, [scenarioId, share.baseScenarioId, share.sharedId]);
   const ensureId = async () => {
     if (id) return id;
-    const created = await share.onCreate!();
+    if (!share.onCreate) throw new Error("Cannot create shared project");
+    const created = await share.onCreate!(scenarioId);
     setId(created);
     return created;
   };
@@ -641,7 +648,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const f = useFormatters(language, project?.currency ?? MARKET_CURRENCY[market]);
   const { t } = f;
   const isDemo = study.caseId.startsWith("MOD-DEMO");
-  const [scenarioId, setScenarioId] = useState(preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
+  const [scenarioId, setScenarioId] = useState<FinancialScenario["id"]>(() => study.result.scenarios.some((item) => item.id === preferredBatteryMode) ? preferredBatteryMode as FinancialScenario["id"] : preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
   const selectedKpis = deriveResultsKpis(study, scenario.id);
   const surfaces = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh);
@@ -741,7 +748,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><dt>{t.surfaces}</dt><dd>{t.surfacesValue(study.result.surfaces.length)}<small>{f.n(study.result.totalCapacityKwp, 2)} kWp</small></dd></div>
             <div><dt>{t.scenario}</dt><dd>{t.scenarioTitles[scenario.id]}<small>{scenario.available ? t.scenarioSub : t.planningComparison}</small></dd></div>
           </dl>
-          {share && (share.sharedId || share.onCreate) && !isDemo && <ShareActions share={share} language={language} />}
+          {share && (share.sharedId || share.onCreate) && !isDemo && <ShareActions share={share} language={language} scenarioId={scenario.id} />}
           {!share?.sharedId && <>
             <button type="button" className={`button-${share?.onCreate && !isDemo ? "secondary" : "primary"} wide`} onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> {share?.onCreate && !isDemo ? sc.studioReport : t.downloadPdf}</button>
             <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
