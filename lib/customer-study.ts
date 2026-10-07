@@ -245,6 +245,16 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       solarOnly: annualGeneration ? t.self / annualGeneration : 0,
       solarBattery: annualGeneration ? batterySums.self / annualGeneration : 0,
     },
+    simulatedEnergyShares: {
+      solarOnly: {
+        self: annualGeneration ? t.self / annualGeneration : 0,
+        export: annualGeneration ? t.export / annualGeneration : 0,
+      },
+      solarBattery: {
+        self: annualGeneration ? batterySums.self / annualGeneration : 0,
+        export: annualGeneration ? batterySums.export / annualGeneration : 0,
+      },
+    },
   });
   const bestScenario = scenarios.filter((scenario) => scenario.available).sort((a, b) => b.net25YearGbp - a.net25YearGbp)[0] ?? scenarios[0];
 
@@ -312,7 +322,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   ];
   if (input.googleSolar?.status === "ok") {
     const top = input.googleSolar.roofSegments?.[0];
-    ledger.push({ id: "google-solar", label: "External roof benchmark", value: `${input.googleSolar.roofSegments?.length ?? 0} roof geometry segments · reference PV area ${input.googleSolar.maxArrayAreaM2 ?? "—"} m²${top ? ` · largest ${top.areaM2} m² at ${top.pitchDeg}° pitch / ${top.azimuthDeg}° azimuth` : ""} · imagery ${input.googleSolar.imageryQuality ?? ""} ${input.googleSolar.imageryDate ?? ""}`.trim(), provenance: "data", stepNumber: 1, fieldKey: "google-solar", params: { segments: input.googleSolar.roofSegments?.length ?? 0, area: input.googleSolar.maxArrayAreaM2 ?? null, topArea: top?.areaM2 ?? null, topPitch: top?.pitchDeg ?? null, topAz: top?.azimuthDeg ?? null, quality: input.googleSolar.imageryQuality ?? null, date: input.googleSolar.imageryDate ?? null }, note: input.googleSolar.note });
+    ledger.push({ id: "google-solar", label: "External roof geometry", value: `${input.googleSolar.roofSegments?.length ?? 0} roof geometry segments · reference roof area ${input.googleSolar.maxArrayAreaM2 ?? "—"} m²${top ? ` · largest ${top.areaM2} m² at ${top.pitchDeg}° pitch / ${top.azimuthDeg}° azimuth` : ""} · imagery ${input.googleSolar.imageryQuality ?? ""} ${input.googleSolar.imageryDate ?? ""}`.trim(), provenance: "data", stepNumber: 1, fieldKey: "google-solar", params: { segments: input.googleSolar.roofSegments?.length ?? 0, area: input.googleSolar.maxArrayAreaM2 ?? null, topArea: top?.areaM2 ?? null, topPitch: top?.pitchDeg ?? null, topAz: top?.azimuthDeg ?? null, quality: input.googleSolar.imageryQuality ?? null, date: input.googleSolar.imageryDate ?? null }, note: input.googleSolar.note });
   }
 
   const result: EstimateResult = {

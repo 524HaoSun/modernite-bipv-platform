@@ -19,4 +19,19 @@ describe("Financial model (§14.10)", () => {
     expect(solar?.annualCashFlows).toHaveLength(25);
     expect(solar?.annualCashFlows.at(-1)?.year).toBe(25);
   });
+
+  it("uses hourly export shares instead of treating battery losses as exported energy", () => {
+    const scenarios = calculateFinancialScenarios({
+      annualGenerationKwh: 1000,
+      energy: { ...energy, annualDemandKwh: 1000 },
+      costs,
+      unitPriceDivisor: 100,
+      simulatedEnergyShares: {
+        solarOnly: { self: 0.4, export: 0.6 },
+        solarBattery: { self: 0.7, export: 0.2 },
+      },
+    });
+    const battery = scenarios.find((scenario) => scenario.id === "solar-battery");
+    expect(battery?.annualCashFlows[0]).toMatchObject({ directUseKwh: 700, exportKwh: 200 });
+  });
 });

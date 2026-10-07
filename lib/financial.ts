@@ -22,6 +22,11 @@ type ScenarioInput = {
   unitPriceDivisor: number;
   /** Self-consumed share of generation from an hourly simulation, replacing the occupancy heuristic. */
   simulatedDirectShares?: { solarOnly: number; solarBattery: number };
+  /** Full hourly energy-balance shares. Export must not be inferred from generation minus self-use when a battery has losses. */
+  simulatedEnergyShares?: {
+    solarOnly: { self: number; export: number };
+    solarBattery: { self: number; export: number };
+  };
 };
 
 function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): FinancialScenario {
@@ -45,9 +50,10 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
   const flows = Array.from({ length: 25 }, (_, index) => {
     const year = index + 1;
     const generation = hasSolar ? degradedGeneration(annualGenerationKwh, year) : 0;
-    const effectiveDirectShare = hasBattery ? input.simulatedDirectShares?.solarBattery ?? Math.min(0.9, directShare + 0.18) : directShare;
+    const energyShares = hasBattery ? input.simulatedEnergyShares?.solarBattery : input.simulatedEnergyShares?.solarOnly;
+    const effectiveDirectShare = energyShares?.self ?? (hasBattery ? input.simulatedDirectShares?.solarBattery ?? Math.min(0.9, directShare + 0.18) : directShare);
     const directUse = Math.min(generation * effectiveDirectShare, energy.annualDemandKwh ?? 0);
-    const exportKwh = Math.max(0, generation - directUse);
+    const exportKwh = energyShares ? Math.max(0, generation * energyShares.export) : Math.max(0, generation - directUse);
     const importRate = (energy.importPence / unitPriceDivisor) * (1 + costs.importGrowthPercent / 100) ** (year - 1);
     const exportRate = (energy.exportPence / unitPriceDivisor) * (1 + costs.exportGrowthPercent / 100) ** (year - 1);
     const arbitrage = id === "battery-only"
@@ -65,9 +71,7 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
   });
   const breakEven = flows.find((flow) => flow.cumulativeNetGbp >= 0)?.year ?? null;
   const labels: Record<FinancialScenario["id"], string> = { "solar-only": "Solar only", "battery-only": "Battery only", "solar-battery": "Solar + battery" };
-  const first = flows[0];
-  const annualBenefit = first ? first.billSavingGbp + first.exportIncomeGbp + first.arbitrageIncomeGbp : 0;
-  return { id, title: labels[id], available: true, upfrontGbp: upfront, firstYearBenefitGbp: first?.netBenefitGbp ?? 0, breakEvenYear: breakEven, net25YearGbp: flows.at(-1)?.cumulativeNetGbp ?? -upfront, annualBenefitGbp: annualBenefit, incrementalPaybackYears: annualBenefit > 0 ? upfront / annualBenefit : null, annualCashFlows: flows };
+  return { id, title: labels[id], available: true, upfrontGbp: upfront, firstYearBenefitGbp: flows[0]?.netBenefitGbp ?? 0, breakEvenYear: breakEven, net25YearGbp: flows.at(-1)?.cumulativeNetGbp ?? -upfront, annualCashFlows: flows };
 }
 
 export function calculateFinancialScenarios(input: ScenarioInput): FinancialScenario[] {
