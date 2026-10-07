@@ -61,13 +61,14 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
       : 0;
     const billSaving = directUse * importRate;
     const exportIncome = exportKwh * exportRate;
+    const monetizableValue = arbitrage;
     const maintenance = hasSolar ? costs.annualMaintenanceGbp : 0;
     const inverterReplacement = hasSolar && year === costs.inverterReplacementYear ? costs.inverterReplacementGbp : 0;
     const batteryReplacement = hasBattery && year === costs.batteryReplacementYear ? batteryPrice * (costs.batteryReplacementPercent / 100) : 0;
     const replacementCostGbp = inverterReplacement + batteryReplacement;
-    const netBenefit = billSaving + exportIncome + arbitrage - maintenance - replacementCostGbp;
+    const netBenefit = billSaving + exportIncome + monetizableValue - maintenance - replacementCostGbp;
     cumulative += netBenefit;
-    return { year, solarGenerationKwh: generation, directUseKwh: directUse, exportKwh, billSavingGbp: billSaving, exportIncomeGbp: exportIncome, arbitrageIncomeGbp: arbitrage, maintenanceCostGbp: maintenance, replacementCostGbp, netBenefitGbp: netBenefit, cumulativeNetGbp: cumulative };
+    return { year, solarGenerationKwh: generation, directUseKwh: directUse, exportKwh, billSavingGbp: billSaving, exportIncomeGbp: exportIncome, monetizableValueGbp: monetizableValue, arbitrageIncomeGbp: arbitrage, maintenanceCostGbp: maintenance, replacementCostGbp, netBenefitGbp: netBenefit, cumulativeNetGbp: cumulative };
   });
   const breakEven = flows.find((flow) => flow.cumulativeNetGbp >= 0)?.year ?? null;
   const labels: Record<FinancialScenario["id"], string> = { "solar-only": "Solar only", "battery-only": "Battery only", "solar-battery": "Solar + battery" };

@@ -42,4 +42,12 @@ describe("Financial model (§14.10)", () => {
     const battery = scenarios.find((scenario) => scenario.id === "solar-battery");
     expect(battery?.annualCashFlows[0]).toMatchObject({ directUseKwh: 700, exportKwh: 200 });
   });
+
+  it("builds annual economic value from bill saving, export income and monetizable value", () => {
+    const touEnergy = { ...energy, offPeakPence: 8, offPeakHours: 7, peakPence: 32, peakHours: 5 };
+    const batteryOnly = calculateFinancialScenarios({ annualGenerationKwh: 0, energy: touEnergy, costs, unitPriceDivisor: 100 }).find((scenario) => scenario.id === "battery-only");
+    const firstYear = batteryOnly?.annualCashFlows[0];
+    expect(firstYear?.monetizableValueGbp).toBe(firstYear?.arbitrageIncomeGbp);
+    expect(firstYear?.netBenefitGbp).toBeCloseTo((firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? 0) - (firstYear?.maintenanceCostGbp ?? 0) - (firstYear?.replacementCostGbp ?? 0), 6);
+  });
 });

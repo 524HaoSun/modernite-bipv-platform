@@ -167,10 +167,6 @@ export type FinancialScenario = {
   firstYearBenefitGbp: number;
   breakEvenYear: number | null;
   net25YearGbp: number;
-  /** First-year bill saving + export income + arbitrage, before maintenance and replacements. */
-  annualBenefitGbp?: number;
-  /** Incremental investment ÷ annual benefit. */
-  incrementalPaybackYears?: number | null;
   annualCashFlows: {
     year: number;
     solarGenerationKwh: number;
@@ -178,6 +174,7 @@ export type FinancialScenario = {
     exportKwh: number;
     billSavingGbp: number;
     exportIncomeGbp: number;
+    monetizableValueGbp: number;
     arbitrageIncomeGbp: number;
     maintenanceCostGbp: number;
     replacementCostGbp: number;
