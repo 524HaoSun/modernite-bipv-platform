@@ -159,6 +159,19 @@ describe("V28-aligned entry gateway", () => {
     expect(styles).toContain(".studio-configuration-notice");
   });
 
+  it("invalidates calculated results when project inputs change before sharing or reporting", () => {
+    expect(app).toContain('SAVED_STUDY_CONTEXT_SIGNATURE_KEY = "modernite-saved-study-context-signature-v1"');
+    expect(app).toContain("function contextStudySignature(context: ProjectContext)");
+    expect(app).toContain("function studioSnapshotSignature(snapshot: StudioCalculationSnapshot");
+    expect(app).toContain("function isStudyInputCurrent(signature: string | null, contextSignature: string, latestStudioSignature: string | null)");
+    expect(app).toContain("onStudioSignatureChange(snapshot ? studioSnapshotSignature(snapshot, studyExtras()) : null)");
+    expect(app).toContain("const nextStudioSignature = studioSnapshotSignature(studioSnapshot, extras)");
+    expect(app).toContain("setStudyContextSignature(studyInputSignature(context, nextStudioSignature))");
+    expect(app).toContain("isStudyInputCurrent(studyContextSignature, currentContextSignature, latestStudioSignature)");
+    expect(app).toContain("Project inputs changed; recalculate the study before sharing.");
+    expect(app).toContain('route === "results" && (!study || !studyIsCurrent)');
+  });
+
   it("features an interactive rotatable market globe, library, and 7-language system matching Studio V31", () => {
     const atlas = fs.readFileSync(path.join(root, "client/src/components/MarketAtlas.tsx"), "utf8");
     expect(app).toContain("journey-rail");

@@ -76,6 +76,7 @@ const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
+const SAVED_STUDY_CONTEXT_SIGNATURE_KEY = "modernite-saved-study-context-signature-v1";
 
 type GatewayRoute = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
 type StudioLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -1031,6 +1032,109 @@ function loadSavedStudy(): ProjectCalculation | null {
   }
 }
 
+function loadSavedStudyContextSignature(): string | null {
+  try {
+    return window.localStorage.getItem(SAVED_STUDY_CONTEXT_SIGNATURE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function contextStudySignature(context: ProjectContext) {
+  const roundCoord = (value?: number) => typeof value === "number" ? Number(value.toFixed(6)) : null;
+  return JSON.stringify({
+    marketKey: context.marketKey,
+    europeanCountry: context.europeanCountry?.shortName ?? null,
+    location: context.location ? {
+      label: cleanAddressLabel(context.location.label, "en"),
+      lat: roundCoord(context.location.coordinates.lat),
+      lng: roundCoord(context.location.coordinates.lng),
+    } : null,
+    siteArea: context.siteArea ? {
+      areaM2: Number(context.siteArea.areaM2.toFixed(2)),
+      source: context.siteArea.source ?? null,
+      path: context.siteArea.path.map((point) => ({ lat: roundCoord(point.lat), lng: roundCoord(point.lng) })),
+    } : null,
+    building: context.building ? {
+      typeId: context.building.typeId,
+      widthM: Number(context.building.widthM.toFixed(2)),
+      depthM: Number(context.building.depthM.toFixed(2)),
+      floors: context.building.floors,
+      storeyHeightM: Number(context.building.storeyHeightM.toFixed(2)),
+      roofForm: context.building.roofForm,
+      roofPitchDeg: Number(context.building.roofPitchDeg.toFixed(1)),
+      frontAzimuthDeg: Number(context.building.frontAzimuthDeg.toFixed(1)),
+    } : null,
+    energySettings: normalizeEnergySettings(context.energySettings),
+  });
+}
+
+function studioSnapshotSignature(snapshot: StudioCalculationSnapshot, extras: StudyRequestExtras = {}) {
+  const round = (value?: number | null, digits = 3) => typeof value === "number" && Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
+  return JSON.stringify({
+    building: {
+      id: snapshot.building.id,
+      width: round(snapshot.building.width),
+      depth: round(snapshot.building.depth),
+      floors: round(snapshot.building.floors, 1),
+      storeyHeight: round(snapshot.building.storeyHeight),
+      usage: snapshot.building.usage ?? null,
+      wwr: round(snapshot.building.wwr),
+      glazedArea: round(snapshot.building.glazedArea),
+    },
+    surfaces: snapshot.surfaces
+      .map((surface) => ({
+        id: surface.id,
+        product: surface.product,
+        profile: surface.profile,
+        area: round(surface.area),
+        tilt: round(surface.tilt),
+        az: round(surface.az),
+        enabled: surface.enabled !== false,
+        role: surface.role ?? null,
+        linked: surface.linked ?? null,
+        u: round(surface.u),
+        g: round(surface.g),
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id)),
+    extras: {
+      timezone: round(extras.timezone, 2),
+      timezoneName: extras.timezoneName ?? null,
+      buildingNorthDeg: round(extras.buildingNorthDeg, 2),
+      weatherSource: extras.weatherSource ?? null,
+    },
+  });
+}
+
+function studyInputSignature(context: ProjectContext, studioSignature: string | null) {
+  return JSON.stringify({ context: contextStudySignature(context), studio: studioSignature });
+}
+
+function parseStudyInputSignature(signature: string | null): { context: string | null; studio: string | null } {
+  if (!signature) return { context: null, studio: null };
+  try {
+    const parsed = JSON.parse(signature) as { context?: unknown; studio?: unknown };
+    return {
+      context: typeof parsed.context === "string" ? parsed.context : signature,
+      studio: typeof parsed.studio === "string" ? parsed.studio : null,
+    };
+  } catch {
+    return { context: signature, studio: null };
+  }
+}
+
+function studyInputStatus(signature: string | null, contextSignature: string, latestStudioSignature: string | null): "current" | "pending" | "stale" {
+  const parsed = parseStudyInputSignature(signature);
+  if (parsed.context !== contextSignature) return "stale";
+  if (!parsed.studio) return latestStudioSignature === null ? "pending" : "stale";
+  if (latestStudioSignature === null) return "pending";
+  return parsed.studio === latestStudioSignature ? "current" : "stale";
+}
+
+function isStudyInputCurrent(signature: string | null, contextSignature: string, latestStudioSignature: string | null) {
+  return studyInputStatus(signature, contextSignature, latestStudioSignature) === "current";
+}
+
 export type WeatherSourceKey = "nasa-power" | "pvgis-tmy";
 export type StudyRequestExtras = { timezone?: number; timezoneName?: string; buildingNorthDeg?: number; weatherSource?: WeatherSourceKey };
 
@@ -1627,6 +1731,7 @@ function StudioPage({
   onNavigate,
   onRunCalculation,
   onEnergySettingsChange,
+  onStudioSignatureChange,
 }: {
   active: boolean;
   market: Market;
@@ -1636,6 +1741,7 @@ function StudioPage({
   onNavigate: (route: GatewayRoute) => void;
   onRunCalculation: (snapshot: StudioCalculationSnapshot, extras: StudyRequestExtras) => void;
   onEnergySettingsChange: (next: Partial<HomeEnergySettings>) => void;
+  onStudioSignatureChange: (signature: string | null) => void;
 }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const weatherAbortRef = useRef<AbortController | null>(null);
@@ -1939,6 +2045,7 @@ function StudioPage({
       applyStudioContext();
       const snapshot = (frame?.contentWindow as StudioWindow | null)?.ModerniteEnergyBridge?.snapshot?.();
       const activeSnapshot = snapshot && mapStudioSnapshotToSurfaces(snapshot).length > 0 ? snapshot : DEMO_STUDIO_SNAPSHOT;
+      onStudioSignatureChange(snapshot ? studioSnapshotSignature(snapshot, studyExtras()) : null);
       setStudyReady(Boolean(snapshot) || frameReady);
       const nextCount = mapStudioSnapshotToSurfaces(activeSnapshot).length;
       setConfiguredSurfaceCount(nextCount);
@@ -1951,7 +2058,7 @@ function StudioPage({
     refreshStudyReadiness();
     const timer = window.setInterval(refreshStudyReadiness, 500);
     return () => window.clearInterval(timer);
-  }, [applyStudioContext, frameReady]);
+  }, [applyStudioContext, frameReady, onStudioSignatureChange, studyExtras]);
 
   useEffect(() => {
     const handleStudyRequest = () => requestCalculation();
@@ -2197,10 +2304,18 @@ export default function App() {
   const [context, setContext] = useState<ProjectContext>(loadContext);
   const [studioLanguage, setStudioLanguage] = useState<StudioLanguage>(loadStudioLanguage);
   const [studioMounted, setStudioMounted] = useState(() => (["studio", "energy", "calculation", "results"] as GatewayRoute[]).includes(route));
-  const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy(loadContext()));
+  const [study, setStudy] = useState<ProjectCalculation | null>(() => loadSavedStudy() ?? createDemoStudy(context));
+  const [studyContextSignature, setStudyContextSignature] = useState<string | null>(() => {
+    const savedStudy = loadSavedStudy();
+    return savedStudy && !savedStudy.caseId.startsWith("MOD-DEMO") ? loadSavedStudyContextSignature() ?? studyInputSignature(context, null) : null;
+  });
+  const [latestStudioSignature, setLatestStudioSignature] = useState<string | null>(null);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
   const copy = GATEWAY_COPY[studioLanguage];
+  const currentContextSignature = useMemo(() => contextStudySignature(context), [context]);
+  const calculatedStudyStatus = useMemo(() => studyInputStatus(studyContextSignature, currentContextSignature, latestStudioSignature), [currentContextSignature, latestStudioSignature, studyContextSignature]);
+  const studyIsCurrent = !study || study.caseId.startsWith("MOD-DEMO") || calculatedStudyStatus === "current";
   const market = useMemo(() => {
     const base = markets.find((item) => item.key === context.marketKey) ?? markets[0];
     if (context.marketKey === "EU" && context.europeanCountry) {
@@ -2220,12 +2335,31 @@ export default function App() {
   useEffect(() => {
     if (study) {
       window.localStorage.setItem(SAVED_STUDY_STORAGE_KEY, JSON.stringify(study));
+    } else {
+      window.localStorage.removeItem(SAVED_STUDY_STORAGE_KEY);
     }
   }, [study]);
 
   useEffect(() => {
-    setStudy((current) => (current && !current.caseId.startsWith("MOD-DEMO") ? current : createDemoStudy(context)));
-  }, [context.marketKey, context.location, context.building]);
+    if (studyContextSignature) {
+      window.localStorage.setItem(SAVED_STUDY_CONTEXT_SIGNATURE_KEY, studyContextSignature);
+    } else {
+      window.localStorage.removeItem(SAVED_STUDY_CONTEXT_SIGNATURE_KEY);
+    }
+  }, [studyContextSignature]);
+
+  useEffect(() => {
+    setStudy((current) => {
+      if (current && !current.caseId.startsWith("MOD-DEMO")) {
+        const status = studyInputStatus(studyContextSignature, currentContextSignature, latestStudioSignature);
+        if (status !== "stale") return current;
+        setStudyContextSignature(null);
+        return null;
+      }
+      if (studyContextSignature) setStudyContextSignature(null);
+      return createDemoStudy(context);
+    });
+  }, [context, currentContextSignature, latestStudioSignature, studyContextSignature]);
 
   useEffect(() => {
     document.documentElement.lang = studioLanguage;
@@ -2307,6 +2441,7 @@ export default function App() {
       updatedAt: Date.now(),
     };
     setContext(nextContext);
+    setStudyContextSignature(null);
     setStudy(createDemoStudy(nextContext));
     navigate("market");
   }, [navigate]);
@@ -2328,6 +2463,9 @@ export default function App() {
         studioSnapshot,
         energySettings: context.energySettings,
       });
+      const nextStudioSignature = studioSnapshotSignature(studioSnapshot, extras);
+      setLatestStudioSignature(nextStudioSignature);
+      setStudyContextSignature(studyInputSignature(context, nextStudioSignature));
       setStudy(nextStudy);
       navigate("results");
     } catch (error) {
@@ -2338,6 +2476,7 @@ export default function App() {
         setCalculationError(MISC_COPY[studioLanguage].addProduct);
       } else {
         const demoStudy = createDemoStudy(context, studioSnapshot, extras);
+        setStudyContextSignature(null);
         setStudy(demoStudy);
         setCalculationError(null);
         navigate("results");
@@ -2345,7 +2484,7 @@ export default function App() {
     }
   }, [context, navigate, runCalculation, studioLanguage]);
 
-  const advisorCaseId = study && !study.caseId.startsWith("MOD-DEMO") ? study.caseId : undefined;
+  const advisorCaseId = study && !study.caseId.startsWith("MOD-DEMO") && studyIsCurrent ? study.caseId : undefined;
   const getAdvisorContext = useCallback(() => {
     const lines = [`Current step: ${route}`, `Market: ${market.name} (${context.marketKey})`];
     if (context.location) lines.push(`Site: ${cleanAddressLabel(context.location.label, "en")} (${context.location.coordinates.lat.toFixed(5)}, ${context.location.coordinates.lng.toFixed(5)})`);
@@ -2375,12 +2514,17 @@ export default function App() {
   const saveSharedProject = trpc.sharedProject.save.useMutation();
   const createShare = useCallback(async () => {
     if (!study) throw new Error("No study");
+    if (!study.caseId.startsWith("MOD-DEMO") && !isStudyInputCurrent(studyContextSignature, currentContextSignature, latestStudioSignature)) throw new Error("Project inputs changed; recalculate the study before sharing.");
     const { id } = await saveSharedProject.mutateAsync({ language: studioLanguage, payload: { study: study as unknown as Record<string, unknown>, context: context as unknown as Record<string, unknown> } });
     return id;
-  }, [context, saveSharedProject, study, studioLanguage]);
+  }, [context, currentContextSignature, latestStudioSignature, saveSharedProject, study, studyContextSignature, studioLanguage]);
   const continueFromShared = useCallback((sharedStudy: ProjectCalculation | null, sharedContext: ProjectContext | null, nextRoute: GatewayRoute) => {
     if (sharedStudy) setStudy(sharedStudy);
-    if (sharedContext && markets.some((item) => item.key === sharedContext.marketKey)) setContext({ ...sharedContext, version: 3, updatedAt: Date.now() });
+    if (sharedContext && markets.some((item) => item.key === sharedContext.marketKey)) {
+      const nextContext: ProjectContext = { ...sharedContext, version: 3, updatedAt: Date.now() };
+      setContext(nextContext);
+      setStudyContextSignature(sharedStudy && !sharedStudy.caseId.startsWith("MOD-DEMO") ? studyInputSignature(nextContext, null) : null);
+    }
     setSharedId(null);
     window.history.replaceState({}, "", routePath(nextRoute));
     navigate(nextRoute);
@@ -2413,11 +2557,11 @@ export default function App() {
           marketKey={context.marketKey}
         />}
         {route === "calculation" && <CalculationLoadingPage error={calculationError} onBack={() => navigate("studio")} language={studioLanguage} />}
-        {route === "results" && study && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} share={{ onCreate: createShare }} /></Suspense>}
-        {route === "results" && !study && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
+        {route === "results" && study && studyIsCurrent && <Suspense fallback={<section className="results-page gateway-page" />}><ResultsPage study={study} preferredBatteryMode={context.energySettings.batteryMode} onNavigate={navigate} language={studioLanguage} marketKey={context.marketKey} share={{ onCreate: createShare }} /></Suspense>}
+        {route === "results" && (!study || !studyIsCurrent) && <CalculationLoadingPage error={MISC_COPY[studioLanguage].noStudy} onBack={() => navigate("studio")} language={studioLanguage} />}
       </main>}
       <ModerniteAdvisor language={studioLanguage} route={route} getContext={getAdvisorContext} caseId={advisorCaseId} />
-      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} onEnergySettingsChange={updateEnergySettings} />}
+      {studioMounted && <StudioPage active={route === "studio"} market={market} context={context} language={studioLanguage} onLanguageChange={setStudioLanguage} onNavigate={navigate} onRunCalculation={startCalculation} onEnergySettingsChange={updateEnergySettings} onStudioSignatureChange={setLatestStudioSignature} />}
     </>
   );
 }
