@@ -6088,6 +6088,26 @@ html:lang(ja) .eyebrow {
 .result-share-note.is-error { color: #a33a2a; }
 .result-share-note input { width: 100%; padding: 7px 9px; border: 1px solid #d5e3d7; border-radius: 9px; background: #f7faf6; color: #2f4a39; font-size: 11px; }
 .result-crosscheck { margin-top: 8px; }
+.benchmark-normalized { margin-top: 14px; padding: 14px; border: 1px solid rgba(185, 214, 190, .82); border-radius: 16px; background: linear-gradient(135deg, rgba(249, 253, 248, .92), rgba(236, 248, 239, .72)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75); }
+.benchmark-normalized__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 10px; }
+.benchmark-normalized__head .mini-label { margin: 0; color: #315f48; }
+.benchmark-normalized__head span { max-width: 540px; color: #688171; font-size: 10.5px; line-height: 1.5; text-align: right; }
+.benchmark-normalized__grid { display: grid; gap: 6px; }
+.benchmark-normalized__row { display: grid; grid-template-columns: minmax(140px, 1.1fr) repeat(2, minmax(112px, .9fr)); gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid rgba(212, 226, 213, .82); border-radius: 12px; background: rgba(255, 255, 255, .66); }
+.benchmark-normalized__row.is-header { padding-block: 4px; border: 0; background: transparent; }
+.benchmark-normalized__row span { color: #21473a; font-size: 12px; font-weight: 750; }
+.benchmark-normalized__row strong { color: #073f34; font-size: 14px; font-weight: 760; text-align: right; font-variant-numeric: tabular-nums; }
+.benchmark-normalized__row.is-header strong { color: #7a8e7e; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+@media (max-width: 760px) {
+  .benchmark-normalized__head { display: grid; gap: 6px; }
+  .benchmark-normalized__head span { text-align: left; }
+  .benchmark-normalized__row { grid-template-columns: 1fr; }
+  .benchmark-normalized__row.is-header { display: none; }
+  .benchmark-normalized__row strong { text-align: left; }
+  .benchmark-normalized__row strong::before { display: block; margin-bottom: 2px; color: #8ba090; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  .benchmark-normalized__row strong:nth-child(2)::before { content: "kWh/kWp"; }
+  .benchmark-normalized__row strong:nth-child(3)::before { content: "kWh/m²"; }
+}
 html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite-advisor-panel, html.is-print-render .results-side-rail button, html.is-print-render .result-share-note, html.is-print-render .results-advisor { display: none !important; }
 @media print { .shared-project-banner, .result-share-note { display: none !important; } }
 

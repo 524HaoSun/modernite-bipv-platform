@@ -615,6 +615,12 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const weatherKind = study.weather.kind;
   const front = Math.round(project?.frontAzimuthDeg ?? sim.buildingNorthDeg);
   const typeId = project?.buildingTypeId;
+  const moderniteAreaM2 = study.result.surfaces.reduce((sum, surface) => sum + surface.areaM2, 0);
+  const moderniteSpecificYield = study.result.totalCapacityKwp > 0 ? study.result.range.representative / study.result.totalCapacityKwp : null;
+  const moderniteAreaYield = moderniteAreaM2 > 0 ? study.result.range.representative / moderniteAreaM2 : null;
+  const externalSpecificYield = solar?.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp ? solar.maxArrayYearlyDcKwh / solar.maxArrayCapacityKwp : null;
+  const externalAreaYield = solar?.maxArrayYearlyDcKwh && solar.maxArrayAreaM2 ? solar.maxArrayYearlyDcKwh / solar.maxArrayAreaM2 : null;
+  const metric = (value: number | null | undefined, suffix: string, digits = 0) => value ? `${f.n(value, digits)} ${suffix}` : t.notAvailable;
   return (
     <section className="results-page gateway-page">
       <PageIntro
@@ -687,6 +693,25 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
               <div><span>{t.peakSunshine}</span><strong>{solar.maxSunshineHoursPerYear ?? "—"} {t.hoursYear}</strong></div>
               {solar.maxArrayCapacityKwp ? <div><span>{sc.googleLayout}</span><strong>{sc.googleLayoutValue(solar.maxArrayPanelsCount ?? 0, f.n(solar.maxArrayCapacityKwp, 1))}</strong></div> : null}
               {solar.maxArrayYearlyDcKwh ? <div><span>{sc.googleYearly}</span><strong>{f.n(solar.maxArrayYearlyDcKwh)} {t.perYear}</strong></div> : null}
+            </div>
+            <div className="benchmark-normalized">
+              <div className="benchmark-normalized__head">
+                <p className="mini-label">{t.benchmarkTitle}</p>
+                <span>{t.benchmarkBoundary}</span>
+              </div>
+              <div className="benchmark-normalized__grid">
+                <div className="benchmark-normalized__row is-header"><span /> <strong>{t.normalizedYield}</strong><strong>{t.areaYield}</strong></div>
+                <div className="benchmark-normalized__row">
+                  <span>{t.moderniteLabel}</span>
+                  <strong>{metric(moderniteSpecificYield, "kWh/kWp")}</strong>
+                  <strong>{metric(moderniteAreaYield, "kWh/m²")}</strong>
+                </div>
+                <div className="benchmark-normalized__row">
+                  <span>{t.externalBenchmarkLabel}</span>
+                  <strong>{metric(externalSpecificYield, "kWh/kWp")}</strong>
+                  <strong>{metric(externalAreaYield, "kWh/m²")}</strong>
+                </div>
+              </div>
             </div>
             {solar.maxArrayYearlyDcKwh && solar.maxArrayCapacityKwp && study.result.totalCapacityKwp > 0 ? <p className="result-note result-crosscheck">{sc.crossCheck(f.n(study.result.range.representative / study.result.totalCapacityKwp), f.n(solar.maxArrayYearlyDcKwh / solar.maxArrayCapacityKwp))}</p> : null}
             <div className="surface-list">{(solar.roofSegments ?? []).slice(0, 6).map((segment, index) => <article className="surface-row" key={index}><div><strong>{t.segment(index + 1)}</strong><span>{t.pitchAz(segment.pitchDeg, segment.azimuthDeg)}</span></div><span>{segment.areaM2} m²</span><b>{segment.sunshineMedianHoursPerYear ?? "—"} {t.hoursYear}</b></article>)}</div>
