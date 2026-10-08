@@ -3,6 +3,7 @@ import type { BuildingFootprint } from "../lib/building-footprint";
 import { MARKET_TO_STUDIO_REGION } from "../lib/studio-catalog";
 import { getBuildingFootprint } from "./building-service";
 import { getGoogleSolarReference } from "./google-solar-service";
+import { getSolarGroundElevation } from "./solar-heatmap-service";
 import { cachedValue } from "./persistent-cache";
 import { ENV } from "./_core/env";
 
@@ -28,14 +29,15 @@ export async function getGroundElevation(lat: number, lng: number): Promise<numb
 
 export async function getBuildingProfile(lat: number, lng: number, market: string): Promise<BuildingProfile> {
   const region = MARKET_TO_STUDIO_REGION[market] ?? "UK";
-  const [footprintResult, solar, groundElevationM] = await Promise.all([
+  const [footprintResult, solar, solarGroundM] = await Promise.all([
     getBuildingFootprint(lat, lng).then(
       (footprint): { footprint: BuildingFootprint | null; status: "ok" | "not-found" | "unavailable" } => ({ footprint, status: footprint.status }),
       () => ({ footprint: null, status: "unavailable" as const }),
     ),
     getGoogleSolarReference(lat, lng).catch(() => null),
-    getGroundElevation(lat, lng),
+    getSolarGroundElevation(lat, lng),
   ]);
+  const groundElevationM = solarGroundM ?? (await getGroundElevation(lat, lng));
   return buildProfile({
     region,
     site: { lat, lng },
@@ -43,5 +45,6 @@ export async function getBuildingProfile(lat: number, lng: number, market: strin
     footprintStatus: footprintResult.status,
     solar: ENV.googleSolarApiKey ? solar ?? { status: "unavailable", note: "" } : undefined,
     groundElevationM,
+    groundSource: solarGroundM !== null ? "google-solar" : "google-elevation",
   });
 }

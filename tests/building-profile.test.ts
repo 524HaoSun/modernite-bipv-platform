@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProfile, chooseBuildingType, classifyRoof, estimateHeight, studioDimensions } from "../lib/building-profile";
+import { buildProfile, chooseBuildingType, classifyRoof, estimateHeight, storeysFromEaves, studioDimensions } from "../lib/building-profile";
 import type { GoogleSolarRoofSegment } from "../lib/google-solar";
 import { studioTypeById } from "../lib/studio-catalog";
 
@@ -22,6 +22,14 @@ describe("roof classification", () => {
     expect(height?.floors).toBe(2);
     expect(height!.heightM).toBeGreaterThan(height!.eavesM);
     expect(estimateHeight([seg(180, 35)], 50, 8, roof, 2.95)).toBeNull();
+  });
+
+  it("maps measured eaves heights to storeys like storey-tagged UK houses", () => {
+    // Eaves measured from the Solar surface model for Cambridge houses with OSM building:levels.
+    for (const eaves of [2.2, 2.5, 3.8, 3.9]) expect(storeysFromEaves(eaves, 2.8)).toBe(1);
+    for (const eaves of [4.3, 4.9, 5.2]) expect(storeysFromEaves(eaves, 2.8)).toBe(2);
+    for (const eaves of [7.3, 7.5, 8.4]) expect(storeysFromEaves(eaves, 2.8)).toBe(3);
+    expect(storeysFromEaves(40, 2.8)).toBe(14);
   });
 });
 

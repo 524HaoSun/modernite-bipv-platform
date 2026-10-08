@@ -85,6 +85,48 @@ async function renderHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
   };
 }
 
+const GROUND_RING_M = [4, 20] as const;
+
+/**
+ * Ground level from the Solar surface model around the building, on the same survey and datum as
+ * the roof-plane heights. Google's Elevation API is a coarse terrain model that can sit 2–3 m off
+ * locally, enough to drop a two-storey house to one storey.
+ */
+async function measureGround(lat: number, lng: number): Promise<number | null> {
+  const url = new URL(DATA_LAYERS);
+  url.searchParams.set("location.latitude", lat.toFixed(6));
+  url.searchParams.set("location.longitude", lng.toFixed(6));
+  url.searchParams.set("radiusMeters", String(GROUND_RING_M[1]));
+  url.searchParams.set("view", "IMAGERY_LAYERS");
+  url.searchParams.set("requiredQuality", "LOW");
+  url.searchParams.set("pixelSizeMeters", "0.5");
+  url.searchParams.set("key", ENV.googleSolarApiKey);
+  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  const layers = (await response.json()) as { dsmUrl?: string; maskUrl?: string };
+  if (!layers.dsmUrl || !layers.maskUrl) return null;
+  const [dsm, mask] = await Promise.all([readTiff(layers.dsmUrl), readTiff(layers.maskUrl)]);
+  const { width, height } = dsm;
+  const [minX, , maxX] = dsm.image.getBoundingBox();
+  const pixelM = (maxX! - minX!) / width;
+  const ground: number[] = [];
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const distanceM = Math.hypot(x + 0.5 - width / 2, y + 0.5 - height / 2) * pixelM;
+    if (distanceM < GROUND_RING_M[0] || distanceM > GROUND_RING_M[1]) continue;
+    const roof = mask.raster[Math.floor((y * mask.height) / height) * mask.width + Math.floor((x * mask.width) / width)] ?? 0;
+    const v = dsm.raster[y * width + x]!;
+    if (!roof && Number.isFinite(v) && v > -1000) ground.push(v);
+  }
+  if (ground.length < 50) return null;
+  // Low percentile: open ground, not hedges, trees or parked cars.
+  return Math.round(quantile(ground.sort((a, b) => a - b), 0.2) * 100) / 100;
+}
+
+/** Billed per call (Solar data layers), so persisted for a year. */
+export async function getSolarGroundElevation(lat: number, lng: number): Promise<number | null> {
+  if (!ENV.googleSolarApiKey) return null;
+  return cachedValue("solar-ground", `${lat.toFixed(5)}:${lng.toFixed(5)}`, TTL_MS, () => measureGround(lat, lng).catch(() => null), (value) => value !== null);
+}
+
 /** Billed per call, so it is only requested on demand and persisted for a year. */
 export async function getSolarHeatmap(lat: number, lng: number): Promise<SolarHeatmap> {
   if (!ENV.googleSolarApiKey) return { status: "disabled", note: "External solar heatmap is not configured." };

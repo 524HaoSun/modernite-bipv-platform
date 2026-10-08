@@ -53,6 +53,8 @@ export type BuildingProfileInput = {
   footprintStatus?: "ok" | "not-found" | "unavailable";
   solar?: GoogleSolarReference | null;
   groundElevationM?: number | null;
+  /** Where the ground level came from: the Solar surface model, else Google's terrain elevation. */
+  groundSource?: "google-solar" | "google-elevation";
 };
 
 type XY = { x: number; y: number };
@@ -121,7 +123,17 @@ export function estimateHeight(segments: GoogleSolarRoofSegment[], groundElevati
   const rise = roof.form === "flat" ? 0 : (depthM / 2) * Math.tan((roof.pitchDeg * Math.PI) / 180);
   const eaves = median - rise / 2;
   if (!Number.isFinite(eaves) || eaves < 2 || eaves > 250) return null;
-  return { eavesM: round1(eaves), heightM: round1(eaves + rise), floors: clamp(Math.round(eaves / storeyHeightM), 1, 60) };
+  return { eavesM: round1(eaves), heightM: round1(eaves + rise), floors: storeysFromEaves(eaves, storeyHeightM) };
+}
+
+/**
+ * Bungalows and chalet bungalows (rooms in the roof) keep their eaves below about 4.1 m, while even
+ * low cottage two-storey houses reach about 4.3 m. Above that, storeys stack on a ~0.3 m plinth.
+ * Checked against storey-tagged OSM houses in Cambridge.
+ */
+export function storeysFromEaves(eavesM: number, storeyHeightM: number) {
+  if (eavesM < 4.1) return 1;
+  return clamp(Math.round((eavesM - 0.3) / storeyHeightM), 2, 60);
 }
 
 const TYPE_BY_KIND: Record<StudioRegion, Record<string, string>> = {
@@ -189,14 +201,14 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
   }
 
   const regionDefault = studioTypesForRegion(region)[0];
-  const storeyGuess = region === "JP" ? 2.8 : 2.95;
+  const storeyGuess = 2.8;
   let floors: ProfileField<number> | null = footprint?.floors ? { value: footprint.floors, source: "osm" } : null;
   let heightM: ProfileField<number> | undefined = footprint?.heightM ? { value: footprint.heightM, source: "osm" } : undefined;
   if (roof && Number.isFinite(input.groundElevationM)) {
     const estimate = estimateHeight(segments, input.groundElevationM!, depth?.value ?? regionDefault.depth, roof, storeyGuess);
     if (estimate) {
-      floors ??= { value: estimate.floors, source: "google-elevation" };
-      heightM ??= { value: estimate.heightM, source: "google-elevation" };
+      floors ??= { value: estimate.floors, source: input.groundSource ?? "google-elevation" };
+      heightM ??= { value: estimate.heightM, source: input.groundSource ?? "google-elevation" };
     }
   }
 
