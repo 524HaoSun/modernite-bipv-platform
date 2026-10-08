@@ -652,7 +652,6 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
     document.documentElement.classList.add("has-print-report");
     return () => document.documentElement.classList.remove("has-print-report");
   }, []);
-  const sc = shareCopy(language);
   const project = study.project;
   const market = (project?.market ?? marketKey) as MarketKey;
   const region = project?.region ?? MARKET_REGION[market];
@@ -763,11 +762,8 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><dt>{t.surfaces}</dt><dd>{t.surfacesValue(study.result.surfaces.length)}<small>{f.n(study.result.totalCapacityKwp, 2)} kWp</small></dd></div>
             <div><dt>{t.scenario}</dt><dd>{t.scenarioTitles[scenario.id]}<small>{scenario.available ? t.scenarioSub : t.planningComparison}</small></dd></div>
           </dl>
-          {share && (share.sharedId || share.onCreate) && !isDemo && <ShareActions share={share} language={language} scenarioId={scenario.id} />}
-          {!share?.sharedId && <>
-            <button type="button" className={`button-${share?.onCreate && !isDemo ? "secondary" : "primary"} wide`} onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "report" }))}><Download size={15} /> {share?.onCreate && !isDemo ? sc.studioReport : t.downloadPdf}</button>
-            <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
-          </>}
+          {share && (share.sharedId || share.onCreate) && <ShareActions share={share} language={language} scenarioId={scenario.id} />}
+          {!share?.sharedId && <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>}
           <button type="button" className="button-secondary wide" onClick={() => window.print()}><Printer size={15} /> {t.print}</button>
         </section>
         <ResultAdvisor isDemo={isDemo} t={t} />

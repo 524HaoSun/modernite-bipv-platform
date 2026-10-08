@@ -147,7 +147,7 @@ describe("V28-aligned entry gateway", () => {
     expect(resultsText).toContain("Save configuration");
     expect(resultsText).toContain("Download Studio PDF");
     expect(app).toContain("style[data-host-workflow]");
-    expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2) { display: none !important; }"');
+    expect(app).toContain('workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2), #generate-report { display: none !important; }"');
     for (const customerFeature of [".mi-toolbar", "#modernite-arrange-panel", ".en-system-card", ".energy-launch-row", ".customer-buttons", "studioTabs[4].hidden"]) {
       expect(app).not.toContain(customerFeature);
     }

@@ -1877,7 +1877,7 @@ function StudioPage({
       workflowStyle.dataset.hostWorkflow = "results-finalised";
       studioDocument.head.append(workflowStyle);
     }
-    workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2) { display: none !important; }";
+    workflowStyle.textContent = ".language-switch, #language-select, #download-dialog > p:nth-of-type(2), #generate-report { display: none !important; }";
 
     const advisorEndpoint = studioDocument.querySelector<HTMLInputElement>("#advisor-endpoint");
     if (advisorEndpoint && root.dataset.hostAdvisor !== "online") {
