@@ -48,6 +48,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .journey-rail button:disabled { color: #a2afa6; cursor: not-allowed; opacity: .68; transform: none; }.journey-rail button:disabled .journey-rail__index { border-color: #d8e1d8; color: #a2afa6; background: #f6f8f4; }
 .gateway-header--entry .journey-rail { opacity: .42; pointer-events: none; }
 .gateway-tools { display: flex; justify-content: flex-end; align-items: center; gap: 13px; font-size: 12px; }
+.control-save-link { display: inline-flex; align-items: center; min-height: 38px; font-size: 12px; border: 1px solid #d6e1d8; padding: 0 13px; border-radius: 8px; color: #194f3a; background: #fff; text-decoration: none; white-space: nowrap; }
+.control-save-link:hover { border-color: #194f3a; }
+@media (max-width: 1100px) { .control-save-link { display: none; } }
 .studio-language-control { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #dbe4d8; border-radius: 7px; color: #53675b; background: rgba(255,255,255,.55); }
 .studio-language-control select { appearance: none; height: 31px; padding: 0 14px 0 0; border: 0; outline: 0; color: inherit; background: transparent; font-size: 12px; cursor: pointer; }
 .studio-language-control svg:last-child { position: absolute; right: 7px; pointer-events: none; }

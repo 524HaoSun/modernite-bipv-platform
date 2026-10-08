@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
   Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TowerControl, TrendingUp,
@@ -8,28 +9,29 @@ import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
 import { shareCopy } from "@/lib/share-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import { PageIntro } from "@/components/PageIntro";
+import { PrintReport } from "@/components/PrintReport";
 import { WORKFLOW_LABELS, type WorkflowLanguage } from "@/lib/workflow-labels";
 import "@/styles/results-compass-refinement.css";
 import type { ProjectCalculation } from "../../../server/estimate-service";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../../types/solar";
 
 type Route = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
-type MarketKey = "GB" | "EU" | "CA" | "JP";
+export type MarketKey = "GB" | "EU" | "CA" | "JP";
 
-const MARKET_CURRENCY: Record<MarketKey, string> = { GB: "GBP", EU: "EUR", CA: "CAD", JP: "JPY" };
-const MARKET_REGION: Record<MarketKey, "UK" | "EU" | "CA" | "JP"> = { GB: "UK", EU: "EU", CA: "CA", JP: "JP" };
+export const MARKET_CURRENCY: Record<MarketKey, string> = { GB: "GBP", EU: "EUR", CA: "CAD", JP: "JPY" };
+export const MARKET_REGION: Record<MarketKey, "UK" | "EU" | "CA" | "JP"> = { GB: "UK", EU: "EU", CA: "CA", JP: "JP" };
 /** Grid emission factors, kg CO₂e per kWh (UK DESNZ 2024, EEA EU-27 2023, Canada NIR 2023, Japan MoE 2022). */
-const GRID_CO2_KG_PER_KWH: Record<"UK" | "EU" | "CA" | "JP", number> = { UK: 0.207, EU: 0.244, CA: 0.11, JP: 0.453 };
-const ORIENTATION_SERIES = [
+export const GRID_CO2_KG_PER_KWH: Record<"UK" | "EU" | "CA" | "JP", number> = { UK: 0.207, EU: 0.244, CA: 0.11, JP: 0.453 };
+export const ORIENTATION_SERIES = [
   ["south", "#07573f"],
   ["east", "#4d9b71"],
   ["west", "#a5c979"],
   ["north", "#79aeca"],
   ["horizontal", "#f1b33d"],
 ] as const;
-const SCENARIO_COLORS: Record<string, string> = { "solar-only": "#0c6249", "solar-battery": "#d6a226", "battery-only": "#789" };
+export const SCENARIO_COLORS: Record<string, string> = { "solar-only": "#0c6249", "solar-battery": "#d6a226", "battery-only": "#789" };
 
-type Fmt = {
+export type Fmt = {
   t: ResultsCopy;
   n: (value: number, digits?: number) => string;
   money: (value: number) => string;
@@ -61,7 +63,13 @@ function selectedKpiKey(scenarioId: FinancialScenario["id"]): ScenarioKpiKey {
   return scenarioId === "solar-battery" ? "solarBattery" : "solarOnly";
 }
 
-function deriveResultsKpis(study: ProjectCalculation, scenarioId: FinancialScenario["id"]): ResultsKpis {
+/** First-year value shown as "Estimated value": avoided import + export income + monetizable value. */
+export function scenarioAnnualValue(scenario: FinancialScenario) {
+  const firstYear = scenario.annualCashFlows[0];
+  return (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
+}
+
+export function deriveResultsKpis(study: ProjectCalculation, scenarioId: FinancialScenario["id"]): ResultsKpis {
   const key = selectedKpiKey(scenarioId);
   const simWithKpis = study.simulation as ProjectCalculation["simulation"] & {
     kpis?: ProjectCalculation["simulation"]["kpis"];
@@ -199,13 +207,13 @@ function EnergyGlyph({ type }: { type: "generated" | "used" | "exported" | "capa
   </svg>;
 }
 
-function weatherSourceLabel(kind: string, source: string, name: string | null | undefined, t: ResultsCopy) {
+export function weatherSourceLabel(kind: string, source: string, name: string | null | undefined, t: ResultsCopy) {
   if (kind !== "customer-synthetic") return source;
   const city = (name ?? source.match(/\(([^)·]+)/)?.[1] ?? "").split("·")[0].trim();
   return t.ledgerText.synthetic(t.ledgerText.cities[city] ?? city);
 }
 
-function ledgerValue(entry: LedgerEntry, f: Fmt) {
+export function ledgerValue(entry: LedgerEntry, f: Fmt) {
   const { t } = f;
   const p = entry.params;
   if (entry.id === "generation") return t.ledgerText.generation;
@@ -234,7 +242,7 @@ function ledgerValue(entry: LedgerEntry, f: Fmt) {
   }
 }
 
-function useFormatters(language: string, currency: string): Fmt {
+export function useFormatters(language: string, currency: string): Fmt {
   return useMemo(() => {
     const t = resultsCopy(language);
     const money = new Intl.NumberFormat(t.locale, { style: "currency", currency, maximumFractionDigits: 0 });
@@ -302,11 +310,10 @@ function GenerationRangeCard({ study, f, scenarioId }: { study: ProjectCalculati
 
 function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculation; scenario: FinancialScenario; f: Fmt }) {
   const { t } = f;
-  const firstYear = scenario.annualCashFlows[0];
   const kpis = deriveResultsKpis(study, scenario.id);
   const selfUse = kpis.selfConsumedKwh;
   const exportKwh = kpis.exportKwh;
-  const annualValue = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
+  const annualValue = scenarioAnnualValue(scenario);
   return <section className="result-section executive-outcome-panel">
     <div className="executive-outcome-main">
       <p className="mini-label">{t.estimatedValue}</p>
@@ -327,11 +334,10 @@ function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculati
 
 function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: ProjectCalculation; scenario: FinancialScenario; onNavigate: (route: Route) => void; f: Fmt }) {
   const { t } = f;
-  const firstYear = scenario.annualCashFlows[0];
   const kpis = deriveResultsKpis(study, scenario.id);
   const selfConsumed = kpis.selfConsumedKwh;
   const exported = kpis.exportKwh;
-  const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
+  const value = scenarioAnnualValue(scenario);
   return <section className="result-section energy-applied-chain">
     <div className="result-section-heading"><div><p className="mini-label">{t.chainLabel}</p><h2>{t.chainTitle}</h2></div><button type="button" onClick={() => onNavigate("energy")}><Pencil size={14} /> {t.editEnergy}</button></div>
     <div className="applied-chain-grid">
@@ -423,7 +429,7 @@ function ScenarioComparisonPanel({ scenarios, scenario, onSelect, f }: { scenari
   </section>;
 }
 
-function niceStep(range: number, target: number) {
+export function niceStep(range: number, target: number) {
   const raw = range / Math.max(1, target);
   const power = 10 ** Math.floor(Math.log10(raw));
   return ([1, 2, 2.5, 5, 10].find((m) => m * power >= raw) ?? 10) * power;
@@ -641,6 +647,10 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
     void document.fonts.ready.then(() => setTimeout(() => !cancelled && setReady(true), 600));
     return () => { cancelled = true; };
   }, []);
+  useEffect(() => {
+    document.documentElement.classList.add("has-print-report");
+    return () => document.documentElement.classList.remove("has-print-report");
+  }, []);
   const sc = shareCopy(language);
   const project = study.project;
   const market = (project?.market ?? marketKey) as MarketKey;
@@ -757,6 +767,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
         </section>
         <ResultAdvisor isDemo={isDemo} t={t} />
       </aside></div>
+      {createPortal(<div className="print-report-portal"><PrintReport study={study} scenarioId={scenario.id} language={language} marketKey={marketKey} /></div>, document.body)}
     </section>
   );
 }

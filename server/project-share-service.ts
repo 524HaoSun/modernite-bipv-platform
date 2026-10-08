@@ -42,6 +42,8 @@ export async function loadProject(id: string): Promise<unknown | null> {
 }
 
 const rendering = new Map<string, Promise<Buffer>>();
+/** Bump when the print layout changes so cached PDFs are re-rendered. */
+const REPORT_LAYOUT = "a4v2";
 
 export function registerProjectReportRoute(app: Express) {
   app.get("/api/projects/:id/report.pdf", async (req, res) => {
@@ -49,16 +51,18 @@ export function registerProjectReportRoute(app: Express) {
     const language = /^[a-z]{2}(-[A-Z]{2})?$/.test(String(req.query.lang ?? "")) ? String(req.query.lang) : "en";
     if (!PROJECT_ID.test(id)) return void res.status(404).json({ error: "Unknown project" });
     if (!browserRenderingEnabled()) return void res.status(503).json({ error: "PDF rendering is not configured" });
-    const file = path.join(dir("reports"), `${id}-${language}.pdf`);
+    const file = path.join(dir("reports"), `${id}-${language}-${REPORT_LAYOUT}.pdf`);
     try {
       let pdf: Buffer;
       if (await stat(file).then(() => true, () => false)) pdf = await readFile(file);
       else {
-        if (!(await loadProject(id))) return void res.status(404).json({ error: "Unknown project" });
+        const project = (await loadProject(id)) as { study?: { caseId?: string } } | null;
+        if (!project) return void res.status(404).json({ error: "Unknown project" });
         let pending = rendering.get(file);
         if (!pending) {
           const base = ENV.publicBaseUrl || `${req.protocol}://${req.get("host")}`;
-          pending = renderPdf(`${base}/p/${id}?print=1&lang=${language}`, ".results-report.is-ready")
+          const footer = ["Modernité BIPV", project.study?.caseId].filter(Boolean).join(" · ");
+          pending = renderPdf(`${base}/p/${id}?print=1&lang=${language}`, ".print-report.is-ready", footer)
             .then(async (buffer) => {
               await mkdir(dir("reports"), { recursive: true });
               await writeFile(file, buffer);

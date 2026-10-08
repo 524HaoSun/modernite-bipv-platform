@@ -33,9 +33,13 @@ export function ensureSchema() {
   return schemaReady;
 }
 
-/** Renders a public URL to PDF through Cloudflare Browser Rendering. */
-export async function renderPdf(url: string, waitForSelector: string): Promise<Buffer> {
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** Renders a public URL to an A4 PDF through Cloudflare Browser Rendering, with "footer · page n / N" on every page. */
+export async function renderPdf(url: string, waitForSelector: string, footer = ""): Promise<Buffer> {
   if (!browserRenderingEnabled()) throw new Error("Browser Rendering is not configured");
+  // Header/footer templates render outside the page CSS, so they carry their own inline styles.
+  const footerTemplate = `<div style="width:100%;padding:0 12mm;display:flex;justify-content:space-between;font-family:Helvetica,Arial,sans-serif;font-size:7px;color:#6b7c72;"><span>${escapeHtml(footer)}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`;
   const response = await fetch(`${API}/accounts/${ENV.cfAccountId}/browser-rendering/pdf`, {
     method: "POST",
     headers: { Authorization: `Bearer ${ENV.cfApiToken}`, "Content-Type": "application/json" },
@@ -43,8 +47,15 @@ export async function renderPdf(url: string, waitForSelector: string): Promise<B
       url,
       gotoOptions: { waitUntil: "networkidle2", timeout: 45_000 },
       waitForSelector: { selector: waitForSelector, timeout: 30_000 },
-      viewport: { width: 1280, height: 1600 },
-      pdfOptions: { format: "a4", printBackground: true, margin: { top: "12mm", bottom: "12mm", left: "10mm", right: "10mm" } },
+      viewport: { width: 794, height: 1123 },
+      pdfOptions: {
+        format: "a4",
+        printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: "<span></span>",
+        footerTemplate,
+        margin: { top: "14mm", bottom: "16mm", left: "12mm", right: "12mm" },
+      },
     }),
     signal: AbortSignal.timeout(90_000),
   });

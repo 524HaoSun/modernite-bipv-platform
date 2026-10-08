@@ -58,6 +58,7 @@ import { EUROPEAN_MARKETS, type EuropeanMarket } from "@/lib/european-markets";
 const MarketAtlas = lazy(() => import("@/components/MarketAtlas").then((module) => ({ default: module.MarketAtlas })));
 const GoogleSiteViewer = lazy(() => import("@/components/GoogleSiteViewer").then((module) => ({ default: module.GoogleSiteViewer })));
 const ResultsPage = lazy(() => import("@/components/ResultsReport").then((module) => ({ default: module.ResultsPage })));
+const PrintReport = lazy(() => import("@/components/PrintReport").then((module) => ({ default: module.PrintReport })));
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import type { ProjectCalculation } from "../../server/estimate-service";
@@ -978,6 +979,26 @@ const MISC_COPY: Record<StudioLanguage, { heroCaption: string; weatherLoading: (
   it: { heroCaption: "Architettura, geometria solare e intelligenza progettuale digitale.", weatherLoading: (s) => `Caricamento meteo ${s}…`, weatherUnavailable: (s) => `${s} non disponibile · clima sintetico`, noLocation: "Scegli la posizione del progetto prima di preparare lo studio.", aborted: "La richiesta dello studio si è interrotta. Le scelte nel Design Studio restano invariate; riprova tra poco.", addProduct: "Aggiungi almeno un prodotto solare compatibile in Prodotti prima di calcolare lo studio.", noStudy: "Nessuno studio attivo. Torna al Design Studio e preparane uno nuovo.", homeAria: "Torna all’inizio del progetto", progressAria: "Avanzamento del progetto", languageAria: "Lingua dell’interfaccia", heroAlt: "Residenza contemporanea con tetto solare integrato e discreto in un giardino maturo", buildingAlt: "Anteprima dell’edificio configurato", planningAria: "Profilo di pianificazione in tempo reale", energyAria: "Scelte energetiche della casa", occupancyAria: "Presenza durante il giorno", demandExample: "es. 4.200", perYear: "kWh/anno", weatherSource: "Fonte meteo", nextStepAria: "Prossimo passo del progetto", stagesAria: "Fasi del calcolo" },
 };
 
+const CONTROL_COPY: Record<StudioLanguage, { saveProject: string; inactiveProduct: (name: string) => string }> = {
+  en: { saveProject: "Save project / My projects", inactiveProduct: (n) => `${n} is no longer offered. Choose another product in Design Studio, then calculate again.` },
+  zh: { saveProject: "保存项目 / 我的项目", inactiveProduct: (n) => `${n} 已下架。请在设计工作室换成其他产品后重新计算。` },
+  "zh-Hant": { saveProject: "儲存專案 / 我的專案", inactiveProduct: (n) => `${n} 已下架。請在設計工作室換成其他產品後重新計算。` },
+  fr: { saveProject: "Enregistrer / Mes projets", inactiveProduct: (n) => `${n} n’est plus proposé. Choisissez un autre produit dans le Design Studio, puis relancez le calcul.` },
+  ja: { saveProject: "プロジェクトを保存 / マイプロジェクト", inactiveProduct: (n) => `${n} は提供を終了しました。デザインスタジオで別の製品を選び、もう一度計算してください。` },
+  es: { saveProject: "Guardar proyecto / Mis proyectos", inactiveProduct: (n) => `${n} ya no está disponible. Elige otro producto en Design Studio y vuelve a calcular.` },
+  it: { saveProject: "Salva progetto / I miei progetti", inactiveProduct: (n) => `${n} non è più disponibile. Scegli un altro prodotto nel Design Studio e ricalcola.` },
+};
+
+/** Read by /account so "Save project" starts from the design currently open in Design Studio. */
+const PRIVATE_PROJECT_INPUT_KEY = "modernite-private-project-input";
+function rememberPrivateProjectInput(input: Record<string, unknown>) {
+  try {
+    window.localStorage.setItem(PRIVATE_PROJECT_INPUT_KEY, JSON.stringify(input));
+  } catch {
+    // Storage can be unavailable in private browsing; /account then starts from an empty configuration.
+  }
+}
+
 function outerCopy(language: StudioLanguage) {
   return OUTER_UI_COPY[language] ?? OUTER_UI_COPY.en;
 }
@@ -1234,6 +1255,7 @@ function GatewayHeader({
         </div>})}
       </nav>
       <div className="gateway-tools">
+        <a className="control-save-link" href="/account" onClick={() => window.dispatchEvent(new Event("modernite:save-project-request"))}>{CONTROL_COPY[language].saveProject}</a>
         <label className="studio-language-control">
           <Globe2 size={13} aria-hidden="true" />
           <span className="sr-only">{copy.workspace}</span>
@@ -2301,6 +2323,9 @@ function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }:
     document.documentElement.classList.toggle("is-print-render", printing);
   }, [printing]);
   const continueTo = (route: GatewayRoute) => onContinue(study, context, route);
+  if (printing) return study
+    ? <Suspense fallback={null}><PrintReport study={study} scenarioId={scenarioId ?? "solar-only"} language={language} marketKey={context?.marketKey ?? (study.project?.market as MarketKey | undefined) ?? "GB"} /></Suspense>
+    : <section className="shared-project-state">{query.isError ? c.missing : c.loading}</section>;
   return (
     <main className="gateway-shell gateway-shell--results shared-project">
       {!printing && <GatewayHeader route="results" language={language} copy={copy} canOpenStudio={Boolean(study)} onLanguageChange={onLanguageChange} onNavigate={continueTo} />}
@@ -2333,6 +2358,25 @@ export default function App() {
   const [latestStudioSignature, setLatestStudioSignature] = useState<string | null>(null);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
+  useEffect(() => {
+    const capture = () => {
+      if (!context.location) return;
+      const studio = document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame")?.contentWindow as StudioWindow | null;
+      const snapshot = studio?.ModerniteEnergyBridge?.snapshot?.();
+      if (!snapshot || mapStudioSnapshotToSurfaces(snapshot).length === 0) return;
+      const north = studio?.ModerniteEnergyApp?.getOrientation?.();
+      rememberPrivateProjectInput({
+        market: context.marketKey,
+        address: cleanAddressLabel(context.location.label, studioLanguage),
+        coordinates: context.location.coordinates,
+        studioSnapshot: snapshot,
+        energySettings: context.energySettings,
+        buildingNorthDeg: Number.isFinite(north) ? north : undefined,
+      });
+    };
+    window.addEventListener("modernite:save-project-request", capture);
+    return () => window.removeEventListener("modernite:save-project-request", capture);
+  }, [context, studioLanguage]);
   const copy = GATEWAY_COPY[studioLanguage];
   const currentContextSignature = useMemo(() => contextStudySignature(context), [context]);
   const calculatedStudyStatus = useMemo(() => studyInputStatus(studyContextSignature, currentContextSignature, latestStudioSignature), [currentContextSignature, latestStudioSignature, studyContextSignature]);
@@ -2475,15 +2519,17 @@ export default function App() {
     }
     setCalculationError(null);
     navigate("calculation");
+    const input = {
+      market: context.marketKey,
+      address: cleanAddressLabel(context.location.label, studioLanguage),
+      coordinates: context.location.coordinates,
+      ...extras,
+      studioSnapshot,
+      energySettings: context.energySettings,
+    };
+    rememberPrivateProjectInput(input);
     try {
-      const nextStudy = await runCalculation.mutateAsync({
-        market: context.marketKey,
-        address: cleanAddressLabel(context.location.label, studioLanguage),
-        coordinates: context.location.coordinates,
-        ...extras,
-        studioSnapshot,
-        energySettings: context.energySettings,
-      });
+      const nextStudy = await runCalculation.mutateAsync(input);
       const nextStudioSignature = studioSnapshotSignature(studioSnapshot, extras);
       setLatestStudioSignature(nextStudioSignature);
       setStudyContextSignature(studyInputSignature(context, nextStudioSignature));
@@ -2491,7 +2537,10 @@ export default function App() {
       navigate("results");
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (/aborted|aborterror/i.test(message)) {
+      const inactiveProduct = message.match(/^(.+?) is no longer available/)?.[1];
+      if (inactiveProduct) {
+        setCalculationError(CONTROL_COPY[studioLanguage].inactiveProduct(inactiveProduct));
+      } else if (/aborted|aborterror/i.test(message)) {
         setCalculationError(MISC_COPY[studioLanguage].aborted);
       } else if (/too_small|expected array to have|at least one supported solar product/i.test(message)) {
         setCalculationError(MISC_COPY[studioLanguage].addProduct);

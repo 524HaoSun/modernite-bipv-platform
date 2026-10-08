@@ -1,6 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { ControlUser } from "../../shared/control";
+import { browserRenderingEnabled, renderPdf } from "../cloudflare";
 import { ControlStore, fail } from "./store";
 import {
   projectCalculationInputSchema,
@@ -169,7 +170,8 @@ export async function createReport(
   store: ControlStore,
   user: ControlUser,
   id: string,
-  revision: number
+  revision: number,
+  language = "en"
 ) {
   const { project, payload } = projectVersion(store, user, id, revision);
   if (!payload.study)
@@ -177,6 +179,75 @@ export async function createReport(
   const reportId = randomUUID(),
     createdAt = new Date().toISOString(),
     study = payload.study;
+  const bytes =
+    browserRenderingEnabled() && process.env.PUBLIC_BASE_URL
+      ? await renderReportPdf(payload, study, language)
+      : await textReport(project, payload, study, id, revision, reportId, createdAt);
+  store.transaction(() => {
+    store.db
+      .prepare("INSERT INTO reports VALUES(?,?,?,?,?,?)")
+      .run(
+        reportId,
+        user.id,
+        id,
+        revision,
+        JSON.stringify({ versions: payload.versions, study }),
+        createdAt
+      );
+    store.audit(user.id, "report.created", reportId, null, {
+      projectId: id,
+      revision,
+    });
+  });
+  return { bytes, reportId };
+}
+
+const REPORT_VIEW_TTL_MS = 5 * 60 * 1000;
+const reportViews = new Map<
+  string,
+  { study: ProjectCalculation; scenarioId: string; market: string; expires: number }
+>();
+
+/** Study behind a short-lived print link; the token is only handed to the PDF renderer. */
+export function reportView(token: string) {
+  const now = Date.now();
+  for (const [key, view] of Array.from(reportViews)) if (view.expires < now) reportViews.delete(key);
+  const view = reportViews.get(token);
+  if (!view) fail(404, "This report link has expired");
+  const { expires: _expires, ...rest } = view;
+  return rest;
+}
+
+async function renderReportPdf(payload: SavedPayload, study: ProjectCalculation, language: string) {
+  const token = randomBytes(24).toString("base64url");
+  reportViews.set(token, {
+    study,
+    scenarioId: payload.input.energySettings?.batteryMode ?? "solar-only",
+    market: payload.input.market,
+    expires: Date.now() + REPORT_VIEW_TTL_MS,
+  });
+  try {
+    const base = process.env.PUBLIC_BASE_URL!.replace(/\/$/, "");
+    const buffer = await renderPdf(
+      `${base}/r/${token}?lang=${encodeURIComponent(language)}`,
+      ".print-report.is-ready",
+      `Modernité BIPV · ${study.caseId}`
+    );
+    return new Uint8Array(buffer);
+  } finally {
+    reportViews.delete(token);
+  }
+}
+
+async function textReport(
+  project: Record<string, unknown>,
+  payload: SavedPayload,
+  study: ProjectCalculation,
+  id: string,
+  revision: number,
+  reportId: string,
+  createdAt: string
+) {
   const pdf = await PDFDocument.create(),
     font = await pdf.embedFont(StandardFonts.Helvetica),
     bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -228,22 +299,5 @@ export async function createReport(
   line(
     "This report is not a sales quotation. Request a quote for approved pricing."
   );
-  const bytes = await pdf.save();
-  store.transaction(() => {
-    store.db
-      .prepare("INSERT INTO reports VALUES(?,?,?,?,?,?)")
-      .run(
-        reportId,
-        user.id,
-        id,
-        revision,
-        JSON.stringify({ versions: payload.versions, study }),
-        createdAt
-      );
-    store.audit(user.id, "report.created", reportId, null, {
-      projectId: id,
-      revision,
-    });
-  });
-  return { bytes, reportId };
+  return pdf.save();
 }

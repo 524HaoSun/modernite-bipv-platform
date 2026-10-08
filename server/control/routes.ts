@@ -51,6 +51,7 @@ import {
   calculatePrivateProject,
   createReport,
   quoteProject,
+  reportView,
 } from "./projects";
 const email = z.string().trim().toLowerCase().email().max(254);
 const reason = z.string().trim().min(8).max(2000);
@@ -166,6 +167,14 @@ export function registerControlRoutes(
       logout(store, req, res);
       res.json({ ok: true });
     }, false)
+  );
+  router.get(
+    "/report-view/:token",
+    endpoint(
+      (req, res) =>
+        res.json(reportView(z.string().min(20).max(64).parse(req.params.token))),
+      false
+    )
   );
   router.get(
     "/catalogue",
@@ -394,11 +403,17 @@ export function registerControlRoutes(
         .int()
         .positive()
         .parse(req.query.revision);
+      const language = z
+        .string()
+        .regex(/^[a-z]{2}(-[A-Za-z]{2,4})?$/)
+        .catch("en")
+        .parse(req.query.lang ?? "en");
       const result = await createReport(
         store,
         user!,
         id.parse(req.params.id),
-        revision
+        revision,
+        language
       );
       res
         .type("application/pdf")

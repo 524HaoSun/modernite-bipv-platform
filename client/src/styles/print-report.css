@@ -1,0 +1,130 @@
+/* A4 document layout for PrintReport. Flat colours only: blur, shadows and photos rasterise into huge, fuzzy PDFs. */
+.print-report {
+  --pr-ink: #0f2e2a;
+  --pr-muted: #5b6f66;
+  --pr-faint: #8a9a91;
+  --pr-line: #dbe5dd;
+  --pr-soft: #f3f7f2;
+  --pr-accent: #0c6249;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 186mm;
+  margin: 0 auto;
+  padding: 0;
+  color: var(--pr-ink);
+  background: #fff;
+  font-family: "DM Sans", "Noto Sans SC", "Noto Sans JP", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.print-report *, .print-report *::before, .print-report *::after { box-sizing: border-box; animation: none !important; transition: none !important; }
+.print-report p, .print-report h1, .print-report h2, .print-report dl, .print-report dd, .print-report ul { margin: 0; }
+
+.pr-masthead { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 10px; border-bottom: 1.5px solid var(--pr-ink); }
+.pr-brand { display: flex; align-items: center; gap: 8px; color: var(--pr-accent); }
+.pr-brand span { display: grid; color: var(--pr-ink); font-weight: 700; font-size: 11pt; letter-spacing: .16em; line-height: 1.1; }
+.pr-brand small { color: var(--pr-muted); font-weight: 500; font-size: 6.5pt; letter-spacing: .2em; text-transform: uppercase; }
+.pr-reference { display: grid; justify-items: end; gap: 1px; }
+.pr-reference span { color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .08em; }
+.pr-reference strong { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10pt; }
+.pr-reference small { color: var(--pr-muted); font-size: 7.5pt; }
+
+.pr-cover { padding: 18px 0 14px; }
+.pr-eyebrow { color: var(--pr-accent); font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
+.pr-cover h1 { margin-top: 4px; font-family: "Instrument Serif", Georgia, "Noto Serif SC", serif; font-weight: 400; font-size: 26pt; line-height: 1.1; }
+.pr-lede { max-width: 150mm; margin-top: 6px !important; color: var(--pr-muted); font-size: 10pt; }
+
+.pr-project { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--pr-line); border-radius: 8px; overflow: hidden; }
+.pr-project > div { padding: 9px 11px; border-left: 1px solid var(--pr-line); }
+.pr-project > div:first-child { border-left: 0; }
+.pr-project dt { color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .08em; }
+.pr-project dd { margin-top: 2px; font-weight: 600; font-size: 9pt; line-height: 1.3; }
+.pr-project dd small { display: block; margin-top: 2px; color: var(--pr-muted); font-weight: 400; font-size: 7.5pt; }
+
+.pr-kpis { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 8px; margin-top: 12px; break-inside: avoid; }
+.pr-kpi { display: grid; align-content: start; gap: 3px; padding: 11px 12px; border-radius: 8px; background: var(--pr-soft); border: 1px solid var(--pr-line); }
+.pr-kpi.is-primary { background: var(--pr-accent); border-color: var(--pr-accent); color: #fff; }
+.pr-kpi span { font-size: 7pt; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--pr-muted); }
+.pr-kpi strong { font-size: 18pt; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
+.pr-kpi strong small { margin-left: 4px; font-size: 8pt; font-weight: 500; letter-spacing: 0; }
+.pr-kpi em { font-style: normal; font-size: 7.5pt; color: var(--pr-muted); line-height: 1.35; }
+.pr-kpi.is-primary span, .pr-kpi.is-primary em { color: rgba(255, 255, 255, .82); }
+
+.pr-section { margin-top: 18px; }
+.pr-keep { break-inside: avoid; page-break-inside: avoid; }
+.pr-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid var(--pr-line); break-after: avoid; page-break-after: avoid; }
+.pr-heading p { color: var(--pr-accent); font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+.pr-heading h2 { margin-top: 1px; font-size: 12.5pt; font-weight: 700; line-height: 1.25; }
+.pr-heading > span { flex: none; padding: 2px 8px; border-radius: 99px; background: var(--pr-soft); color: var(--pr-muted); font-size: 7.5pt; font-weight: 600; white-space: nowrap; }
+.pr-note { margin-top: 7px !important; color: var(--pr-muted); font-size: 7.5pt; line-height: 1.45; }
+
+.pr-balance-bar { display: flex; height: 14px; overflow: hidden; border-radius: 99px; background: var(--pr-soft); }
+.pr-balance-bar i { display: block; height: 100%; }
+.pr-balance-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.pr-balance-legend > div { display: grid; grid-template-columns: 9px 1fr; column-gap: 7px; row-gap: 1px; align-items: baseline; }
+.pr-balance-legend i { width: 9px; height: 9px; border-radius: 2px; transform: translateY(1px); }
+.pr-balance-legend span { font-size: 8pt; font-weight: 600; }
+.pr-balance-legend strong, .pr-balance-legend em { grid-column: 2; }
+.pr-balance-legend strong { font-size: 11pt; }
+.pr-balance-legend strong small { color: var(--pr-muted); font-size: 7.5pt; font-weight: 500; }
+.pr-balance-legend em { font-style: normal; color: var(--pr-muted); font-size: 7.5pt; }
+
+.pr-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.pr-chart .grid { stroke: #e6ede7; stroke-width: 1; }
+.pr-chart .axis { stroke: #9fb2a6; stroke-width: 1.2; }
+.pr-chart .tick { fill: var(--pr-muted); font-size: 10px; }
+.pr-chart .value { fill: var(--pr-ink); font-size: 9.5px; font-weight: 600; }
+.pr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; color: var(--pr-muted); font-size: 7.5pt; }
+.pr-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.pr-legend i { width: 9px; height: 9px; border-radius: 2px; }
+
+.pr-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.pr-table thead { display: table-header-group; }
+.pr-table tr { break-inside: avoid; page-break-inside: avoid; }
+.pr-table th { padding: 5px 6px; border-bottom: 1.2px solid var(--pr-ink); color: var(--pr-muted); font-size: 7pt; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: .06em; }
+.pr-table td { padding: 5px 6px; border-bottom: 1px solid var(--pr-line); vertical-align: top; }
+.pr-table td strong { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.pr-table td small { display: block; margin-top: 1px; color: var(--pr-muted); font-size: 7pt; }
+.pr-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pr-table tr.is-total td { border-top: 1.2px solid var(--pr-ink); border-bottom: 0; font-weight: 600; }
+.pr-table .muted { color: var(--pr-muted); font-style: italic; }
+.pr-scenarios { margin-bottom: 10px; }
+.pr-scenarios td strong i { width: 8px; height: 8px; border-radius: 2px; }
+.pr-scenarios tr.is-selected td { background: var(--pr-soft); }
+
+.pr-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.pr-columns > .pr-section { margin-top: 18px; }
+.pr-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.pr-facts > div { padding: 5px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
+.pr-facts.is-stacked { grid-template-columns: 1fr; }
+.pr-facts dt { color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .06em; }
+.pr-facts dd { margin-top: 1px; font-size: 8.5pt; font-weight: 600; }
+.pr-bullets { margin-top: 8px !important; padding-left: 14px; color: var(--pr-muted); font-size: 7.5pt; }
+.pr-carbon { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pr-carbon > div { padding: 10px 12px; border-radius: 8px; background: var(--pr-soft); }
+.pr-carbon span { display: block; color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .06em; }
+.pr-carbon strong { font-size: 16pt; }
+
+.pr-ledger > div { display: grid; grid-template-columns: 42mm 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
+.pr-ledger dt { font-size: 8pt; font-weight: 600; }
+.pr-ledger dt small { display: block; color: var(--pr-faint); font-size: 6.5pt; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+.pr-ledger dd { color: var(--pr-ink); font-size: 8pt; overflow-wrap: anywhere; }
+
+.pr-closing { margin-top: 18px; padding-top: 8px; border-top: 1px solid var(--pr-line); color: var(--pr-muted); font-size: 7pt; break-inside: avoid; }
+.pr-closing p + p { margin-top: 3px; }
+
+/* Server render (/p/:id?print=1): the report is the whole page. */
+html.is-print-render, html.is-print-render body { background: #fff !important; }
+html.is-print-render body { margin: 0; }
+html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite-advisor-panel { display: none !important; }
+
+/* In-app results page: the report is portalled next to #root and only shown when printing. */
+.print-report-portal { display: none; }
+@page { size: A4; margin: 14mm 12mm 16mm; }
+@media print {
+  html.has-print-report body > *:not(.print-report-portal) { display: none !important; }
+  html.has-print-report .print-report-portal { display: block !important; }
+  html.has-print-report, html.has-print-report body { background: #fff !important; }
+}

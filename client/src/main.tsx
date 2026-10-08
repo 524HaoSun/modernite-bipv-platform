@@ -8,6 +8,7 @@ import App from "./App";
 import { lazy, Suspense } from "react";
 const Admin = lazy(() => import("./control/Admin"));
 const Account = lazy(() => import("./control/Account"));
+const ReportView = lazy(() => import("./control/ReportView"));
 import { startLogin } from "./const";
 import "./index.css";
 
@@ -89,7 +90,7 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <Suspense fallback={<div style={{ padding: 40 }}>Opening Modernité…</div>}>{window.location.pathname.replace(/\/$/, "") === "/admin" ? <Admin /> : window.location.pathname.replace(/\/$/, "") === "/account" ? <Account /> : <App />}</Suspense>
+      <Suspense fallback={<div style={{ padding: 40 }}>Opening Modernité…</div>}>{window.location.pathname.replace(/\/$/, "") === "/admin" ? <Admin /> : window.location.pathname.replace(/\/$/, "") === "/account" ? <Account /> : window.location.pathname.startsWith("/r/") ? <ReportView /> : <App />}</Suspense>
     </QueryClientProvider>
   </trpc.Provider>
 );
