@@ -8,6 +8,7 @@ import type { PvgisTmyPayload } from "../lib/pvgis-tmy";
 import { estimateAnnualDemandKwh } from "../lib/studio-calculation";
 
 process.env.WEATHER_CACHE_DIR = mkdtempSync(path.join(os.tmpdir(), "modernite-weather-"));
+process.env.LLM_API_KEY = "test-key";
 delete process.env.GOOGLE_SOLAR_API_KEY;
 
 let runProjectCalculation: typeof import("../server/estimate-service")["runProjectCalculation"];
@@ -75,7 +76,10 @@ describe("project study calculation service", () => {
     ({ runProjectCalculation } = await import("../server/estimate-service"));
   });
   beforeEach(() => vi.clearAllMocks());
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it("uses NASA POWER by default, as the customer Studio does", async () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeNasa()), { status: 200 }));
@@ -161,6 +165,23 @@ describe("project study calculation service", () => {
     expect(study.result.engine.guardsTriggered).toContain("customer-synthetic-climate");
     expect(study.energy.source).toBe("customer-model");
     expect(study.result.range.representative).toBeGreaterThan(0);
+  });
+
+  it("does not keep the calculation page waiting when economic guidance stalls", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("re.jrc.ec.europa.eu")) return new Response(JSON.stringify(fakeTmy()), { status: 200 });
+      return new Promise<Response>(() => undefined);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings });
+    await vi.advanceTimersByTimeAsync(15_100);
+    const study = await pending;
+
+    expect(study.validation.status).toBe("pvgis-tmy");
+    expect(study.result.range.representative).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("chat/completions"))).toBe(true);
   });
 
   it("returns a clear configuration requirement before any network request for an empty Studio snapshot", async () => {

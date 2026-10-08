@@ -29,6 +29,7 @@ export type ProjectCalculation = CustomerStudy & {
 type StoredStudy = ProjectCalculation & { expiresAt: number };
 const studies = new Map<string, StoredStudy>();
 const STUDY_TTL_MS = 2 * 60 * 60 * 1000;
+const ECONOMIC_GUIDANCE_TIMEOUT_MS = 15_000;
 
 function purgeExpiredStudies() {
   const now = Date.now();
@@ -65,7 +66,11 @@ export async function runProjectCalculation(input: ProjectCalculationInput): Pro
     googleSolar,
   };
   const preliminaryStudy = runCustomerStudy(baseStudyInput);
-  const economicPlan = await estimateProjectEconomics(input, preliminaryStudy).catch((error: unknown) => {
+  const economicPlan = await withTimeout(
+    estimateProjectEconomics(input, preliminaryStudy),
+    ECONOMIC_GUIDANCE_TIMEOUT_MS,
+    "Economic guidance timed out",
+  ).catch((error: unknown) => {
     console.warn("[study] economic guidance fallback:", error instanceof Error ? error.message : String(error));
     return null;
   });
@@ -93,6 +98,16 @@ const economicPlanSchema = z.object({
 function clamp(value: number | null | undefined, min: number, max: number) {
   if (value === null || value === undefined || !Number.isFinite(value)) return null;
   return Math.max(min, Math.min(max, value));
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 async function estimateProjectEconomics(input: ProjectCalculationInput, study: CustomerStudy): Promise<CustomerEconomicsPlan | null> {

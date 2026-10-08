@@ -453,7 +453,7 @@ function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialSce
     const before = flows[index - 1]!.cumulativeNetGbp, after = flows[index]!.cumulativeNetGbp;
     return [{ item, x: xAt(index - 1 + (0 - before) / Math.max(1e-9, after - before)), year: item.breakEvenYear ?? flows[index]!.year }];
   }).sort((a, b) => a.x - b.x);
-  const labelRows = breaks.map((entry, i) => (i > 0 && entry.x - breaks[i - 1]!.x < 120 ? 1 : 0));
+  const labelRows = breaks.map((entry, i) => (i > 0 && entry.x - breaks[i - 1]!.x < 132 ? 1 : 0));
   const selected = visible.find((item) => item.id === scenario.id) ?? visible[0];
   const areaPath = selected ? `M${xAt(0)},${zeroY} L${points(selected).join(" L")} L${xAt(selected.annualCashFlows.length - 1)},${zeroY} Z` : "";
   const selectedFinal = scenario.annualCashFlows.at(-1);
@@ -482,11 +482,11 @@ function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialSce
         {visible.map((item) => <polyline key={item.id} points={points(item).join(" ")} className={`cash-position-line ${item.id === scenario.id ? "is-selected" : ""}`} style={{ stroke: SCENARIO_COLORS[item.id] }} />)}
         {breaks.map(({ item, x, year }, i) => {
           const selectedLine = item.id === scenario.id;
-          const labelY = CHART.top + 24 + labelRows[i]! * 28;
+          const labelY = CHART.top + 22 + labelRows[i]! * 30;
           return <g key={`${item.id}-break`} className={`cash-break ${selectedLine ? "is-selected" : ""}`}>
             <line x1={x} x2={x} y1={labelY + 6} y2={zeroY} style={{ stroke: SCENARIO_COLORS[item.id] }} />
             <circle cx={x} cy={zeroY} r={selectedLine ? 5.5 : 4.5} fill={SCENARIO_COLORS[item.id]} />
-            {selectedLine && <text x={x} y={labelY} textAnchor={x > CHART.right - 70 ? "end" : x < CHART.left + 70 ? "start" : "middle"} style={{ fill: SCENARIO_COLORS[item.id] }}>{t.breakEvenYear(year)}</text>}
+            <text x={x} y={labelY} textAnchor={x > CHART.right - 76 ? "end" : x < CHART.left + 76 ? "start" : "middle"} style={{ fill: SCENARIO_COLORS[item.id] }}>{t.breakEvenYear(year)}</text>
           </g>;
         })}
         {visible.map((item) => {

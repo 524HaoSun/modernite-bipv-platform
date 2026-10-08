@@ -3255,7 +3255,10 @@ body {
   font-size: 11px;
 }
 .scenario-premium-panel .scenario-options button {
+  align-items: center;
+  gap: 16px;
   min-height: 112px;
+  padding: 18px 22px;
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255,255,255,.88), rgba(247,252,246,.88));
@@ -3265,6 +3268,27 @@ body {
   background:
     radial-gradient(circle at 100% 0, rgba(245,202,89,.19), transparent 30%),
     linear-gradient(180deg, #edf8ed, #fbfff9);
+}
+.scenario-premium-panel .scenario-options button > span {
+  width: 44px;
+  height: 44px;
+}
+.scenario-premium-panel .scenario-options button > span svg {
+  width: 22px;
+  height: 22px;
+}
+.scenario-premium-panel .scenario-options b {
+  color: #244f40;
+  font-size: clamp(18px, 1.35vw, 23px);
+  line-height: 1.15;
+  font-weight: 850;
+}
+.scenario-premium-panel .scenario-options small {
+  margin-top: 8px;
+  color: #6d8272;
+  font-size: clamp(13px, .95vw, 15px);
+  line-height: 1.35;
+  font-weight: 700;
 }
 .cash-position-chart {
   min-height: 238px;
