@@ -309,7 +309,7 @@ const OUTER_UI_COPY = {
     residential: "Residential",
     activeSolarSurfaces: "Active solar surfaces",
     buildingFootprint: "Building footprint",
-    energyNoteTitle: "Your energy inputs help us calculate savings, self-consumption and payback.",
+    energyNoteTitle: "Your energy inputs help us calculate Solar Coverage, PV self-consumption, Export Rate and payback.",
     energyNoteBody: "We combine your building design with household energy use to model real-world performance over 25 years.",
     planningInputs: "Planning inputs",
     energyCashTitle: "Home energy & cash position",
@@ -348,7 +348,8 @@ const OUTER_UI_COPY = {
     livePreview: "Live preview",
     estimatedAnnualUse: "Estimated annual household use",
     homeProfile: "Home profile",
-    directSolarUse: "Pre-calculation solar use estimate",
+    directSolarUse: "Pre-calculation self-use assumption",
+    directSolarUseNote: "Final Solar Coverage, PV self-consumption and Export Rate are calculated together in Results and the PDF.",
     aboutPercent: (value: number) => `About ${value}%`,
     electricLoads: "Electric home loads",
     storageScenario: "Storage scenario",
@@ -407,7 +408,7 @@ const OUTER_UI_COPY = {
     residential: "住宅",
     activeSolarSurfaces: "有效光伏面",
     buildingFootprint: "建筑占地面积",
-    energyNoteTitle: "能耗输入将帮助计算节省、自用率和回本周期。",
+    energyNoteTitle: "能耗输入将帮助计算光伏覆盖率、光伏自用率、上网率和回本周期。",
     energyNoteBody: "我们会把建筑设计与家庭用电结合，模拟 25 年真实使用表现。",
     planningInputs: "规划输入",
     energyCashTitle: "家庭能耗与现金流",
@@ -446,7 +447,8 @@ const OUTER_UI_COPY = {
     livePreview: "实时预览",
     estimatedAnnualUse: "预估年度家庭用电",
     homeProfile: "家庭画像",
-    directSolarUse: "计算前光伏自用预估",
+    directSolarUse: "计算前自用假设",
+    directSolarUseNote: "最终光伏覆盖率、光伏自用率和上网率会在 Results 与 PDF 中统一计算。",
     aboutPercent: (value: number) => `约 ${value}%`,
     electricLoads: "家庭电力负载",
     storageScenario: "储能场景",
@@ -505,7 +507,7 @@ const OUTER_UI_COPY = {
     residential: "住宅",
     activeSolarSurfaces: "有效光伏面",
     buildingFootprint: "建築佔地面積",
-    energyNoteTitle: "能耗輸入將幫助計算節省、自用率和回本週期。",
+    energyNoteTitle: "能耗輸入將幫助計算光電覆蓋率、光電自用率、上網率與回本週期。",
     energyNoteBody: "我們會把建築設計與家庭用電結合，模擬 25 年真實使用表現。",
     planningInputs: "規劃輸入",
     energyCashTitle: "家庭能耗與現金流",
@@ -544,7 +546,8 @@ const OUTER_UI_COPY = {
     livePreview: "即時預覽",
     estimatedAnnualUse: "預估年度家庭用電",
     homeProfile: "家庭畫像",
-    directSolarUse: "計算前光電自用預估",
+    directSolarUse: "計算前自用假設",
+    directSolarUseNote: "最終光電覆蓋率、光電自用率與上網率會在 Results 與 PDF 中統一計算。",
     aboutPercent: (value: number) => `約 ${value}%`,
     electricLoads: "家庭電力負載",
     storageScenario: "儲能場景",
@@ -603,7 +606,7 @@ const OUTER_UI_COPY = {
     residential: "Résidentiel",
     activeSolarSurfaces: "Surfaces solaires actives",
     buildingFootprint: "Emprise au sol",
-    energyNoteTitle: "Vos données énergie permettent de calculer économies, autoconsommation et retour sur investissement.",
+    energyNoteTitle: "Vos données énergie permettent de calculer couverture solaire, autoconsommation PV, taux d'export et retour.",
     energyNoteBody: "Nous combinons la conception du bâtiment et la consommation du foyer pour modéliser la performance réelle sur 25 ans.",
     planningInputs: "Données de planification",
     energyCashTitle: "Énergie du foyer et trésorerie",
@@ -642,7 +645,8 @@ const OUTER_UI_COPY = {
     livePreview: "Aperçu en direct",
     estimatedAnnualUse: "Consommation annuelle estimée",
     homeProfile: "Profil du foyer",
-    directSolarUse: "Estimation solaire avant calcul",
+    directSolarUse: "Hypothèse d'autoconsommation avant calcul",
+    directSolarUseNote: "La couverture solaire, l'autoconsommation PV et le taux d'export finaux sont calculés ensemble dans Results et le PDF.",
     aboutPercent: (value: number) => `Environ ${value} %`,
     electricLoads: "Charges électriques",
     storageScenario: "Scénario de stockage",
@@ -701,7 +705,7 @@ const OUTER_UI_COPY = {
     residential: "住宅",
     activeSolarSurfaces: "太陽光面",
     buildingFootprint: "建築面積",
-    energyNoteTitle: "エネルギー入力から、節約額・自家消費・回収期間を計算します。",
+    energyNoteTitle: "エネルギー入力から、太陽光カバー率、PV 自家消費率、売電率、回収期間を計算します。",
     energyNoteBody: "建物デザインと家庭の電力使用を組み合わせ、25 年間の実性能をモデル化します。",
     planningInputs: "計画入力",
     energyCashTitle: "家庭のエネルギーと収支",
@@ -740,7 +744,8 @@ const OUTER_UI_COPY = {
     livePreview: "ライブプレビュー",
     estimatedAnnualUse: "推定年間使用量",
     homeProfile: "世帯プロファイル",
-    directSolarUse: "想定自家消費",
+    directSolarUse: "計算前の自家消費仮定",
+    directSolarUseNote: "最終的な太陽光カバー率、PV 自家消費率、売電率は Results と PDF で同じ口径で計算されます。",
     aboutPercent: (value: number) => `約 ${value}%`,
     electricLoads: "電気負荷",
     storageScenario: "蓄電シナリオ",
@@ -799,7 +804,7 @@ const OUTER_UI_COPY = {
     residential: "Residencial",
     activeSolarSurfaces: "Superficies solares activas",
     buildingFootprint: "Superficie en planta",
-    energyNoteTitle: "Sus datos de energía permiten calcular ahorro, autoconsumo y retorno.",
+    energyNoteTitle: "Sus datos de energía permiten calcular cobertura solar, autoconsumo FV, tasa de exportación y retorno.",
     energyNoteBody: "Combinamos el diseño del edificio con el consumo del hogar para modelar el rendimiento real durante 25 años.",
     planningInputs: "Datos de planificación",
     energyCashTitle: "Energía del hogar y caja",
@@ -838,7 +843,8 @@ const OUTER_UI_COPY = {
     livePreview: "Vista previa",
     estimatedAnnualUse: "Consumo anual estimado",
     homeProfile: "Perfil del hogar",
-    directSolarUse: "Estimación solar previa al cálculo",
+    directSolarUse: "Supuesto de autoconsumo previo",
+    directSolarUseNote: "La cobertura solar, el autoconsumo FV y la tasa de exportación finales se calculan juntos en Results y en el PDF.",
     aboutPercent: (value: number) => `Aprox. ${value} %`,
     electricLoads: "Cargas eléctricas",
     storageScenario: "Escenario de almacenamiento",
@@ -897,7 +903,7 @@ const OUTER_UI_COPY = {
     residential: "Residenziale",
     activeSolarSurfaces: "Superfici solari attive",
     buildingFootprint: "Impronta a terra",
-    energyNoteTitle: "I tuoi dati energetici servono a calcolare risparmio, autoconsumo e rientro.",
+    energyNoteTitle: "I tuoi dati energetici servono a calcolare copertura solare, autoconsumo FV, tasso di esportazione e rientro.",
     energyNoteBody: "Combiniamo il progetto dell'edificio con i consumi domestici per modellare le prestazioni reali in 25 anni.",
     planningInputs: "Dati di pianificazione",
     energyCashTitle: "Energia domestica e flussi di cassa",
@@ -936,7 +942,8 @@ const OUTER_UI_COPY = {
     livePreview: "Anteprima",
     estimatedAnnualUse: "Consumo annuo stimato",
     homeProfile: "Profilo domestico",
-    directSolarUse: "Stima solare pre-calcolo",
+    directSolarUse: "Ipotesi di autoconsumo pre-calcolo",
+    directSolarUseNote: "Copertura solare, autoconsumo FV e tasso di esportazione finali sono calcolati insieme in Results e nel PDF.",
     aboutPercent: (value: number) => `Circa ${value}%`,
     electricLoads: "Carichi elettrici",
     storageScenario: "Scenario di accumulo",
@@ -1572,7 +1579,7 @@ function EnergyPlanningPreview({ settings, language, marketKey, solarAreaM2 }: {
       </div>
       <dl className="energy-preview-facts">
         <div><dt><Home size={14} /> {text.homeProfile}</dt><dd>{preview.profile}</dd></div>
-        <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}</dd></div>
+        <div><dt><SunMedium size={14} /> {text.directSolarUse}</dt><dd>{text.aboutPercent(preview.directUse)}<small>{text.directSolarUseNote}</small></dd></div>
         <div><dt><Zap size={14} /> {text.electricLoads}</dt><dd>{preview.services}</dd></div>
         <div><dt><BatteryCharging size={14} /> {text.storageScenario}</dt><dd>{preview.battery}</dd></div>
         <div><dt><TrendingUp size={14} /> {text.planningCostUsed}</dt><dd>{preview.cost}{preview.costEstimated ? ` ${text.estimateLabel}` : ""}</dd></div>
@@ -2509,6 +2516,7 @@ export default function App() {
       ? `Building applied from the site step: ${building.typeId}, ${building.widthM.toFixed(1)} × ${building.depthM.toFixed(1)} m, ${building.floors} storeys of ${building.storeyHeightM} m, ${building.roofForm} roof ${building.roofPitchDeg}°, front faces ${building.frontAzimuthDeg}°`
       : "Building: not read from map data; the Design Studio uses its own building settings");
     lines.push(`Home energy inputs: ${JSON.stringify(context.energySettings)}`);
+    lines.push("KPI definitions: Energy step values are pre-calculation planning inputs. Final Solar Coverage, PV self-consumption and Export Rate are calculated in Results/PDF from the selected scenario. In the solar + battery scenario, battery discharge to the home is included in solar energy used by the home.");
     try {
       const studio = (document.querySelector<HTMLIFrameElement>("iframe.customer-studio-frame")?.contentWindow as (Window & { ModerniteAdvisorCore?: { context: () => string } }) | null)?.ModerniteAdvisorCore?.context();
       if (studio) lines.push("", "Design Studio configuration:", studio);

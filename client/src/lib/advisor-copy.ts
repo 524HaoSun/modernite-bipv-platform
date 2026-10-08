@@ -49,7 +49,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "I don’t know my annual electricity use", answer: "Choose “Not sure” and enter the number of people, daytime occupancy and electric loads such as a heat pump or EV charger. The model estimates demand from these; a figure from your bill is more accurate if you have it." },
-        { id: "battery", question: "Should I add a battery?", answer: "A battery stores daytime surplus for the evening, raising self-consumption. It pays off best when you are out during the day and your export rate is low. Select “Add a battery” to compare both options side by side in the results." },
+        { id: "battery", question: "Should I add a battery?", answer: "A battery stores daytime surplus for evening use. In Results, Solar Coverage means solar energy used by the home divided by annual demand; PV self-consumption means configured generation kept on site; Export Rate means the share sent to the grid. In the battery scenario, energy discharged from the battery to the home is included in solar used by the home." },
         { id: "sizing", question: "When are the inverter and battery sized?", answer: "When you press “Calculate project results”. The hourly model then sizes the inverter (≤1% clipping) and the battery from your final building, products and demand, so changing the design beforehand costs nothing." },
       ],
       results: [
@@ -87,7 +87,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "不知道每年用多少电怎么办？", answer: "选择“不确定”，填写居住人数、白天在家情况，以及热泵、电动车充电桩等用电设备，模型会据此估算；如果有电费账单，填写年用电量会更准确。" },
-        { id: "battery", question: "需要配电池吗？", answer: "电池把白天多余的电留到晚上用，提高自用比例。白天常不在家、上网电价低时更划算。选择“增加电池”后，结果页会并排比较两种方案。" },
+        { id: "battery", question: "需要配电池吗？", answer: "电池把白天多余的电留到晚上用。Results 里的光伏覆盖率=家庭实际用到的太阳能/年用电量；光伏自用率=已配置发电量中留在现场使用的比例；上网率=送入电网的比例。电池方案中，电池放电供家庭使用的电量会计入家庭用到的太阳能。" },
         { id: "sizing", question: "逆变器和电池什么时候计算？", answer: "在你点击“计算项目结果”时。逐时模型会根据最终的建筑、产品和用电情况匹配逆变器（削峰损失 ≤1%）和电池，所以之前反复调整设计不会产生额外计算。" },
       ],
       results: [
@@ -125,7 +125,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "不知道每年用多少電怎麼辦？", answer: "選擇「不確定」，填寫居住人數、白天在家情況，以及熱泵、電動車充電樁等用電設備，模型會據此估算；若有電費帳單，填寫年用電量會更準確。" },
-        { id: "battery", question: "需要配電池嗎？", answer: "電池把白天多餘的電留到晚上使用，提高自用比例。白天常不在家、售電價格低時更划算。選擇「增加電池」後，結果頁會並排比較兩種方案。" },
+        { id: "battery", question: "需要配電池嗎？", answer: "電池把白天多餘的電留到晚上使用。Results 裡的光電覆蓋率=家庭實際用到的太陽能/年用電量；光電自用率=已配置發電量中留在現場使用的比例；上網率=送入電網的比例。電池方案中，電池放電供家庭使用的電量會計入家庭用到的太陽能。" },
         { id: "sizing", question: "逆變器與電池什麼時候計算？", answer: "在你點擊「計算專案結果」時。逐時模型會依最終的建築、產品與用電情況匹配逆變器（削峰損失 ≤1%）與電池，因此之前反覆調整設計不會產生額外計算。" },
       ],
       results: [
@@ -163,7 +163,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "Je ne connais pas ma consommation annuelle", answer: "Choisissez « Je ne sais pas » et indiquez le nombre d’occupants, la présence en journée et les usages électriques (pompe à chaleur, borne de recharge…). Le modèle estime alors la demande ; une facture reste plus précise." },
-        { id: "battery", question: "Faut-il ajouter une batterie ?", answer: "La batterie stocke le surplus de la journée pour le soir et augmente l’autoconsommation. Elle est plus intéressante si vous êtes absent le jour et si le tarif de revente est bas. Sélectionnez-la pour comparer les deux options dans les résultats." },
+        { id: "battery", question: "Faut-il ajouter une batterie ?", answer: "Une batterie stocke le surplus de la journée pour le soir. Dans Results, la couverture solaire est l'énergie solaire utilisée par le foyer divisée par la demande annuelle ; l'autoconsommation PV est la part de production gardée sur site ; le taux d'export est la part envoyée au réseau. En scénario batterie, la décharge vers le foyer est incluse dans l'énergie solaire utilisée par le foyer." },
         { id: "sizing", question: "Quand l’onduleur et la batterie sont-ils dimensionnés ?", answer: "Lorsque vous cliquez sur « Calculer les résultats ». Le modèle horaire dimensionne alors l’onduleur (écrêtage ≤ 1 %) et la batterie à partir du bâtiment, des produits et de la demande définitifs." },
       ],
       results: [
@@ -201,7 +201,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "年間使用量がわからない", answer: "「わからない」を選び、人数・日中の在宅状況・ヒートポンプや EV 充電器などを入力すると、モデルが需要を推定します。検針票の値があればより正確です。" },
-        { id: "battery", question: "蓄電池は必要？", answer: "蓄電池は日中の余剰電力を夜に使えるようにし、自家消費率を高めます。日中不在が多く売電単価が低い場合に有利です。「蓄電池を追加」を選ぶと結果で両案を比較できます。" },
+        { id: "battery", question: "蓄電池は必要？", answer: "蓄電池は日中の余剰電力を夜に使えるようにします。Results の太陽光カバー率は家庭で使った太陽光 ÷ 年間需要、PV 自家消費率は発電量のうち現地で使った割合、売電率は系統へ送った割合です。蓄電池シナリオでは、蓄電池から家庭へ放電した電力も家庭で使った太陽光に含まれます。" },
         { id: "sizing", question: "インバーターと蓄電池はいつ選定される？", answer: "「検討結果を計算」を押したときです。時間別モデルが最終的な建物・製品・需要からインバーター（クリッピング 1% 以下）と蓄電池を選定するため、それまで設計を何度変更しても計算は発生しません。" },
       ],
       results: [
@@ -239,7 +239,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "No sé mi consumo anual", answer: "Elige «No estoy seguro» e indica personas, presencia diurna y cargas eléctricas como bomba de calor o cargador de VE. El modelo estimará la demanda; una factura es más precisa si la tienes." },
-        { id: "battery", question: "¿Conviene añadir batería?", answer: "La batería guarda el excedente del día para la noche y aumenta el autoconsumo. Compensa más si pasas el día fuera y la compensación por excedentes es baja. Selecciónala para comparar ambas opciones en los resultados." },
+        { id: "battery", question: "¿Conviene añadir batería?", answer: "La batería guarda el excedente del día para usarlo por la noche. En Results, la cobertura solar es la energía solar usada por el hogar dividida por la demanda anual; el autoconsumo FV es la parte de generación que se queda en sitio; la tasa de exportación es la parte enviada a la red. En el escenario con batería, la descarga hacia el hogar cuenta como solar usado por el hogar." },
         { id: "sizing", question: "¿Cuándo se dimensionan el inversor y la batería?", answer: "Al pulsar «Calcular resultados». El modelo horario dimensiona entonces el inversor (recorte ≤1 %) y la batería con el edificio, los productos y la demanda definitivos." },
       ],
       results: [
@@ -277,7 +277,7 @@ export const ADVISOR_COPY: Record<WorkflowLanguage, AdvisorCopy> = {
       studio: [],
       energy: [
         { id: "demand", question: "Non conosco il consumo annuo", answer: "Scegli «Non sono sicuro» e indica persone, presenza diurna e carichi elettrici come pompa di calore o colonnina. Il modello stima la domanda; il valore in bolletta è più preciso, se disponibile." },
-        { id: "battery", question: "Conviene aggiungere una batteria?", answer: "La batteria accumula il surplus diurno per la sera e aumenta l’autoconsumo. Conviene di più se di giorno sei fuori casa e la remunerazione dell’energia ceduta è bassa. Selezionala per confrontare le due opzioni nei risultati." },
+        { id: "battery", question: "Conviene aggiungere una batteria?", answer: "La batteria accumula il surplus diurno per usarlo la sera. In Results, la copertura solare è l'energia solare usata dalla casa divisa per la domanda annua; l'autoconsumo FV è la quota di produzione mantenuta in sito; il tasso di esportazione è la quota inviata alla rete. Nello scenario con batteria, la scarica verso la casa è inclusa nell'energia solare usata dalla casa." },
         { id: "sizing", question: "Quando vengono dimensionati inverter e batteria?", answer: "Quando premi «Calcola i risultati». Il modello orario dimensiona allora l’inverter (clipping ≤1%) e la batteria in base a edificio, prodotti e consumi definitivi." },
       ],
       results: [
