@@ -11778,3 +11778,42 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
     max-width: 128px !important;
   }
 }
+
+/* Critical visual stability guard.
+   Keep this as the final CSS block so later edits cannot reintroduce the
+   loading-page ghost overlays or the Results hero image/carding regressions. */
+.calculation-page.calculation-page--cinematic::before {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  background:
+    linear-gradient(180deg, rgba(245, 251, 247, .04), rgba(238, 247, 240, .04)),
+    url("/assets/modernite-loading-client-bg.png") center center / 100% 100% no-repeat !important;
+  filter: blur(4px) saturate(1.02) contrast(.98) !important;
+  opacity: 1 !important;
+  transform: scale(1.008) !important;
+}
+
+.calculation-page--cinematic .calculation-ambient,
+.calculation-page--cinematic .calculation-orb,
+.calculation-page--cinematic .calculation-radar__arc,
+.calculation-page--cinematic .calculation-radar__spark {
+  display: none !important;
+}
+
+.calculation-page--cinematic .calculation-radar {
+  width: clamp(250px, 23vw, 340px) !important;
+  height: clamp(250px, 23vw, 340px) !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-hero-card {
+  --modernite-results-card-image: url("/assets/modernite-results-client-bg.png");
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+.gateway-shell--results .results-hero-stage .modernite-client-home-visual {
+  object-fit: contain !important;
+  pointer-events: none !important;
+}
