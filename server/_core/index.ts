@@ -1,3 +1,4 @@
+import { registerControlRoutes } from "../control/routes";
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
@@ -37,6 +38,7 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  registerControlRoutes(app);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerWeatherRoutes(app);
@@ -64,8 +66,17 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  // Demo workspace stays on loopback; reverse proxies on the same host still reach it.
+  const host =
+    process.env.HOST ||
+    (process.env.CONTROL_PREVIEW === "1" ? "127.0.0.1" : undefined);
+
+  server.listen(port, host, () => {
+    const where = host ? `http://${host}:${port}/` : `http://localhost:${port}/`;
+    console.log(`Server running on ${where}`);
+    if (process.env.CONTROL_PREVIEW === "1") {
+      console.log(`Admin demo: ${where.replace(/\/$/, "")}/admin`);
+    }
   });
 }
 
