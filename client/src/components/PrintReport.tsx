@@ -172,7 +172,6 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
 
     <footer className="pr-closing">
       <p>{t.chainNote}</p>
-      <p>{t.cashDisclaimer}</p>
     </footer>
   </article>;
 }

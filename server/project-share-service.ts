@@ -43,7 +43,7 @@ export async function loadProject(id: string): Promise<unknown | null> {
 
 const rendering = new Map<string, Promise<Buffer>>();
 /** Bump when the print layout changes so cached PDFs are re-rendered. */
-const REPORT_LAYOUT = "a4v2";
+const REPORT_LAYOUT = "a4v3";
 
 export function registerProjectReportRoute(app: Express) {
   app.get("/api/projects/:id/report.pdf", async (req, res) => {

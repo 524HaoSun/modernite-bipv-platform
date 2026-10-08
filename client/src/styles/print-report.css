@@ -52,7 +52,7 @@
 .pr-kpi em { font-style: normal; font-size: 7.5pt; color: var(--pr-muted); line-height: 1.35; }
 .pr-kpi.is-primary span, .pr-kpi.is-primary em { color: rgba(255, 255, 255, .82); }
 
-.pr-section { margin-top: 18px; }
+.pr-section { margin-top: 15px; }
 .pr-keep { break-inside: avoid; page-break-inside: avoid; }
 .pr-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid var(--pr-line); break-after: avoid; page-break-after: avoid; }
 .pr-heading p { color: var(--pr-accent); font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
@@ -95,9 +95,9 @@
 .pr-scenarios tr.is-selected td { background: var(--pr-soft); }
 
 .pr-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
-.pr-columns > .pr-section { margin-top: 18px; }
+.pr-columns > .pr-section { margin-top: 15px; }
 .pr-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
-.pr-facts > div { padding: 5px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
+.pr-facts > div { padding: 3px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
 .pr-facts.is-stacked { grid-template-columns: 1fr; }
 .pr-facts dt { color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .06em; }
 .pr-facts dd { margin-top: 1px; font-size: 8.5pt; font-weight: 600; }
@@ -107,12 +107,12 @@
 .pr-carbon span { display: block; color: var(--pr-muted); font-size: 7pt; text-transform: uppercase; letter-spacing: .06em; }
 .pr-carbon strong { font-size: 16pt; }
 
-.pr-ledger > div { display: grid; grid-template-columns: 42mm 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
+.pr-ledger > div { display: grid; grid-template-columns: 42mm 1fr; gap: 10px; padding: 2px 0; border-bottom: 1px solid var(--pr-line); break-inside: avoid; }
 .pr-ledger dt { font-size: 8pt; font-weight: 600; }
 .pr-ledger dt small { display: block; color: var(--pr-faint); font-size: 6.5pt; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
-.pr-ledger dd { color: var(--pr-ink); font-size: 8pt; overflow-wrap: anywhere; }
+.pr-ledger dd { color: var(--pr-ink); font-size: 7.5pt; line-height: 1.4; overflow-wrap: anywhere; }
 
-.pr-closing { margin-top: 18px; padding-top: 8px; border-top: 1px solid var(--pr-line); color: var(--pr-muted); font-size: 7pt; break-inside: avoid; }
+.pr-closing { margin-top: 10px; padding-top: 5px; border-top: 1px solid var(--pr-line); color: var(--pr-muted); font-size: 7pt; break-inside: avoid; }
 .pr-closing p + p { margin-top: 3px; }
 
 /* Server render (/p/:id?print=1): the report is the whole page. */

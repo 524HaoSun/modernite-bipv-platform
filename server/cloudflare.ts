@@ -36,8 +36,25 @@ export function ensureSchema() {
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** Renders a public URL to an A4 PDF through Cloudflare Browser Rendering, with "footer · page n / N" on every page. */
-export async function renderPdf(url: string, waitForSelector: string, footer = ""): Promise<Buffer> {
-  if (!browserRenderingEnabled()) throw new Error("Browser Rendering is not configured");
+// Browser Rendering rate-limits new sessions per account, so renders run one at a time and back off on 429.
+const RATE_LIMIT_DELAYS_MS = [5_000, 10_000, 20_000];
+let renderQueue: Promise<unknown> = Promise.resolve();
+
+export function renderPdf(url: string, waitForSelector: string, footer = ""): Promise<Buffer> {
+  if (!browserRenderingEnabled()) return Promise.reject(new Error("Browser Rendering is not configured"));
+  const run = renderQueue.then(async () => {
+    for (let attempt = 0; ; attempt++) {
+      const result = await renderPdfOnce(url, waitForSelector, footer);
+      if (result !== "rate-limited") return result;
+      if (attempt >= RATE_LIMIT_DELAYS_MS.length) throw new Error("Browser Rendering failed (429): rate limit exceeded");
+      await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAYS_MS[attempt]));
+    }
+  });
+  renderQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function renderPdfOnce(url: string, waitForSelector: string, footer: string): Promise<Buffer | "rate-limited"> {
   // Header/footer templates render outside the page CSS, so they carry their own inline styles.
   const footerTemplate = `<div style="width:100%;padding:0 12mm;display:flex;justify-content:space-between;font-family:Helvetica,Arial,sans-serif;font-size:7px;color:#6b7c72;"><span>${escapeHtml(footer)}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`;
   const response = await fetch(`${API}/accounts/${ENV.cfAccountId}/browser-rendering/pdf`, {
@@ -59,6 +76,10 @@ export async function renderPdf(url: string, waitForSelector: string, footer = "
     }),
     signal: AbortSignal.timeout(90_000),
   });
+  if (response.status === 429) {
+    await response.body?.cancel();
+    return "rate-limited";
+  }
   const type = response.headers.get("content-type") ?? "";
   if (!response.ok || !type.includes("pdf")) throw new Error(`Browser Rendering failed (${response.status}): ${(await response.text()).slice(0, 200)}`);
   return Buffer.from(await response.arrayBuffer());
