@@ -37,8 +37,8 @@ export type BuildingProfile = {
   path?: LatLng[];
   roadName?: string;
   roofSegments: { pitchDeg: number; azimuthDeg: number; areaM2: number }[];
-  /** Google Solar's own max panel layout for this roof (DC, Google's panel model). */
-  solarPotential?: { panels: number; capacityKwp?: number; yearlyDcKwh?: number; sunshineHours?: number; arrayAreaM2?: number };
+  /** External roof-geometry reference area and sunshine context. */
+  roofReference?: { sunshineHours?: number; arrayAreaM2?: number };
   sources: {
     osm: "ok" | "not-found" | "unavailable";
     googleSolar: "ok" | "not-found" | "unavailable" | "disabled";
@@ -239,10 +239,7 @@ export function buildProfile(input: BuildingProfileInput): BuildingProfile {
     path: footprint?.path,
     roadName: footprint?.roadName,
     roofSegments: segments.map((s) => ({ pitchDeg: s.pitchDeg, azimuthDeg: s.azimuthDeg, areaM2: s.areaM2 })),
-    solarPotential: solarOk && segments.length && solarOk.maxArrayPanelsCount ? {
-      panels: solarOk.maxArrayPanelsCount,
-      capacityKwp: solarOk.maxArrayCapacityKwp,
-      yearlyDcKwh: solarOk.maxArrayYearlyDcKwh,
+    roofReference: solarOk && segments.length ? {
       sunshineHours: solarOk.maxSunshineHoursPerYear,
       arrayAreaM2: solarOk.maxArrayAreaM2,
     } : undefined,

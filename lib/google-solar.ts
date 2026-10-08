@@ -24,12 +24,7 @@ export type GoogleSolarReference = {
   imageryDate?: string;
   wholeRoofAreaM2?: number;
   maxArrayAreaM2?: number;
-  maxArrayPanelsCount?: number;
   maxSunshineHoursPerYear?: number;
-  panelCapacityWatts?: number;
-  maxArrayCapacityKwp?: number;
-  maxArrayYearlyDcKwh?: number;
-  panelConfigs?: { panels: number; capacityKwp: number; yearlyDcKwh: number }[];
   roofSegments?: GoogleSolarRoofSegment[];
   boundingBox?: { sw: { lat: number; lng: number }; ne: { lat: number; lng: number } };
   note: string;
@@ -45,11 +40,8 @@ type BuildingInsights = {
   imageryQuality?: string;
   imageryDate?: { year?: number; month?: number; day?: number };
   solarPotential?: {
-    maxArrayPanelsCount?: number;
     maxArrayAreaMeters2?: number;
     maxSunshineHoursPerYear?: number;
-    panelCapacityWatts?: number;
-    solarPanelConfigs?: { panelsCount?: number; yearlyEnergyDcKwh?: number }[];
     wholeRoofStats?: SizeAndSunshine;
     roofSegmentStats?: ({ pitchDegrees?: number; azimuthDegrees?: number; stats?: SizeAndSunshine; center?: LatLng; planeHeightAtCenterMeters?: number })[];
   };
@@ -72,7 +64,7 @@ const round = (value: number | undefined, digits = 1) => (Number.isFinite(value)
 export function parseBuildingInsights(payload: BuildingInsights, requested: { lat: number; lng: number }): GoogleSolarReference {
   if (payload.error) {
     const notFound = payload.error.code === 404 || payload.error.status === "NOT_FOUND";
-    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "The external roof benchmark has no building model at this location." : `External roof benchmark request failed (${payload.error.status ?? payload.error.code ?? "error"}).` };
+    return { status: notFound ? "not-found" : "unavailable", note: notFound ? "The external roof geometry reference has no building model at this location." : `External roof geometry request failed (${payload.error.status ?? payload.error.code ?? "error"}).` };
   }
   const potential = payload.solarPotential;
   const center = payload.center?.latitude !== undefined && payload.center?.longitude !== undefined ? { lat: payload.center.latitude, lng: payload.center.longitude } : undefined;
@@ -89,12 +81,6 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
       planeHeightAslM: round(segment.planeHeightAtCenterMeters, 2),
     };
   }).sort((a, b) => b.areaM2 - a.areaM2);
-  const watts = potential?.panelCapacityWatts;
-  const configs = (potential?.solarPanelConfigs ?? [])
-    .filter((c) => (c.panelsCount ?? 0) > 0 && Number.isFinite(c.yearlyEnergyDcKwh))
-    .map((c) => ({ panels: c.panelsCount!, capacityKwp: watts ? round((c.panelsCount! * watts) / 1000, 2)! : 0, yearlyDcKwh: Math.round(c.yearlyEnergyDcKwh!) }));
-  const largest = configs[configs.length - 1];
-  const panelConfigs = configs.length > 8 ? [0.25, 0.5, 0.75, 1].map((q) => configs[Math.max(0, Math.ceil(q * configs.length) - 1)]!) : configs;
   return {
     status: "ok",
     buildingId: payload.name,
@@ -104,12 +90,7 @@ export function parseBuildingInsights(payload: BuildingInsights, requested: { la
     imageryDate: date?.year ? `${date.year}-${String(date.month ?? 1).padStart(2, "0")}-${String(date.day ?? 1).padStart(2, "0")}` : undefined,
     wholeRoofAreaM2: round(potential?.wholeRoofStats?.areaMeters2),
     maxArrayAreaM2: round(potential?.maxArrayAreaMeters2),
-    maxArrayPanelsCount: potential?.maxArrayPanelsCount,
     maxSunshineHoursPerYear: round(potential?.maxSunshineHoursPerYear, 0),
-    panelCapacityWatts: watts,
-    maxArrayCapacityKwp: watts && potential?.maxArrayPanelsCount ? round((potential.maxArrayPanelsCount * watts) / 1000, 2) : undefined,
-    maxArrayYearlyDcKwh: largest?.yearlyDcKwh,
-    panelConfigs,
     roofSegments: segments,
     boundingBox: toLatLng(payload.boundingBox?.sw) && toLatLng(payload.boundingBox?.ne) ? { sw: toLatLng(payload.boundingBox?.sw)!, ne: toLatLng(payload.boundingBox?.ne)! } : undefined,
     note: "External roof geometry reference from aerial imagery and DSM; Modernité generation follows the configured Design Studio BIPV model.",
@@ -129,7 +110,7 @@ export async function fetchBuildingInsights(input: { lat: number; lng: number; a
     const payload = (await response.json()) as BuildingInsights;
     return parseBuildingInsights(payload, input);
   } catch (error) {
-    return { status: "unavailable", note: `External roof benchmark is temporarily unavailable${error instanceof Error && !/abort/i.test(error.message) ? ` (${error.message})` : ""}.` };
+    return { status: "unavailable", note: `External roof geometry reference is temporarily unavailable${error instanceof Error && !/abort/i.test(error.message) ? ` (${error.message})` : ""}.` };
   } finally {
     clearTimeout(timer);
   }

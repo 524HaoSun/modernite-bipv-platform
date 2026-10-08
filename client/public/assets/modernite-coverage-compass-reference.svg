@@ -78,11 +78,6 @@
     <line x1="154" y1="486" x2="118" y2="522"/>
   </g>
 
-  <text class="scale" x="310" y="78">100%</text>
-  <text class="scale" x="63" y="327">25%</text>
-  <text class="scale" x="538" y="327">75%</text>
-  <text class="scale" x="309" y="586">0%</text>
-
   <g transform="translate(320 244)" stroke="#c29121" stroke-width="2" stroke-linecap="round" fill="none">
     <circle r="10" fill="none"/>
     <line x1="0" y1="-21" x2="0" y2="-31"/>
