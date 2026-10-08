@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Leaf,
   Package,
   SlidersHorizontal,
   Banknote,
@@ -371,10 +370,10 @@ export default function Admin() {
     <div className="control control-app">
       <aside className="control-sidebar">
         <a className="control-brand" href="/">
-          <Leaf size={26} />
-          <span>
-            MODERNITÉ<small>ADMINISTRATION</small>
-          </span>
+          <img
+            src="/assets/modernite-logo.png"
+            alt="Modernité by CarbonFutureX Group"
+          />
         </a>
         <div className="control-sidebar-label">WORKSPACE</div>
         <nav>
