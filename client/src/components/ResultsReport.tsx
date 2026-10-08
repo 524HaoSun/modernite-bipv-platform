@@ -5,6 +5,7 @@ import {
   Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TowerControl, TrendingUp,
 } from "lucide-react";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
+import { formatAdvisorStudy, publishAdvisorStudy } from "@/lib/advisor-study-context";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
 import { shareCopy } from "@/lib/share-copy";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
@@ -660,6 +661,10 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
   const isDemo = study.caseId.startsWith("MOD-DEMO");
   const [scenarioId, setScenarioId] = useState<FinancialScenario["id"]>(() => study.result.scenarios.some((item) => item.id === preferredBatteryMode) ? preferredBatteryMode as FinancialScenario["id"] : preferredBatteryMode === "solar-battery" ? "solar-battery" : "solar-only");
   const scenario = study.result.scenarios.find((item) => item.id === scenarioId) ?? study.result.scenarios[0]!;
+  useEffect(() => {
+    publishAdvisorStudy(formatAdvisorStudy(study, scenario.id));
+    return () => publishAdvisorStudy(null);
+  }, [study, scenario.id]);
   const selectedKpis = deriveResultsKpis(study, scenario.id);
   const surfaces = study.result.surfaces.slice().sort((a: SurfaceResult, b: SurfaceResult) => b.annualKwh - a.annualKwh);
   const sim = study.simulation;

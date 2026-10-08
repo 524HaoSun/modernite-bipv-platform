@@ -46,6 +46,7 @@ import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
 import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
+import { formatAdvisorStudy, publishedAdvisorStudy } from "@/lib/advisor-study-context";
 import { ProjectLocationMap, cleanAddressLabel, geocodeLanguage, pointInPath, useMapsKey, usePrewarmLocationMap, type AddressMatch, type BuildingPicker, type MapBuildingCandidate, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection, type SunHeatmap } from "@/components/ProjectLocationMap";
 import { AddressGate } from "@/components/AddressGate";
 import { StudioTour } from "@/components/StudioTour";
@@ -2327,6 +2328,7 @@ function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }:
     ? <Suspense fallback={null}><PrintReport study={study} scenarioId={scenarioId ?? "solar-only"} language={language} marketKey={context?.marketKey ?? (study.project?.market as MarketKey | undefined) ?? "GB"} /></Suspense>
     : <section className="shared-project-state">{query.isError ? c.missing : c.loading}</section>;
   return (
+    <>
     <main className="gateway-shell gateway-shell--results shared-project">
       {!printing && <GatewayHeader route="results" language={language} copy={copy} canOpenStudio={Boolean(study)} onLanguageChange={onLanguageChange} onNavigate={continueTo} />}
       {!printing && study && <div className="shared-project-banner"><span><Link2 size={14} /> {c.sharedBanner}</span><button type="button" className="button-secondary" onClick={() => continueTo("results")}>{c.continueHere} <ArrowRight size={14} /></button></div>}
@@ -2341,6 +2343,14 @@ function SharedProjectPage({ id, language, copy, onLanguageChange, onContinue }:
         share={{ sharedId: id, baseScenarioId: scenarioId as FinancialScenario["id"] | undefined, onCreate: createScenarioShare }}
       /></Suspense>}
     </main>
+    <ModerniteAdvisor language={language} route="results" getContext={() => {
+      const lines = ["Current step: results", "Viewing a shared project link."];
+      if (context?.location) lines.push(`Site: ${context.location.label}`);
+      const viewed = scenarioId === "solar-battery" || scenarioId === "battery-only" || scenarioId === "solar-only" ? scenarioId : "solar-only";
+      lines.push("", publishedAdvisorStudy() ?? (study ? formatAdvisorStudy(study, viewed) : "The shared study has not loaded yet."));
+      return lines.join("\n");
+    }} />
+    </>
   );
 }
 
@@ -2572,15 +2582,12 @@ export default function App() {
     } catch {
       /* Studio not loaded */
     }
-    if (study && advisorCaseId) {
-      const selectedScenario = context.energySettings.batteryMode === "solar-battery" ? "solarBattery" : "solarOnly";
-      const kpis = study.simulation.kpis?.[selectedScenario];
-      lines.push("", `A project study has been calculated (reference ${study.caseId}); annual generation ≈ ${Math.round(study.result.range.representative)} kWh from ${study.result.totalCapacityKwp.toFixed(2)} kWp.`);
-      if (kpis) lines.push(`Selected KPI basis: ${selectedScenario}; Solar Coverage ${Math.round(kpis.solarCoverage * 100)}%, PV self-consumption ${Math.round(kpis.pvSelfConsumption * 100)}%, Export Rate ${Math.round(kpis.exportRate * 100)}%.`);
-    }
+    const onScreen = publishedAdvisorStudy();
+    if (onScreen) lines.push("", onScreen);
+    else if (study) lines.push("", formatAdvisorStudy(study, context.energySettings.batteryMode === "solar-battery" ? "solar-battery" : "solar-only"));
     else lines.push("", "No project study has been calculated yet; inverter and battery sizing happens when the customer confirms the calculation.");
     return lines.join("\n");
-  }, [advisorCaseId, context, market.name, route, study]);
+  }, [context, market.name, route, study]);
 
   const saveSharedProject = trpc.sharedProject.save.useMutation();
   const createShare = useCallback(async (scenarioId: FinancialScenario["id"]) => {

@@ -30,6 +30,7 @@ describe("studio advisor online mode", () => {
   it("serves the platform-wide advisor with an optional study reference", () => {
     const parsed = studioAdvisorInputSchema.parse({ message: "Is the payback realistic?", language: "en", context: "Current step: results", caseId: "MOD-1A2B3C4D" });
     const messages = studioAdvisorMessages(parsed, '{"capacityKwp":4.2}');
+    expect(messages[0].content).toContain("currently on screen");
     expect(messages[0].content).toContain("Current step: results");
     expect(messages[0].content).toContain('Calculated project study (authoritative figures):\n{"capacityKwp":4.2}');
     expect(studioAdvisorMessages(parsed)[0].content).not.toContain("Calculated project study");
