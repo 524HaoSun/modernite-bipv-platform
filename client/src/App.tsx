@@ -1257,7 +1257,6 @@ function GatewayHeader({
         </div>})}
       </nav>
       <div className="gateway-tools">
-        <a className="control-save-link" href="/account" onClick={() => window.dispatchEvent(new Event("modernite:save-project-request"))}>{CONTROL_COPY[language].saveProject}</a>
         <label className="studio-language-control">
           <Globe2 size={13} aria-hidden="true" />
           <span className="sr-only">{copy.workspace}</span>
