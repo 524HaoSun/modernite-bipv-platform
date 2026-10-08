@@ -21,6 +21,15 @@ describe("visual stability guards", () => {
     expect(guard).toContain("isolation: isolate !important");
   });
 
+  it("keeps the Results hero stable on laptop and zoomed viewports", () => {
+    expect(guard).toContain("@media (max-width: 1500px)");
+    expect(guard).toContain("grid-template-columns: repeat(2, minmax(0, 1fr)) !important");
+    expect(guard).toContain("@media (max-width: 980px)");
+    expect(guard).toContain("width: min(430px, 86vw) !important");
+    expect(guard).toContain("@media (max-width: 680px)");
+    expect(guard).toContain("grid-template-columns: 1fr !important");
+  });
+
   it("remains the final CSS block so visual fixes cannot be silently overridden", () => {
     expect(css.lastIndexOf(guardMarker)).toBeGreaterThan(0);
     expect(css.trimEnd().endsWith("}")).toBe(true);

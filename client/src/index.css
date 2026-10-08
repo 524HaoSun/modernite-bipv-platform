@@ -11817,3 +11817,76 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   object-fit: contain !important;
   pointer-events: none !important;
 }
+
+.gateway-header {
+  min-width: 0 !important;
+}
+
+.gateway-header .brand-lockup,
+.gateway-header .journey-rail,
+.gateway-header .gateway-tools {
+  min-width: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-dashboard,
+.gateway-shell--results .results-hero-stage .generation-range-flow,
+.gateway-shell--results .results-hero-stage .generation-flow-cards,
+.gateway-shell--results .results-hero-stage .generation-flow-cards article,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+  min-width: 0 !important;
+}
+
+.gateway-shell--results .results-hero-stage .generation-flow-cards small,
+.gateway-shell--results .results-hero-stage .generation-flow-cards b,
+.gateway-shell--results .results-hero-stage .generation-flow-cards em,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head,
+.gateway-shell--results .results-hero-stage .generation-hero-card .range-points {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+@media (max-width: 1500px) {
+  .gateway-shell--results .results-hero-stage .generation-range-flow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-hero-card .range-window {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-flow-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .gateway-shell--results .results-hero-stage .generation-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-outlook-dial {
+    justify-self: center !important;
+    width: min(430px, 86vw) !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-dashboard-copy > strong {
+    font-size: clamp(58px, 15vw, 92px) !important;
+    letter-spacing: -2.4px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .gateway-shell--results .results-hero-stage .generation-flow-cards {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-flow-cards article {
+    min-height: 0 !important;
+  }
+
+  .gateway-shell--results .results-hero-stage .generation-hero-card .range-window-head,
+  .gateway-shell--results .results-hero-stage .generation-hero-card .range-points {
+    gap: 14px !important;
+  }
+}
