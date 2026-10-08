@@ -3046,26 +3046,3 @@
     transform: none !important;
   }
 }
-
-.solar-coverage-gauge { position: relative; }
-.solar-coverage-gauge__logo-plate {
-  position: absolute;
-  left: 16%;
-  top: 76.2%;
-  width: 68%;
-  height: 14%;
-  background: linear-gradient(180deg, #e2f1ed 0%, #d4e6dd 100%);
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 58%, transparent 100%);
-  mask-image: radial-gradient(ellipse at center, #000 58%, transparent 100%);
-  pointer-events: none;
-}
-.solar-coverage-gauge__logo {
-  position: absolute;
-  left: 50%;
-  top: 78.4%;
-  width: 33%;
-  height: auto;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 1;
-}
