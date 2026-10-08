@@ -54,7 +54,7 @@
 
 .pr-section { margin-top: 15px; }
 .pr-keep { break-inside: avoid; page-break-inside: avoid; }
-.pr-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid var(--pr-line); break-after: avoid; page-break-after: avoid; }
+.pr-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid var(--pr-line); break-inside: avoid; break-after: avoid; page-break-after: avoid; }
 .pr-heading p { color: var(--pr-accent); font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
 .pr-heading h2 { margin-top: 1px; font-size: 12.5pt; font-weight: 700; line-height: 1.25; }
 .pr-heading > span { flex: none; padding: 2px 8px; border-radius: 99px; background: var(--pr-soft); color: var(--pr-muted); font-size: 7.5pt; font-weight: 600; white-space: nowrap; }
@@ -112,8 +112,6 @@
 .pr-ledger dt small { display: block; color: var(--pr-faint); font-size: 6.5pt; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
 .pr-ledger dd { color: var(--pr-ink); font-size: 7.5pt; line-height: 1.4; overflow-wrap: anywhere; }
 
-.pr-closing { margin-top: 10px; padding-top: 5px; border-top: 1px solid var(--pr-line); color: var(--pr-muted); font-size: 7pt; break-inside: avoid; }
-.pr-closing p + p { margin-top: 3px; }
 
 /* Server render (/p/:id?print=1): the report is the whole page. */
 html.is-print-render, html.is-print-render body { background: #fff !important; }

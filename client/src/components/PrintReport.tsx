@@ -98,7 +98,7 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
       <Heading label={t.scenarioLabel} title={t.cashTitle} aside={t.view25} />
       <ScenarioTable scenarios={study.result.scenarios} selected={scenario} f={f} />
       <CashChart scenarios={study.result.scenarios} selected={scenario} f={f} />
-      <p className="pr-note">{t.scenarioNote} {t.cashDisclaimer}</p>
+      <p className="pr-note">{t.scenarioNote} {t.cashDisclaimer} {t.chainNote}</p>
     </section>
 
     <SystemAndCarbon study={study} region={region} f={f} />
@@ -126,7 +126,7 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
       {surfaces[0] && <p className="pr-note">{t.largest(surfaces[0].surfaceLabel, f.n(surfaces[0].annualKwh))}</p>}
     </section>
 
-    {study.result.schedule.length > 0 && <section className="pr-section">
+    {study.result.schedule.length > 0 && <section className="pr-section pr-keep">
       <Heading label={t.scheduleLabel} title={t.scheduleTitle} />
       <table className="pr-table">
         <thead><tr><th>{t.colProduct}</th><th className="num">{t.colArea}</th><th className="num">{t.colPeak}</th><th className="num">{t.colCapacity}</th></tr></thead>
@@ -169,10 +169,6 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
         <dd>{ledgerValue(entry, f)}</dd>
       </div>)}</dl>
     </section>
-
-    <footer className="pr-closing">
-      <p>{t.chainNote}</p>
-    </footer>
   </article>;
 }
 
