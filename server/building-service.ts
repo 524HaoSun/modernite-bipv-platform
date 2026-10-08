@@ -1,6 +1,6 @@
 import { cachedValue } from "./persistent-cache";
 import { getGoogleBuilding, getGoogleNeighbours } from "./google-building-service";
-import { candidatesFromOverpass, footprintFromOverpass, type BuildingCandidate, type BuildingFootprint, type LatLng, type OverpassElement } from "../lib/building-footprint";
+import { alignOsmToReference, candidatesFromOverpass, footprintFromOverpass, type BuildingCandidate, type BuildingFootprint, type LatLng, type OverpassElement } from "../lib/building-footprint";
 
 const OVERPASS_ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 const STAGGER_MS = 2500;
@@ -84,14 +84,15 @@ function osmBuildingIn(elements: OverpassElement[], site: LatLng) {
 export async function getBuildingFootprint(lat: number, lng: number): Promise<BuildingFootprint> {
   const key = `${lat.toFixed(5)}_${lng.toFixed(5)}`;
   const site = { lat, lng };
-  return cachedValue("footprint-v5", key, STORE_TTL_MS, async () => {
+  return cachedValue("footprint-v6", key, STORE_TTL_MS, async () => {
     const nearby = areaElements.find((entry) => entry.expiresAt > Date.now() && metresBetween(entry.center, site) <= REUSE_WITHIN_M);
     const osm = nearby ? Promise.resolve(nearby.elements) : requestOverpass(lat, lng);
     const google = getGoogleBuilding(lat, lng)
       .then(async (found) => (found ? { ...found, neighbours: await getGoogleNeighbours(found.building) } : null))
       .catch(() => null);
     const found = await google;
-    const quick = await within(osm, found ? OSM_GRACE_MS : OSM_WAIT_MS);
+    const raw = await within(osm, found ? OSM_GRACE_MS : OSM_WAIT_MS);
+    const quick = raw && found ? alignOsmToReference(raw, [found.building, ...found.neighbours]) : raw;
     const osmHit = quick && osmBuildingIn(quick, site);
     if (osmHit) return osmHit;
     if (found) {
@@ -129,7 +130,8 @@ export async function getNearbyBuildings(lat: number, lng: number): Promise<Buil
     .then(async (found) => (found ? [found.building, ...(await getGoogleNeighbours(found.building))] : []))
     .catch(() => []);
   const googleBuildings = await google;
-  const elements = (await within(osm, googleBuildings.length ? NEARBY_GRACE_MS : NEARBY_WAIT_MS)) ?? [];
+  const raw = (await within(osm, googleBuildings.length ? NEARBY_GRACE_MS : NEARBY_WAIT_MS)) ?? [];
+  const elements = googleBuildings.length ? alignOsmToReference(raw, googleBuildings) : raw;
   const candidates = candidatesFromOverpass(elements, site).filter((candidate) => candidate.distanceM <= NEARBY_RADIUS_M);
   for (const extra of candidatesFromOverpass(googleBuildings, site)) {
     if (extra.distanceM <= NEARBY_RADIUS_M && !candidates.some((candidate) => pointInPath(extra.center, candidate.path))) candidates.push(extra);

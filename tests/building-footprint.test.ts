@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { footprintFromOverpass, type OverpassElement } from "../lib/building-footprint";
+import { alignOsmToReference, footprintFromOverpass, osmOffsetToReference, type OverpassElement } from "../lib/building-footprint";
 
 const site = { lat: 51.5, lng: -0.12 };
 const mPerDegLng = 111_320 * Math.cos((site.lat * Math.PI) / 180);
@@ -58,5 +58,35 @@ describe("OpenStreetMap building footprint", () => {
     expect(value.widthM).toBeCloseTo(14, 0);
     expect(value.frontAzimuthDeg).toBe(180);
     expect(value.note).toContain("Google Maps building outline");
+  });
+});
+
+describe("OSM outline alignment to Google outlines", () => {
+  /** A street of 6 m × 9 m semi-detached houses (pairs 3 m apart, one pair stepped back), moved by (dx, dy) metres. */
+  const terrace = (dx: number, dy: number, source?: string): OverpassElement[] =>
+    [0, 1, 2, 3, 4, 5].map((i) => {
+      const x0 = i * 6 + Math.floor(i / 2) * 3 - 22 + dx, y0 = dy + (i >= 4 ? 2 : 0);
+      return { type: "way", id: source ? -(i + 1) : i + 1, tags: { building: "house", ...(source ? { source } : {}) }, geometry: [[x0, y0], [x0 + 6, y0], [x0 + 6, y0 + 9], [x0, y0 + 9], [x0, y0]].map(([x, y]) => toLatLon(x, y)) };
+    });
+  const road: OverpassElement = { type: "way", id: 99, tags: { highway: "residential" }, geometry: [toLatLon(-40, -8), toLatLon(40, -8)] };
+
+  it("measures a whole-area OSM offset against several Google outlines", () => {
+    const google = terrace(2.3, 0.6, "google").slice(1, 4);
+    const offset = osmOffsetToReference([...terrace(0, 0), road], google);
+    expect(offset?.x).toBeCloseTo(2.3, 0);
+    expect(offset?.y).toBeCloseTo(0.6, 0);
+    const aligned = alignOsmToReference([...terrace(0, 0), road], google);
+    const firstHouse = (aligned[0].geometry ?? [])[0];
+    expect((firstHouse.lon - toLatLon(-22, 0).lon) * mPerDegLng).toBeCloseTo(offset!.x, 5);
+    // Roads were traced from the same imagery, so they move with the buildings.
+    expect((aligned.at(-1)!.geometry![0].lat - road.geometry![0].lat) * 110_540).toBeCloseTo(offset!.y, 5);
+  });
+
+  it("leaves outlines alone when they already match or the match is ambiguous", () => {
+    expect(osmOffsetToReference(terrace(0, 0), terrace(0.2, -0.1, "google").slice(1, 4))).toBeNull();
+    // One terraced house matches every house in the row equally well along the street.
+    expect(osmOffsetToReference(terrace(0, 0), terrace(3, 0, "google").slice(2, 3))).toBeNull();
+    const elements = terrace(0, 0);
+    expect(alignOsmToReference(elements, [])).toBe(elements);
   });
 });

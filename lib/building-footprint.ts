@@ -168,6 +168,74 @@ export function candidatesFromOverpass(elements: OverpassElement[], site: LatLng
     .slice(0, limit);
 }
 
+const ALIGN_CELL_M = 0.5;
+const ALIGN_MAX_SHIFT_M = 5;
+
+/**
+ * OSM outlines are often traced from imagery that sits a few metres off Google's aerial photo, while
+ * Google's own outlines match it (and the Solar API roof layers). Returns the translation in metres
+ * (x east, y north) that best lays the OSM buildings over the Google outlines, or null when no move
+ * is needed or the evidence is too weak to justify one.
+ */
+export function osmOffsetToReference(osm: OverpassElement[], reference: OverpassElement[]): XY | null {
+  const refRings = reference.map(ringOf).filter((ring) => ring.length >= 3);
+  if (!refRings.length) return null;
+  const project = projector(refRings[0][0]);
+  const refXY = refRings.map((ring) => ring.map(project));
+  const refPts = refXY.flat();
+  const margin = ALIGN_MAX_SHIFT_M + 1;
+  const box = { x0: Math.min(...refPts.map((p) => p.x)) - margin, x1: Math.max(...refPts.map((p) => p.x)) + margin, y0: Math.min(...refPts.map((p) => p.y)) - margin, y1: Math.max(...refPts.map((p) => p.y)) + margin };
+  const osmXY = osm
+    .filter((e) => e.type === "way" && e.tags?.building && e.tags.source !== "google" && (e.geometry?.length ?? 0) >= 4)
+    .map((e) => ringOf(e).map(project))
+    .filter((ring) => ring.length >= 3 && ring.some((p) => p.x >= box.x0 - margin && p.x <= box.x1 + margin && p.y >= box.y0 - margin && p.y <= box.y1 + margin));
+  if (!osmXY.length) return null;
+
+  const s = Math.round(ALIGN_MAX_SHIFT_M / ALIGN_CELL_M);
+  const nx = Math.ceil((box.x1 - box.x0) / ALIGN_CELL_M), ny = Math.ceil((box.y1 - box.y0) / ALIGN_CELL_M);
+  const gx = nx + 2 * s, gy = ny + 2 * s;
+  const ref = new Uint8Array(nx * ny), osmGrid = new Uint8Array(gx * gy);
+  const inside = (rings: XY[][], p: XY) => rings.some((ring) => contains(ring, p));
+  let refCount = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    if (inside(refXY, { x: box.x0 + (i + 0.5) * ALIGN_CELL_M, y: box.y0 + (j + 0.5) * ALIGN_CELL_M })) { ref[j * nx + i] = 1; refCount++; }
+  }
+  for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) {
+    if (inside(osmXY, { x: box.x0 + (i - s + 0.5) * ALIGN_CELL_M, y: box.y0 + (j - s + 0.5) * ALIGN_CELL_M })) osmGrid[j * gx + i] = 1;
+  }
+  if (refCount < 40) return null;
+
+  // OSM moved by (dx, dy) covers window cell p when the unshifted OSM covers p - (dx, dy).
+  const iou = (dx: number, dy: number) => {
+    let inter = 0, osmCount = 0;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const o = osmGrid[(j + s - dy) * gx + (i + s - dx)];
+      osmCount += o;
+      inter += o & ref[j * nx + i];
+    }
+    return inter / (refCount + osmCount - inter);
+  };
+  const scores: { dx: number; dy: number; score: number }[] = [];
+  for (let dy = -s; dy <= s; dy++) for (let dx = -s; dx <= s; dx++) scores.push({ dx, dy, score: iou(dx, dy) });
+  const best = scores.reduce((a, b) => (b.score > a.score ? b : a));
+  const unshifted = scores.find((c) => c.dx === 0 && c.dy === 0)!.score;
+  // A row of identical terraced houses fits equally well one house along; such matches prove nothing.
+  const rival = Math.max(...scores.filter((c) => Math.hypot(c.dx - best.dx, c.dy - best.dy) * ALIGN_CELL_M > 1.5).map((c) => c.score));
+  const offset = { x: best.dx * ALIGN_CELL_M, y: best.dy * ALIGN_CELL_M };
+  if (Math.abs(best.dx) === s || Math.abs(best.dy) === s || best.score - rival < 0.03) return null;
+  if (best.score < 0.5 || best.score - unshifted < 0.05 || Math.hypot(offset.x, offset.y) < 0.75) return null;
+  return offset;
+}
+
+/** OSM ways moved onto the Google outlines when they are measurably offset; Google ways are left untouched. */
+export function alignOsmToReference(elements: OverpassElement[], reference: OverpassElement[]): OverpassElement[] {
+  const offset = osmOffsetToReference(elements, reference);
+  if (!offset) return elements;
+  const origin = ringOf(reference[0])[0];
+  const dLat = offset.y / M_PER_DEG_LAT, dLon = offset.x / (111_320 * Math.cos((origin.lat * Math.PI) / 180));
+  return elements.map((e) => (e.tags?.source === "google" || !e.geometry ? e : { ...e, geometry: e.geometry.map((p) => ({ lat: p.lat + dLat, lon: p.lon + dLon })) }));
+}
+
 const ROAD_TYPES = /^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|pedestrian)(_link)?$/;
 
 export function footprintFromOverpass(elements: OverpassElement[], site: LatLng, maxDistanceM = 35): BuildingFootprint {
