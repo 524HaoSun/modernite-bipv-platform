@@ -45,6 +45,7 @@ import { resultsCopy } from "@/lib/results-copy";
 import { regionName } from "@/lib/region-names";
 import { WORKFLOW_LABELS } from "@/lib/workflow-labels";
 import { PageIntro } from "@/components/PageIntro";
+import { BrandLogo } from "@/components/BrandLogo";
 import { AdvisorHeaderButton, ModerniteAdvisor } from "@/components/ModerniteAdvisor";
 import { formatAdvisorStudy, publishedAdvisorStudy } from "@/lib/advisor-study-context";
 import { ProjectLocationMap, cleanAddressLabel, geocodeLanguage, pointInPath, useMapsKey, usePrewarmLocationMap, type AddressMatch, type BuildingPicker, type MapBuildingCandidate, type Market, type MarketKey, type ProjectLocationSelection, type SiteAreaSelection, type SiteDetection, type SunHeatmap } from "@/components/ProjectLocationMap";
@@ -1234,7 +1235,7 @@ function GatewayHeader({
   return (
     <header className={`gateway-header gateway-header--${route}`}>
       <button type="button" className="brand-lockup" onClick={() => onNavigate("entry")} aria-label={MISC_COPY[language].homeAria}>
-        <img className="brand-logo-image" src="/assets/modernite-carbonfuture-logo.png" alt="Modernité by CarbonFutureX Group" />
+        <BrandLogo />
       </button>
       <nav className="journey-rail" aria-label={MISC_COPY[language].progressAria}>
         {steps.map((step, index) => {
@@ -2183,7 +2184,7 @@ function StudioPage({
     <main className={`customer-studio-shell is-workspace ${active ? "is-active" : ""} ${focusMode ? "is-focus" : ""}`} aria-hidden={!active}>
       <header className="studio-bridge-bar">
         <button type="button" className="studio-bridge-brand" onClick={() => onNavigate("location")} aria-label={bridgeCopy.returnToSite}>
-          <img className="brand-logo-image" src="/assets/modernite-carbonfuture-logo.png" alt="Modernité by CarbonFutureX Group" />
+          <BrandLogo />
         </button>
         <div className="studio-bridge-journey" aria-label={text.studioProgressLabel}>
           {studioJourney.map((step, index) => <div className="studio-bridge-journey__segment" key={step.id}>

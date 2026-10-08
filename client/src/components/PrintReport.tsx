@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Leaf } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import {
   GRID_CO2_KG_PER_KWH, MARKET_CURRENCY, MARKET_REGION, ORIENTATION_SERIES, SCENARIO_COLORS,
@@ -46,7 +46,7 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
 
   return <article className={`print-report ${ready ? "is-ready" : ""} ${className}`.trim()} lang={t.locale}>
     <header className="pr-masthead">
-      <div className="pr-brand"><Leaf size={18} /><span>MODERNITÉ<small>Building integrated solar</small></span></div>
+      <div className="pr-brand"><BrandLogo className="pr-brand-logo" /></div>
       <div className="pr-reference"><span>{t.reference}</span><strong>{study.caseId}</strong><small>{created}</small></div>
     </header>
 

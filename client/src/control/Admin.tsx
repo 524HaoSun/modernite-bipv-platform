@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Leaf,
   Package,
   SlidersHorizontal,
   Banknote,
@@ -15,6 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 import type { ControlUser, Domain, Release } from "../../../shared/control";
+import { BrandLogo } from "@/components/BrandLogo";
 import { api } from "./api";
 import { Auth } from "./Auth";
 import "./control.css";
@@ -371,10 +371,7 @@ export default function Admin() {
     <div className="control control-app">
       <aside className="control-sidebar">
         <a className="control-brand" href="/">
-          <Leaf size={26} />
-          <span>
-            MODERNITÉ<small>ADMINISTRATION</small>
-          </span>
+          <BrandLogo className="control-brand-logo" />
         </a>
         <div className="control-sidebar-label">WORKSPACE</div>
         <nav>

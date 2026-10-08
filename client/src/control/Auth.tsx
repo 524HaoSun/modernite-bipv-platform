@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Leaf, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import type { ControlUser } from "../../../shared/control";
 import { api } from "./api";
 export function Auth({
@@ -80,10 +81,7 @@ export function Auth({
   return (
     <div className="control-auth">
       <a className="control-brand" href="/">
-        <Leaf size={24} />
-        <span>
-          MODERNITÉ<small>BUILDING INTEGRATED SOLAR</small>
-        </span>
+        <BrandLogo className="control-brand-logo" />
       </a>
       <div className="control-auth-card">
         <div className="control-kicker">

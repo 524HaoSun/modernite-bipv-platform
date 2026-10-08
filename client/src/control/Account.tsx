@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Leaf, Plus, Save, Download, ArrowRight } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import type { ControlUser } from "../../../shared/control";
 import { api } from "./api";
 import { Auth } from "./Auth";
@@ -79,10 +80,7 @@ export default function Account() {
       <main className="control-account">
         <header>
           <a className="control-brand" href="/">
-            <Leaf size={25} />
-            <span>
-              MODERNITÉ<small>YOUR SOLAR PROJECTS</small>
-            </span>
+            <BrandLogo className="control-brand-logo" />
           </a>
           <div className="control-row">
             {user.roles.some(r => !["customer", "dealer"].includes(r)) && (

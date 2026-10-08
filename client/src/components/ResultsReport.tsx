@@ -4,6 +4,7 @@ import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
   Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TowerControl, TrendingUp,
 } from "lucide-react";
+import { BRAND_LOGO_SRC } from "@/components/BrandLogo";
 import { ADVISOR_ASK_EVENT } from "@/components/ModerniteAdvisor";
 import { formatAdvisorStudy, publishAdvisorStudy } from "@/lib/advisor-study-context";
 import { resultsCopy, type ResultsCopy } from "@/lib/results-copy";
@@ -155,16 +156,16 @@ function SolarCoverageGauge({ value, showNeedle = false, animate = true, classNa
       <GaugeNeedle value={percentage} visible={showNeedle} />
       <text className="solar-coverage-gauge__percent" x="500" y="444" textAnchor="middle">{displayValue}%</text>
       <g className="solar-coverage-gauge__crisp-brand" aria-hidden="true">
-        <rect className="solar-coverage-gauge__crisp-brand-cover" x="338" y="692" width="324" height="128" rx="54" />
+        <rect className="solar-coverage-gauge__crisp-brand-cover" x="300" y="700" width="400" height="160" rx="28" />
         <line x1="304" y1="609" x2="384" y2="609" />
         <line x1="616" y1="609" x2="696" y2="609" />
         <text className="solar-coverage-gauge__crisp-brand-label" x="500" y="622" textAnchor="middle">SOLAR COVERAGE</text>
         <text className="solar-coverage-gauge__crisp-brand-bipv" x="500" y="684" textAnchor="middle">BIPV</text>
         <line x1="472" y1="716" x2="528" y2="716" />
-        <text className="solar-coverage-gauge__crisp-brand-name" x="500" y="758" textAnchor="middle">Modernité</text>
-        <text className="solar-coverage-gauge__crisp-brand-group" x="500" y="786" textAnchor="middle">By CarbonFutureX Group</text>
       </g>
     </svg>
+    <div className="solar-coverage-gauge__logo-plate" aria-hidden="true" />
+    <img className="solar-coverage-gauge__logo" src={BRAND_LOGO_SRC} alt="" />
   </div>;
 }
 
