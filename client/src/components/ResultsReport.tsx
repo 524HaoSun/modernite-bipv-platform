@@ -67,8 +67,8 @@ function deriveResultsKpis(study: ProjectCalculation, scenarioId: FinancialScena
     kpis?: ProjectCalculation["simulation"]["kpis"];
   };
   const canonical = simWithKpis.kpis?.[key];
-  const generated = Math.max(1, study.result.range.representative);
-  const demand = Math.max(1, study.energy.annualDemandKwh);
+  const generated = Math.max(1, study.simulation.annualGenerationKwh ?? study.result.range.representative);
+  const demand = Math.max(1, study.simulation.annualLoadKwh ?? study.energy.annualDemandKwh);
   const selfConsumedKwh = canonical?.selfConsumedKwh ?? (key === "solarBattery" ? study.simulation.battery.selfConsumedKwh : study.simulation.selfConsumedKwh);
   const exportKwh = canonical?.exportKwh ?? (key === "solarBattery" ? study.simulation.battery.exportKwh : study.simulation.exportKwh);
   const gridImportKwh = canonical?.gridImportKwh ?? (key === "solarBattery" ? study.simulation.battery.gridImportKwh : study.simulation.gridImportKwh);
@@ -329,7 +329,7 @@ function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: Project
   const { t } = f;
   const firstYear = scenario.annualCashFlows[0];
   const kpis = deriveResultsKpis(study, scenario.id);
-  const directUse = kpis.selfConsumedKwh;
+  const selfConsumed = kpis.selfConsumedKwh;
   const exported = kpis.exportKwh;
   const value = (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
   return <section className="result-section energy-applied-chain">
@@ -337,7 +337,7 @@ function EnergyAppliedChain({ study, scenario, onNavigate, f }: { study: Project
     <div className="applied-chain-grid">
       <article><span><Home size={17} /></span><p>01 · {t.household}</p><strong>{f.n(study.energy.annualDemandKwh)} {t.perYear}</strong><small>{study.energy.source === "bill" ? t.demandNoteBill : study.energy.source === "household" ? t.demandNoteHousehold : t.demandNoteModel}</small></article>
       <i><ArrowRight size={18} /></i>
-      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(directUse), f.n(exported))}</strong><small>{t.chainDetail(kpis.solarCoveragePercent, kpis.pvSelfConsumptionPercent)}</small></article>
+      <article><span><SunMedium size={17} /></span><p>02 · {t.selfUseExport}</p><strong>{t.usedExported(f.n(selfConsumed), f.n(exported))}</strong><small>{t.chainDetail(kpis.solarCoveragePercent, kpis.pvSelfConsumptionPercent)}</small></article>
       <i><ArrowRight size={18} /></i>
       <article className="is-highlighted"><span><TrendingUp size={17} /></span><p>03 · {t.estimatedValue}</p><strong>{f.money(value)} {t.perYearMoney}</strong><small>{scenario.breakEvenYear ? t.breakEvenSimple(scenario.breakEvenYear) : t.longTerm} {t.onCost(f.money(scenario.upfrontGbp))}</small></article>
     </div>
@@ -715,7 +715,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <div><span>{t.hourlyWeather}</span><strong>{weatherSourceLabel(study.weather.kind, study.weather.source, study.weather.name, t)}</strong></div>
             <div><span>{t.irradiation}</span><strong>GHI {f.n(study.weather.annualGhiKwhM2)} · DNI {f.n(study.weather.annualDniKwhM2)} · DHI {f.n(study.weather.annualDhiKwhM2)} kWh/m²</strong></div>
             <div><span>{t.solarOnSite}</span><strong>{t.selfUse(selectedKpis.pvSelfConsumptionPercent, selectedKpis.solarCoveragePercent)}</strong></div>
-            <div><span>{t.withBattery(sim.battery.nominalKwh)}</span><strong>{t.usedOnSite(f.n(sim.battery.selfConsumedKwh))}</strong></div>
+            {scenario.id === "solar-battery" && <div><span>{t.withBattery(sim.battery.nominalKwh)}</span><strong>{t.usedOnSite(f.n(sim.battery.selfConsumedKwh))}</strong></div>}
             <div><span>{t.meanTemp}</span><strong>{f.n(study.weather.meanAirTemperatureC, 1)} °C</strong></div>
           </div>
           <p className="result-note">{weatherKind === "customer-synthetic" ? t.basisSynthetic : t.basisSite(study.weather.source, study.weather.hours)}</p>
