@@ -11932,3 +11932,76 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
     gap: 14px !important;
   }
 }
+
+/* Final workflow rail normalization.
+   Every main step keeps its label visible on every route; the current step is
+   highlighted through weight, color, and the filled index marker instead of
+   being the only readable label. */
+.gateway-header .journey-rail {
+  justify-content: center !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.gateway-header .journey-rail::-webkit-scrollbar {
+  display: none !important;
+}
+
+.gateway-header .journey-rail button {
+  flex: 0 0 auto !important;
+  gap: clamp(5px, .55vw, 9px) !important;
+  min-width: max-content !important;
+  padding-inline: clamp(3px, .38vw, 7px) !important;
+  color: #7b8b84 !important;
+  font-weight: 650 !important;
+}
+
+.gateway-header .journey-rail button .journey-rail__label,
+.gateway-header .journey-rail button:not(.is-current) .journey-rail__label,
+.gateway-header .journey-rail button.is-current .journey-rail__label {
+  position: static !important;
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  overflow: visible !important;
+  clip: auto !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.gateway-header .journey-rail button.is-complete {
+  color: #4d765d !important;
+}
+
+.gateway-header .journey-rail button.is-current {
+  color: var(--v28-green) !important;
+  font-weight: 800 !important;
+}
+
+.gateway-header .journey-rail button:not(.is-current) .journey-rail__label {
+  opacity: .82 !important;
+}
+
+.gateway-header .journey-rail button.is-current .journey-rail__label {
+  opacity: 1 !important;
+}
+
+.gateway-header .journey-rail__segment > i {
+  flex: 0 0 auto !important;
+  width: clamp(12px, 1.45vw, 34px) !important;
+  margin-inline: clamp(1px, .25vw, 5px) !important;
+}
+
+@media (max-width: 1520px) {
+  .gateway-header .journey-rail {
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .gateway-header .journey-rail button {
+    font-size: 11px !important;
+  }
+}
