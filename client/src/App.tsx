@@ -76,6 +76,11 @@ const STUDIO_ADVISOR_PATH = publicPath("api/studio-advisor");
 const HERO_IMAGE_URL = publicPath("assets/modernite-entry-hero-a_aa79dbb7.png");
 const ENTRY_REFERENCE_URL = publicPath("assets/modernite-entry-clean-bg.png");
 const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
+const STUDIO_PRODUCT_CLIENT_IMAGES = {
+  roofTiles: publicPath("assets/modernite-product-solar-tiles-client.png"),
+  railing: publicPath("assets/modernite-product-solar-railing-client.png"),
+  sunroom: publicPath("assets/modernite-product-solar-sunroom-client.png"),
+} as const;
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
@@ -2162,6 +2167,142 @@ function StudioPage({
       }
     };
   }, [frameReady, studioTab, guide, language]);
+
+  useEffect(() => {
+    if (!frameReady) return;
+    const studioDocument = frameRef.current?.contentDocument;
+    if (!studioDocument) return;
+
+    let collapsed = false;
+    let scheduled = false;
+
+    const sectionForProductSettings = () => {
+      const label = studioDocument.getElementById("product-label");
+      return label?.closest<HTMLElement>("section")
+        ?? Array.from(studioDocument.querySelectorAll<HTMLElement>("section.section")).find((section) => section.textContent?.includes("03 /"))
+        ?? null;
+    };
+
+    const imageForProduct = (label: string) => {
+      const normalized = label.toLowerCase();
+      if (normalized.includes("瓦") || normalized.includes("tile")) return STUDIO_PRODUCT_CLIENT_IMAGES.roofTiles;
+      if (normalized.includes("栏杆") || normalized.includes("railing")) return STUDIO_PRODUCT_CLIENT_IMAGES.railing;
+      if (normalized.includes("阳光房") || normalized.includes("sunroom") || normalized.includes("conservatory")) return STUDIO_PRODUCT_CLIENT_IMAGES.sunroom;
+      return null;
+    };
+
+    let style = studioDocument.querySelector<HTMLStyleElement>("style[data-host-product-scheme]");
+    if (!style) {
+      style = studioDocument.createElement("style");
+      style.dataset.hostProductScheme = "true";
+      studioDocument.head.append(style);
+    }
+    style.textContent = `
+      .stage { position: relative; }
+      #products .product-card .product-preview[data-client-product-image="true"] {
+        width: 100%; height: 86px; object-fit: contain !important; object-position: center;
+        padding: 0; border-radius: 7px; background: #edf4ef;
+      }
+      #host-product-scheme-dock {
+        position: absolute; z-index: 14; top: 50%; right: 18px; transform: translateY(-50%);
+        width: min(248px, calc(100% - 36px)); padding: 13px; border: 1px solid #c9dfcf;
+        border-radius: 12px; color: #173e2d; background: rgba(250, 255, 251, .92);
+        box-shadow: 0 18px 45px rgba(25, 72, 50, .18); backdrop-filter: blur(12px);
+        transition: width .22s ease, padding .22s ease, transform .22s ease;
+      }
+      #host-product-scheme-dock.is-collapsed { width: 46px; padding: 8px; }
+      #host-product-scheme-dock__toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; color: inherit; background: transparent; cursor: pointer; font: inherit; text-align: left; }
+      #host-product-scheme-dock__toggle b { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff; background: #1f6a4d; font-size: 11px; letter-spacing: .06em; }
+      #host-product-scheme-dock__toggle span { font-size: 12px; font-weight: 760; line-height: 1.25; }
+      #host-product-scheme-dock.is-collapsed .host-product-scheme-dock__body, #host-product-scheme-dock.is-collapsed #host-product-scheme-dock__toggle span { display: none; }
+      .host-product-scheme-dock__body { margin-top: 10px; padding-top: 10px; border-top: 1px solid #dceade; }
+      .host-product-scheme-dock__eyebrow { display: block; color: #668075; font-size: 10px; font-weight: 720; letter-spacing: .08em; text-transform: uppercase; }
+      .host-product-scheme-dock__product { display: block; margin-top: 3px; font-size: 14px; font-weight: 780; }
+      #host-product-scheme-dock__open { width: 100%; margin-top: 11px; padding: 9px 10px; border: 1px solid #2b7755; border-radius: 7px; color: #fff; background: #1f6a4d; font: inherit; font-size: 12px; font-weight: 720; cursor: pointer; }
+      #host-product-scheme-dock__open:hover { background: #164c37; }
+      .host-product-settings-flash { animation: host-product-settings-flash 1.4s ease; }
+      @keyframes host-product-settings-flash { 0%, 100% { box-shadow: none; } 35% { box-shadow: 0 0 0 4px rgba(43, 119, 85, .22), 0 8px 22px rgba(31, 106, 77, .16); } }
+      @media (max-width: 900px) { #host-product-scheme-dock { top: auto; bottom: 16px; transform: none; right: 14px; } }
+      @media (prefers-reduced-motion: reduce) { #host-product-scheme-dock, .host-product-settings-flash { transition: none; animation: none; } }
+    `;
+
+    let dock = studioDocument.getElementById("host-product-scheme-dock") as HTMLElement | null;
+    if (!dock) {
+      dock = studioDocument.createElement("aside");
+      dock.id = "host-product-scheme-dock";
+      dock.dataset.noI18n = "";
+      dock.innerHTML = `<button type="button" id="host-product-scheme-dock__toggle" aria-expanded="true"><b>03</b><span>Product settings</span></button><div class="host-product-scheme-dock__body"><small class="host-product-scheme-dock__eyebrow">Product scheme</small><strong class="host-product-scheme-dock__product"></strong><button type="button" id="host-product-scheme-dock__open">Open product settings</button></div>`;
+      studioDocument.querySelector<HTMLElement>(".stage")?.append(dock);
+    }
+
+    const focusSettings = () => {
+      const settings = sectionForProductSettings();
+      if (!settings) return;
+      collapsed = false;
+      dock?.classList.remove("is-collapsed");
+      const toggle = dock?.querySelector<HTMLButtonElement>("#host-product-scheme-dock__toggle");
+      toggle?.setAttribute("aria-expanded", "true");
+      settings.scrollIntoView({ behavior: "smooth", block: "start" });
+      settings.classList.remove("host-product-settings-flash");
+      window.setTimeout(() => settings.classList.add("host-product-settings-flash"), 40);
+      window.setTimeout(() => settings.classList.remove("host-product-settings-flash"), 1500);
+      settings.querySelector<HTMLElement>("select, button")?.focus({ preventScroll: true });
+    };
+
+    dock.querySelector<HTMLButtonElement>("#host-product-scheme-dock__toggle")!.onclick = () => {
+      collapsed = !collapsed;
+      dock?.classList.toggle("is-collapsed", collapsed);
+      dock?.querySelector("#host-product-scheme-dock__toggle")?.setAttribute("aria-expanded", String(!collapsed));
+    };
+    dock.querySelector<HTMLButtonElement>("#host-product-scheme-dock__open")!.onclick = focusSettings;
+
+    const hydrate = () => {
+      scheduled = false;
+      const settings = sectionForProductSettings();
+      const activeLabel = studioDocument.getElementById("product-label")?.textContent?.trim() ?? "";
+      const active = Boolean(settings && !settings.hidden && activeLabel);
+      if (dock) {
+        dock.hidden = !active;
+        const product = dock.querySelector<HTMLElement>(".host-product-scheme-dock__product");
+        if (product) product.textContent = activeLabel;
+      }
+      studioDocument.querySelectorAll<HTMLElement>("#products .product-card").forEach((card) => {
+        const label = card.querySelector("strong")?.textContent?.trim() ?? "";
+        const imageUrl = imageForProduct(label);
+        const image = card.querySelector<HTMLImageElement>("img.product-preview");
+        if (imageUrl && image) {
+          image.src = imageUrl;
+          image.alt = label;
+          image.dataset.clientProductImage = "true";
+        }
+      });
+    };
+
+    const scheduleHydrate = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(hydrate);
+    };
+    const handleProductChange = (event: Event) => {
+      const control = event.target as HTMLInputElement | null;
+      if (!control?.matches("#products input[type=checkbox]") || !control.checked) return;
+      window.setTimeout(() => {
+        hydrate();
+        focusSettings();
+      }, 120);
+    };
+
+    studioDocument.addEventListener("change", handleProductChange, true);
+    const observer = new MutationObserver(scheduleHydrate);
+    observer.observe(studioDocument.body, { childList: true, subtree: true });
+    hydrate();
+    return () => {
+      observer.disconnect();
+      studioDocument.removeEventListener("change", handleProductChange, true);
+      dock?.remove();
+      style?.remove();
+    };
+  }, [frameReady]);
 
   const openStudioTab = (index: number) => {
     frameRef.current?.contentDocument?.querySelectorAll<HTMLButtonElement>("nav.studio-tabs .studio-tab")[index]?.click();
