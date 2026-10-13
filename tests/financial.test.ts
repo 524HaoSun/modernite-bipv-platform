@@ -43,11 +43,54 @@ describe("Financial model (§14.10)", () => {
     expect(battery?.annualCashFlows[0]).toMatchObject({ directUseKwh: 700, exportKwh: 200 });
   });
 
+  it("splits annual value into direct solar, stored solar, off-peak battery and export earnings", () => {
+    const scenarios = calculateFinancialScenarios({
+      annualGenerationKwh: 1000,
+      energy: { ...energy, annualDemandKwh: 1400, offPeakPence: 7, offPeakHours: 7, peakPence: 35, peakHours: 8 },
+      costs,
+      unitPriceDivisor: 100,
+      simulatedEnergyKwh: {
+        solarOnly: { directSolarKwh: 400, storedSolarKwh: 0, exportKwh: 600 },
+        solarBattery: { directSolarKwh: 400, storedSolarKwh: 250, exportKwh: 250, offPeakChargeKwh: 100, offPeakDischargeKwh: 90 },
+      },
+    });
+    const first = scenarios.find((scenario) => scenario.id === "solar-battery")?.annualCashFlows[0];
+
+    expect(first).toMatchObject({
+      directUseKwh: 400,
+      storedSolarKwh: 250,
+      offPeakChargeKwh: 100,
+      offPeakDischargeKwh: 90,
+      exportKwh: 250,
+    });
+    expect(first?.directSolarSavingsGbp).toBeCloseTo(100, 6);
+    expect(first?.storedSolarSavingsGbp).toBeCloseTo(62.5, 6);
+    expect(first?.offPeakBatterySavingsGbp).toBeCloseTo(24.5, 6);
+    expect(first?.exportEarningsGbp).toBeCloseTo(30, 6);
+    expect(first?.billSavingGbp).toBeCloseTo(187, 6);
+  });
+
+  it("keeps uneconomic off-peak charging visible instead of clamping it away", () => {
+    const scenarios = calculateFinancialScenarios({
+      annualGenerationKwh: 0,
+      energy: { ...energy, offPeakPence: 30, offPeakHours: 7, peakPence: 25, peakHours: 8 },
+      costs,
+      unitPriceDivisor: 100,
+      simulatedEnergyKwh: {
+        batteryOnly: { offPeakChargeKwh: 100, offPeakDischargeKwh: 90 },
+      },
+    });
+    const first = scenarios.find((scenario) => scenario.id === "battery-only")?.annualCashFlows[0];
+
+    expect(first?.offPeakBatterySavingsGbp).toBeCloseTo(-7.5, 6);
+    expect(first?.billSavingGbp).toBeCloseTo(-7.5, 6);
+  });
+
   it("builds annual economic value from bill saving, export income and monetizable value", () => {
     const touEnergy = { ...energy, offPeakPence: 8, offPeakHours: 7, peakPence: 32, peakHours: 5 };
     const batteryOnly = calculateFinancialScenarios({ annualGenerationKwh: 0, energy: touEnergy, costs, unitPriceDivisor: 100 }).find((scenario) => scenario.id === "battery-only");
     const firstYear = batteryOnly?.annualCashFlows[0];
-    expect(firstYear?.monetizableValueGbp).toBe(firstYear?.arbitrageIncomeGbp);
-    expect(firstYear?.netBenefitGbp).toBeCloseTo((firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? 0) - (firstYear?.maintenanceCostGbp ?? 0) - (firstYear?.replacementCostGbp ?? 0), 6);
+    expect(firstYear?.offPeakBatterySavingsGbp).toBe(firstYear?.arbitrageIncomeGbp);
+    expect(firstYear?.netBenefitGbp).toBeCloseTo((firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) - (firstYear?.maintenanceCostGbp ?? 0) - (firstYear?.replacementCostGbp ?? 0), 6);
   });
 });

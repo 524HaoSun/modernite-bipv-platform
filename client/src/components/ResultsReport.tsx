@@ -64,10 +64,35 @@ function selectedKpiKey(scenarioId: FinancialScenario["id"]): ScenarioKpiKey {
   return scenarioId === "solar-battery" ? "solarBattery" : "solarOnly";
 }
 
+export function scenarioSavingsBreakdown(scenario: FinancialScenario) {
+  const firstYear = scenario.annualCashFlows[0];
+  if (!firstYear) return { directSolar: 0, storedSolar: 0, offPeakBattery: 0, exportEarnings: 0 };
+  const hasExplicit = firstYear.directSolarSavingsGbp !== undefined
+    && firstYear.storedSolarSavingsGbp !== undefined
+    && firstYear.offPeakBatterySavingsGbp !== undefined
+    && firstYear.exportEarningsGbp !== undefined;
+  if (hasExplicit) return {
+    directSolar: firstYear.directSolarSavingsGbp!,
+    storedSolar: firstYear.storedSolarSavingsGbp!,
+    offPeakBattery: firstYear.offPeakBatterySavingsGbp!,
+    exportEarnings: firstYear.exportEarningsGbp!,
+  };
+  const offPeakBattery = firstYear.offPeakBatterySavingsGbp ?? firstYear.arbitrageIncomeGbp ?? firstYear.monetizableValueGbp ?? 0;
+  const storedSolar = firstYear.storedSolarSavingsGbp ?? 0;
+  return {
+    directSolar: firstYear.directSolarSavingsGbp ?? Math.max(0, firstYear.billSavingGbp - storedSolar - offPeakBattery),
+    storedSolar,
+    offPeakBattery,
+    exportEarnings: firstYear.exportEarningsGbp ?? firstYear.exportIncomeGbp ?? 0,
+  };
+}
+
 /** First-year value shown as "Estimated value": avoided import + export income + monetizable value. */
 export function scenarioAnnualValue(scenario: FinancialScenario) {
   const firstYear = scenario.annualCashFlows[0];
-  return (firstYear?.billSavingGbp ?? 0) + (firstYear?.exportIncomeGbp ?? 0) + (firstYear?.monetizableValueGbp ?? firstYear?.arbitrageIncomeGbp ?? 0);
+  if (!firstYear) return 0;
+  const split = scenarioSavingsBreakdown(scenario);
+  return split.directSolar + split.storedSolar + split.offPeakBattery + split.exportEarnings;
 }
 
 export function deriveResultsKpis(study: ProjectCalculation, scenarioId: FinancialScenario["id"]): ResultsKpis {
@@ -81,14 +106,14 @@ export function deriveResultsKpis(study: ProjectCalculation, scenarioId: Financi
   const selfConsumedKwh = canonical?.selfConsumedKwh ?? (key === "solarBattery" ? study.simulation.battery.selfConsumedKwh : study.simulation.selfConsumedKwh);
   const exportKwh = canonical?.exportKwh ?? (key === "solarBattery" ? study.simulation.battery.exportKwh : study.simulation.exportKwh);
   const gridImportKwh = canonical?.gridImportKwh ?? (key === "solarBattery" ? study.simulation.battery.gridImportKwh : study.simulation.gridImportKwh);
-  const solarOnlySelf = study.simulation.selfConsumedKwh;
+  const solarOnlySelf = key === "solarBattery" ? study.simulation.battery.directSolarKwh ?? study.simulation.selfConsumedKwh : study.simulation.selfConsumedKwh;
   return {
     solarCoveragePercent: Math.round(clamp(canonical?.solarCoverage ?? selfConsumedKwh / demand, 0, 1) * 100),
     pvSelfConsumptionPercent: Math.round(clamp(canonical?.pvSelfConsumption ?? selfConsumedKwh / generated, 0, 1) * 100),
     exportRatePercent: Math.round(clamp(canonical?.exportRate ?? exportKwh / generated, 0, 1) * 100),
     selfConsumedKwh,
     directSolarKwh: Math.min(selfConsumedKwh, solarOnlySelf),
-    batteryToLoadKwh: key === "solarBattery" ? Math.max(0, selfConsumedKwh - solarOnlySelf) : 0,
+    batteryToLoadKwh: key === "solarBattery" ? study.simulation.battery.storedSolarKwh ?? Math.max(0, selfConsumedKwh - solarOnlySelf) : 0,
     exportKwh,
     gridImportKwh,
   };
@@ -438,6 +463,33 @@ export function niceStep(range: number, target: number) {
 
 const CHART = { left: 78, right: 732, top: 30, bottom: 214, width: 760, height: 252 };
 
+function AnnualSavingsBreakdown({ scenario, f }: { scenario: FinancialScenario; f: Fmt }) {
+  const { t } = f;
+  const year = scenario.annualCashFlows[0];
+  if (!year) return null;
+  const split = scenarioSavingsBreakdown(scenario);
+  const items = [
+    { key: "direct", label: t.directSolarSavings, value: split.directSolar },
+    { key: "stored", label: t.storedSolarSavings, value: split.storedSolar },
+    { key: "offpeak", label: t.offPeakBatterySavings, value: split.offPeakBattery },
+    { key: "export", label: t.exportEarnings, value: split.exportEarnings },
+  ];
+  const max = Math.max(1, ...items.map((item) => item.value));
+  return <div className="annual-savings-breakdown" aria-label={t.savingsTitle}>
+    <div>
+      <p className="mini-label">{t.savingsLabel}</p>
+      <h3>{t.savingsTitle}</h3>
+    </div>
+    <div className="annual-savings-bars">
+      {items.map((item) => <span className={`annual-savings-bar annual-savings-bar--${item.key}`} key={item.key}>
+        <i>{item.label}</i>
+        <b>{f.money(item.value)}</b>
+        <em style={{ width: `${Math.max(5, (item.value / max) * 100)}%` }} />
+      </span>)}
+    </div>
+  </div>;
+}
+
 function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialScenario[]; scenario: FinancialScenario; f: Fmt }) {
   const { t } = f;
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -518,6 +570,7 @@ function CashPositionChart({ scenarios, scenario, f }: { scenarios: FinancialSce
         <span><i>{t.year25Cumulative}</i><b>{f.money(selectedFinal?.cumulativeNetGbp ?? scenario.net25YearGbp)}</b></span>
         <span><i>{t.firstYearBenefit}</i><b>{f.money(scenario.firstYearBenefitGbp)}</b></span>
       </div>
+      <AnnualSavingsBreakdown scenario={scenario} f={f} />
       <div className="cash-scenario-legend">{visible.map((item) => <span key={item.id}><i style={{ backgroundColor: SCENARIO_COLORS[item.id] }} />{t.scenarioTitles[item.id]}</span>)}</div>
     </> : <p className="result-note">{t.unavailable[scenario.id]}</p>}
     <p className="result-note">{t.cashDisclaimer}</p>

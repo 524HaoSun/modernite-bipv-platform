@@ -6230,6 +6230,17 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 .cash-position-chart .cash-hover rect { fill: rgba(255, 255, 255, .96); stroke: rgba(19, 79, 71, .15); filter: drop-shadow(0 6px 14px rgba(28, 52, 36, .14)); }
 .cash-position-chart .cash-hover text { fill: #2f4a39; font-size: 11px; font-weight: 600; }
 .cash-position-chart .cash-hover .cash-hover-title { fill: #6d8073; font-weight: 700; }
+.annual-savings-breakdown { display: grid; grid-template-columns: minmax(170px, .72fr) 1.45fr; gap: 18px; align-items: center; margin: 18px 0 6px; padding: 18px; border: 1px solid rgba(133, 169, 137, .32); border-radius: 18px; background: linear-gradient(115deg, rgba(255,255,255,.72), rgba(238,248,235,.58)); box-shadow: inset 0 1px 0 rgba(255,255,255,.68); }
+.annual-savings-breakdown h3 { margin: 3px 0 0; color: #214b3d; font-size: 20px; line-height: 1.15; letter-spacing: 0; }
+.annual-savings-bars { display: grid; gap: 9px; }
+.annual-savings-bar { position: relative; display: grid; grid-template-columns: minmax(112px, 1fr) auto; gap: 12px; align-items: center; min-height: 34px; padding: 0 0 10px; color: #315948; overflow: hidden; }
+.annual-savings-bar i, .annual-savings-bar b { position: relative; z-index: 1; font-style: normal; }
+.annual-savings-bar i { font-size: 11px; font-weight: 760; }
+.annual-savings-bar b { font-size: 13px; font-weight: 820; }
+.annual-savings-bar em { position: absolute; left: 0; bottom: 0; height: 6px; border-radius: 999px; background: linear-gradient(90deg, #0b7353, #85c196); box-shadow: 0 0 14px rgba(39, 128, 91, .18); }
+.annual-savings-bar--stored em { background: linear-gradient(90deg, #5d9876, #d0df9a); }
+.annual-savings-bar--offpeak em { background: linear-gradient(90deg, #3e7169, #93bfd2); }
+.annual-savings-bar--export em { background: linear-gradient(90deg, #c69520, #f2d275); }
 @media print { .cash-position-chart .cash-hover { display: none; } }
 
 /* Results hero concept: Modernite outcome dashboard. */
@@ -11262,6 +11273,7 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
   .gateway-shell--results .results-side-rail,
   .gateway-shell--results .results-hero-stage .generation-benefit-list,
   .gateway-shell--results .results-hero-stage .generation-flow-cards,
+  .gateway-shell--results .annual-savings-breakdown,
   .gateway-shell--results .cash-position-values,
   .gateway-shell--results .source-ledger dl {
     grid-template-columns: 1fr !important;

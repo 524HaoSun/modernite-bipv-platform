@@ -178,6 +178,13 @@ export type FinancialScenario = {
     solarGenerationKwh: number;
     selfConsumedKwh: number;
     directUseKwh: number;
+    storedSolarKwh?: number;
+    offPeakChargeKwh?: number;
+    offPeakDischargeKwh?: number;
+    directSolarSavingsGbp?: number;
+    storedSolarSavingsGbp?: number;
+    offPeakBatterySavingsGbp?: number;
+    exportEarningsGbp?: number;
     exportKwh: number;
     billSavingGbp: number;
     exportIncomeGbp: number;

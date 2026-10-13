@@ -3,7 +3,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { buildingTypeLabel } from "@/components/BuildingProfileCard";
 import {
   GRID_CO2_KG_PER_KWH, MARKET_CURRENCY, MARKET_REGION, ORIENTATION_SERIES, SCENARIO_COLORS,
-  deriveResultsKpis, ledgerValue, niceStep, scenarioAnnualValue, useFormatters, weatherSourceLabel,
+  deriveResultsKpis, ledgerValue, niceStep, scenarioAnnualValue, scenarioSavingsBreakdown, useFormatters, weatherSourceLabel,
   type Fmt, type MarketKey,
 } from "@/components/ResultsReport";
 import "@/styles/print-report.css";
@@ -98,6 +98,7 @@ export function PrintReport({ study, scenarioId, language, marketKey, className 
       <Heading label={t.scenarioLabel} title={t.cashTitle} aside={t.view25} />
       <ScenarioTable scenarios={study.result.scenarios} selected={scenario} f={f} />
       <CashChart scenarios={study.result.scenarios} selected={scenario} f={f} />
+      <PrintSavingsBreakdown selected={scenario} f={f} />
       <p className="pr-note">{t.scenarioNote} {t.cashDisclaimer} {t.chainNote}</p>
     </section>
 
@@ -284,6 +285,23 @@ function CashChart({ scenarios, selected, f }: { scenarios: FinancialScenario[];
     </svg>
     <div className="pr-legend">{visible.map((item) => <span key={item.id}><i style={{ background: SCENARIO_COLORS[item.id] }} />{t.scenarioTitles[item.id]}{item.breakEvenYear ? ` · ${t.breakEvenYear(item.breakEvenYear)}` : ""}</span>)}</div>
   </>;
+}
+
+function PrintSavingsBreakdown({ selected, f }: { selected: FinancialScenario; f: Fmt }) {
+  const { t } = f;
+  const first = selected.annualCashFlows[0];
+  if (!first) return null;
+  const split = scenarioSavingsBreakdown(selected);
+  const rows = [
+    { label: t.directSolarSavings, value: split.directSolar },
+    { label: t.storedSolarSavings, value: split.storedSolar },
+    { label: t.offPeakBatterySavings, value: split.offPeakBattery },
+    { label: t.exportEarnings, value: split.exportEarnings },
+  ];
+  return <div className="pr-savings">
+    <strong>{t.savingsLabel}</strong>
+    {rows.map((row) => <span key={row.label}><i>{row.label}</i><b>{f.money(row.value)}</b></span>)}
+  </div>;
 }
 
 function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; region: "UK" | "EU" | "CA" | "JP"; f: Fmt }) {

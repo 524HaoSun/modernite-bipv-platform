@@ -77,6 +77,11 @@
 .pr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; color: var(--pr-muted); font-size: 7.5pt; }
 .pr-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .pr-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.pr-savings { display: grid; grid-template-columns: 1.15fr repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; padding: 8px; border: 1px solid var(--pr-line); border-radius: 8px; background: var(--pr-soft); }
+.pr-savings > strong { align-self: center; color: var(--pr-accent); font-size: 7.5pt; text-transform: uppercase; letter-spacing: .08em; }
+.pr-savings span { display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.pr-savings i { color: var(--pr-muted); font-size: 6.8pt; font-style: normal; line-height: 1.2; }
+.pr-savings b { color: var(--pr-ink); font-size: 9pt; }
 
 .pr-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
 .pr-table thead { display: table-header-group; }

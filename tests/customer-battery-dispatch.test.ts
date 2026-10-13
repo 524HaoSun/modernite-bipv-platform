@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaults, dispatch, simulate, synthetic, SYSTEM_ASSUMPTIONS, type Building, type HourlyRow, type Surface } from "../lib/customer-energy-core";
+import { defaults, dispatch, dispatchWithGridCharging, simulate, synthetic, SYSTEM_ASSUMPTIONS, type Building, type HourlyRow, type Surface } from "../lib/customer-energy-core";
 
 describe("customer battery dispatch model", () => {
   it("respects capacity, SOC reserve, power limits and round-trip efficiency", () => {
@@ -21,6 +21,26 @@ describe("customer battery dispatch model", () => {
     expect(capacityLimited[1].batteryDischarge).toBeCloseTo(usable * eta, 6);
     expect(capacityLimited[1].batterySOC).toBeCloseTo((1 - SYSTEM_ASSUMPTIONS.usableFraction) * 100, 6);
     expect(capacityLimited[0].batteryLoss + capacityLimited[1].batteryLoss).toBeCloseTo(usable / eta - usable * eta, 6);
+  });
+
+  it("tracks off-peak grid charging separately from PV self-consumption", () => {
+    const rows: HourlyRow[] = [
+      { t: Date.UTC(2025, 0, 1, 0), pv: 0, load: 0 },
+      { t: Date.UTC(2025, 0, 1, 10), pv: 3, load: 0 },
+      { t: Date.UTC(2025, 0, 1, 19), pv: 0, load: 4 },
+    ];
+    const result = dispatchWithGridCharging(rows, 5, 5, { collect: true, offPeakHours: 7, reserveSolarCapacity: false });
+    const sums = result.rows.reduce((acc, row) => ({
+      self: acc.self + row.self,
+      solarDischarge: acc.solarDischarge + (row.batterySolarDischarge ?? 0),
+      gridDischarge: acc.gridDischarge + (row.batteryGridDischarge ?? 0),
+      gridCharge: acc.gridCharge + (row.gridBatteryCharge ?? 0),
+    }), { self: 0, solarDischarge: 0, gridDischarge: 0, gridCharge: 0 });
+
+    expect(sums.gridCharge).toBeGreaterThan(0);
+    expect(sums.gridDischarge).toBeGreaterThan(0);
+    expect(sums.self).toBeCloseTo(sums.solarDischarge, 6);
+    expect(sums.self).toBeLessThan(4);
   });
 
   it("rolls dispatched battery rows into simulation totals and sizing metadata", () => {
