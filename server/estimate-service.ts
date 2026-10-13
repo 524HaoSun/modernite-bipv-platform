@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { runCustomerStudy, syntheticWeatherFor, type CustomerEconomicsPlan, type CustomerStudy } from "../lib/customer-study";
 import { PROFILES, type Weather } from "../lib/customer-energy-core";
-import type { HomeEnergySettings, StudioCalculationSnapshot } from "../lib/studio-calculation";
+import { normalizeHomeEnergySettings, type HomeEnergySettings, type StudioCalculationSnapshot } from "../lib/studio-calculation";
 import { invokeLLM } from "./_core/llm";
 import { getGoogleSolarReference } from "./google-solar-service";
 import { DEFAULT_WEATHER_SOURCE, WEATHER_SOURCES, getWeatherWithFallback, type WeatherSource } from "./weather-service";
@@ -56,6 +56,7 @@ function resolveRuntime(input: ProjectCalculationInput, options?: CalculationOpt
 
 export async function runProjectCalculation(input: ProjectCalculationInput, options?: CalculationOptions): Promise<ProjectCalculation> {
   const runtime = resolveRuntime(input, options);
+  const energySettings = input.energySettings ? normalizeHomeEnergySettings(input.energySettings) : undefined;
   if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && PROFILES[surface.profile])) {
     throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
   }
@@ -79,13 +80,13 @@ export async function runProjectCalculation(input: ProjectCalculationInput, opti
     snapshot: runtime.snapshot,
     productRuntime: runtime.productRuntime,
     buildingNorthDeg: input.buildingNorthDeg,
-    energySettings: input.energySettings,
+    energySettings,
     weather: weatherResult.weather,
     googleSolar,
   };
   const preliminaryStudy = runCustomerStudy(baseStudyInput);
   const economicPlan = await withTimeout(
-    estimateProjectEconomics(input, preliminaryStudy),
+    estimateProjectEconomics({ ...input, energySettings }, preliminaryStudy),
     ECONOMIC_GUIDANCE_TIMEOUT_MS,
     "Economic guidance timed out",
   ).catch((error: unknown) => {
@@ -141,10 +142,13 @@ async function estimateProjectEconomics(input: ProjectCalculationInput, study: C
       annualDemandKwh: settings.annualDemandKwh ?? null,
       householdSize: settings.householdSize,
       daytimeOccupancy: settings.daytimeOccupancy,
-      electricHeating: settings.electricHeating,
-      heatPump: settings.heatPump,
-      electricHotWater: settings.electricHotWater,
-      evCharger: settings.evCharger,
+      heatPumpUse: settings.heatPumpUse,
+      airConditionerUse: settings.airConditionerUse,
+      electricUnderfloorHeating: settings.electricUnderfloorHeating,
+      electricRadiators: settings.electricRadiators,
+      electricWaterHeating: settings.electricWaterHeating,
+      evCharging: settings.evCharging,
+      evAnnualDistanceKm: settings.evAnnualDistanceKm,
       batteryMode: settings.batteryMode,
       batteryCapacityKwh: settings.batteryCapacityKwh,
       projectPriceGbp: settings.projectPriceGbp ?? null,
@@ -366,16 +370,32 @@ export const projectCalculationInputSchema = z.object({
     annualDemandKwh: z.number().finite().min(500).max(100_000).nullable().optional(),
     householdSize: z.number().finite().int().min(1).max(12),
     daytimeOccupancy: z.enum(["usually", "sometimes", "rarely"]),
-    electricHeating: z.boolean(),
-    heatPump: z.boolean(),
-    electricHotWater: z.boolean(),
-    evCharger: z.boolean(),
+    heatPumpUse: z.enum(["off", "space-heating", "hot-water", "space-heating-hot-water"]).optional(),
+    airConditionerUse: z.enum(["off", "cooling", "heating", "heating-cooling"]).optional(),
+    electricUnderfloorHeating: z.boolean().optional(),
+    electricRadiators: z.boolean().optional(),
+    electricWaterHeating: z.boolean().optional(),
+    evCharging: z.boolean().optional(),
+    evAnnualDistanceKm: z.number().finite().min(0).max(1_000_000).optional(),
+    electricHeating: z.boolean().optional(),
+    heatPump: z.boolean().optional(),
+    electricHotWater: z.boolean().optional(),
+    evCharger: z.boolean().optional(),
     batteryMode: z.enum(["solar-only", "solar-battery"]),
     batteryCapacityKwh: z.number().finite().min(0).max(100),
     batteryCapacitySource: z.enum(["auto", "user"]).optional(),
     projectPriceGbp: z.number().finite().min(0).max(10_000_000).nullable().optional(),
     batteryPriceGbp: z.number().finite().min(0).max(100_000).nullable().optional(),
-  }).optional(),
+  }).transform((settings): HomeEnergySettings => ({
+    ...settings,
+    heatPumpUse: settings.heatPumpUse ?? (settings.heatPump ? "space-heating" : "off"),
+    airConditionerUse: settings.airConditionerUse ?? "off",
+    electricUnderfloorHeating: settings.electricUnderfloorHeating ?? false,
+    electricRadiators: settings.electricRadiators ?? (settings.heatPump ? false : settings.electricHeating ?? false),
+    electricWaterHeating: settings.electricWaterHeating ?? settings.electricHotWater ?? false,
+    evCharging: settings.evCharging ?? settings.evCharger ?? false,
+    evAnnualDistanceKm: settings.evAnnualDistanceKm ?? 12000,
+  })).optional(),
 });
 
 export const projectAssistantInputSchema = z.object({

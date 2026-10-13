@@ -88,6 +88,8 @@ export type Parameters = ReturnType<typeof defaults> & {
   batteryMode?: "auto" | "manual";
   batteryKWh?: number;
   batteryKW?: number;
+  /** Optional authoritative annual electricity total; preserves the simulated hourly shape. */
+  annualLoadTargetKwh?: number;
 };
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -425,9 +427,41 @@ function applySystem(base: SimulationResult, p: Partial<Parameters>, offsetHours
   return base;
 }
 
+function calibrateAnnualElectricLoad(base: SimulationResult, targetKwh: number) {
+  if (!Number.isFinite(targetKwh) || targetKwh <= 0 || base.totals.load <= 0) return base;
+  const fixedEv = base.totals.ev;
+  const flexible = base.totals.heatElectric + base.totals.coolElectric + base.totals.dhw;
+  const nonBase = fixedEv + flexible;
+  const baseScale = base.totals.base > 0 && targetKwh >= nonBase
+    ? (targetKwh - nonBase) / base.totals.base
+    : 0;
+  const flexibleScale = targetKwh < nonBase && flexible > 0
+    ? Math.max(0, Math.min(1, (targetKwh - fixedEv) / flexible))
+    : 1;
+  const aggregateKeys = ["load", "heatElectric", "coolElectric", "base", "dhw", "ev", "evUnserved", "heat", "cool", "heatPump", "underfloor", "radiant", "infrared", "baseline"] as const;
+  for (const bucket of [base.totals, ...base.monthly]) for (const key of aggregateKeys) bucket[key] = 0;
+  for (const row of base.hourly) {
+    const originalBase = row.base;
+    row.base *= baseScale;
+    for (const key of ["heatElectric", "coolElectric", "dhw", "heat", "cool", "heatPump", "underfloor", "radiant", "infrared"] as const) {
+      if (Number.isFinite(row[key])) row[key] *= flexibleScale;
+    }
+    row.load = row.base + row.heatElectric + row.coolElectric + row.dhw + row.ev;
+    row.baseline = Math.max(0, row.baseline - originalBase) * flexibleScale + row.base;
+    const month = new Date(row.t).getUTCMonth();
+    for (const key of aggregateKeys) {
+      base.totals[key] += row[key];
+      base.monthly[month][key] += row[key];
+    }
+  }
+  base.electricSaving = base.totals.baseline - base.totals.load;
+  return base;
+}
+
 /** Equivalent of the customer runtime's `ModerniteEnergyCore.simulate` after `modernite-system-core` wraps it. */
 export function simulate(p: Parameters, surfaces: Surface[], weather: Weather, location: Location, shadows: Shadows | null = null): SimulationResult {
   validateSystem(systemSettings(p));
   const base = simulateBase({ ...p, inverter: 0 }, surfaces, weather, location, shadows);
+  if (p.annualLoadTargetKwh) calibrateAnnualElectricLoad(base, p.annualLoadTargetKwh);
   return applySystem(base, p, weather.timeStandard === "UTC" ? location.tz : 0);
 }

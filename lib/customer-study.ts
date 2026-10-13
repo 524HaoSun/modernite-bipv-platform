@@ -4,7 +4,20 @@ import * as core from "./customer-energy-core";
 import { calculateFinancialScenarios } from "./financial";
 import { compassName } from "./geometry";
 import type { GoogleSolarReference } from "./google-solar";
-import { activeSolarAreaM2, buildPlanningInput, estimateAnnualDemandKwh, planningCosts, productForSnapshot, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "./studio-calculation";
+import {
+  activeSolarAreaM2,
+  airConditionerProvidesCooling,
+  airConditionerProvidesHeating,
+  buildPlanningInput,
+  estimateAnnualDemandKwh,
+  heatPumpProvidesHotWater,
+  heatPumpProvidesSpaceHeating,
+  planningCosts,
+  productForSnapshot,
+  regionForMarket,
+  type HomeEnergySettings,
+  type StudioCalculationSnapshot,
+} from "./studio-calculation";
 
 export type Market = "GB" | "EU" | "CA" | "JP";
 
@@ -92,6 +105,12 @@ export type StudyProject = {
   heatMode: "gas" | "pump" | "direct";
   electricHotWater: boolean;
   evCharger: boolean;
+  heatPumpUse?: HomeEnergySettings["heatPumpUse"];
+  airConditionerUse?: HomeEnergySettings["airConditionerUse"];
+  electricUnderfloorHeating?: boolean;
+  electricRadiators?: boolean;
+  electricWaterHeating?: boolean;
+  evAnnualDistanceKm?: number;
 };
 
 export type CustomerStudy = {
@@ -155,14 +174,34 @@ function buildingFromSnapshot(snapshot: StudioCalculationSnapshot): core.Buildin
 }
 
 function parametersFor(building: core.Building, settings: HomeEnergySettings | undefined, north: number): core.Parameters {
-  const heatMode = settings?.heatPump ? "pump" : settings?.electricHeating ? "direct" : "gas";
+  const efficientHeating = settings ? heatPumpProvidesSpaceHeating(settings) || airConditionerProvidesHeating(settings) : false;
+  const heatPumpSpaceHeating = settings ? heatPumpProvidesSpaceHeating(settings) : false;
+  const airConditionerHeating = settings ? airConditionerProvidesHeating(settings) : false;
+  const underfloorHeating = settings?.electricUnderfloorHeating ?? false;
+  const radiatorHeating = settings?.electricRadiators ?? false;
+  const heatingSystems = [efficientHeating, underfloorHeating, radiatorHeating].filter(Boolean).length;
+  const heatingShare = heatingSystems ? 100 / heatingSystems : 0;
+  const efficientHeatingCop = (Number(heatPumpSpaceHeating) * 3 + Number(airConditionerHeating) * 3.5)
+    / Math.max(1, Number(heatPumpSpaceHeating) + Number(airConditionerHeating));
+  const heatMode = efficientHeating ? "pump" : underfloorHeating || radiatorHeating ? "direct" : "gas";
+  const heatPumpHotWater = settings ? heatPumpProvidesHotWater(settings) : false;
+  const directHotWater = settings?.electricWaterHeating ?? false;
+  const hotWaterSystems = Number(heatPumpHotWater) + Number(directHotWater);
+  const hotWaterIntensity = hotWaterSystems
+    ? ((heatPumpHotWater ? 12 / 3 : 0) + (directHotWater ? 12 : 0)) / hotWaterSystems
+    : 12;
   return {
     ...core.defaults(building),
     north,
     heatMode,
     devices: {
-      hotWater: { enabled: settings?.electricHotWater ?? false },
-      ev: { enabled: settings?.evCharger ?? false },
+      heatPump: { enabled: efficientHeating, share: efficientHeating ? heatingShare : 0, cop: efficientHeatingCop },
+      underfloor: { enabled: underfloorHeating, share: underfloorHeating ? heatingShare : 0 },
+      radiant: { enabled: radiatorHeating, share: radiatorHeating ? heatingShare : 0 },
+      gasBoiler: { enabled: heatingSystems === 0, share: heatingSystems === 0 ? 100 : 0, efficiency: 0.9 },
+      ac: { enabled: settings ? airConditionerProvidesCooling(settings) : false, cop: 3 },
+      hotWater: { enabled: hotWaterSystems > 0, intensity: hotWaterIntensity },
+      ev: { enabled: settings?.evCharging ?? false, distance: Math.max(0, settings?.evAnnualDistanceKm ?? 12000) },
     },
     inverterMode: "auto",
     batteryEnabled: false,
@@ -215,26 +254,18 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const p = parametersFor(building, settings, north);
   p.productRuntime = input.productRuntime;
   const profiles = input.productRuntime?.profiles ?? core.PROFILES;
-
-  let sim = core.simulate(p, surfaces, input.weather, location);
   const bill = settings?.demandMode === "bill" && settings.annualDemandKwh && settings.annualDemandKwh > 0 ? settings.annualDemandKwh : null;
   const household = bill === null && settings ? estimateAnnualDemandKwh(settings) : null;
   const guidedDemand = bill === null && input.economicPlan?.annualDemandKwh && input.economicPlan.annualDemandKwh > 0 ? input.economicPlan.annualDemandKwh : null;
   const demandTarget = bill ?? guidedDemand ?? household;
+  if (demandTarget !== null) p.annualLoadTargetKwh = demandTarget;
+  const sim = core.simulate(p, surfaces, input.weather, location);
   let calibrationNote = "Annual demand is the customer building model result: hourly base load, heating and cooling (one-node RC), hot water and EV charging.";
-  if (demandTarget !== null && sim.totals.base > 0) {
-    const nonBase = sim.totals.load - sim.totals.base;
-    const scale = Math.max(0, demandTarget - nonBase) / sim.totals.base;
-    p.base = p.base * scale;
-    sim = core.simulate(p, surfaces, input.weather, location);
-    calibrationNote = bill !== null
-      ? bill < nonBase
-        ? `The bill (${Math.round(bill).toLocaleString("en")} kWh) is below the modelled heating/EV load; base appliance load was set to zero.`
-        : `Base appliance load calibrated so the modelled annual demand matches the ${Math.round(bill).toLocaleString("en")} kWh bill.`
-      : guidedDemand !== null
-        ? "Annual demand has been tailored from the household profile, configured building and project context."
-        : `Base appliance load calibrated so the modelled annual demand matches the ${Math.round(demandTarget).toLocaleString("en")} kWh household estimate (${settings!.householdSize} people, daytime occupancy: ${settings!.daytimeOccupancy}).`;
-  }
+  if (demandTarget !== null) calibrationNote = bill !== null
+    ? `The hourly electricity profile is calibrated to the ${Math.round(bill).toLocaleString("en")} kWh bill while retaining the selected device-use pattern.`
+    : guidedDemand !== null
+      ? "Annual demand has been tailored from the household profile, configured building and project context."
+      : `The hourly electricity profile is calibrated to the ${Math.round(demandTarget).toLocaleString("en")} kWh household estimate (${settings!.householdSize} people, daytime occupancy: ${settings!.daytimeOccupancy}) while retaining the selected device-use pattern.`;
 
   const t = sim.totals, sizing = sim.systemSizing!;
   const requestedBattery = settings?.batteryMode === "solar-battery" && settings.batteryCapacitySource === "user" ? settings.batteryCapacityKwh : 0;
@@ -401,8 +432,14 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       building: { width: building.width, depth: building.depth, floors: building.floors, storeyHeight: building.storeyHeight ?? DEFAULT_BUILDING.storeyHeight, usage: building.usage === "office" ? "office" : "residential" },
       frontAzimuthDeg: north,
       heatMode: p.heatMode as StudyProject["heatMode"],
-      electricHotWater: settings?.electricHotWater ?? false,
-      evCharger: settings?.evCharger ?? false,
+      electricHotWater: heatPumpProvidesHotWater(settings ?? { heatPumpUse: "off" }) || (settings?.electricWaterHeating ?? false),
+      evCharger: settings?.evCharging ?? false,
+      heatPumpUse: settings?.heatPumpUse,
+      airConditionerUse: settings?.airConditionerUse,
+      electricUnderfloorHeating: settings?.electricUnderfloorHeating,
+      electricRadiators: settings?.electricRadiators,
+      electricWaterHeating: settings?.electricWaterHeating,
+      evAnnualDistanceKm: settings?.evAnnualDistanceKm,
     },
     result,
     validation: {

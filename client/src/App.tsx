@@ -67,7 +67,22 @@ import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
 import { expandWeather, type CompactWeather } from "../../lib/pvgis-tmy";
-import { estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts, regionForMarket, type HomeEnergySettings, type StudioCalculationSnapshot } from "../../lib/studio-calculation";
+import {
+  airConditionerProvidesCooling,
+  airConditionerProvidesHeating,
+  DEFAULT_HOME_ENERGY_SETTINGS,
+  estimateAnnualDemandKwh,
+  heatPumpProvidesHotWater,
+  heatPumpProvidesSpaceHeating,
+  mapStudioSnapshotToSurfaces,
+  normalizeHomeEnergySettings,
+  planningCosts,
+  regionForMarket,
+  type AirConditionerUse,
+  type HeatPumpUse,
+  type HomeEnergySettings,
+  type StudioCalculationSnapshot,
+} from "../../lib/studio-calculation";
 import { REGION_CONFIG } from "../../data/constants";
 import type { FinancialScenario, LedgerEntry, SurfaceResult } from "../../types/solar";
 
@@ -126,31 +141,8 @@ type StudioWindow = Window & {
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
 
-const DEFAULT_ENERGY_SETTINGS: HomeEnergySettings = {
-  demandMode: "estimate",
-  annualDemandKwh: null,
-  householdSize: 3,
-  daytimeOccupancy: "usually",
-  electricHeating: false,
-  heatPump: true,
-  electricHotWater: false,
-  evCharger: true,
-  batteryMode: "solar-battery",
-  batteryCapacityKwh: 7.5,
-  batteryCapacitySource: "auto",
-  projectPriceGbp: null,
-  batteryPriceGbp: null,
-};
-
-function withoutLegacyPriceDefaults(settings: Partial<HomeEnergySettings> | undefined): Partial<HomeEnergySettings> {
-  if (!settings || settings.projectPriceGbp !== 16000 || settings.batteryPriceGbp !== 5800) return settings ?? {};
-  return { ...settings, projectPriceGbp: null, batteryPriceGbp: null };
-}
-
-function normalizeEnergySettings(settings?: Partial<HomeEnergySettings>): HomeEnergySettings {
-  const merged = { ...DEFAULT_ENERGY_SETTINGS, ...withoutLegacyPriceDefaults(settings) };
-  return { ...merged, batteryCapacitySource: merged.batteryCapacitySource ?? "auto" };
-}
+const DEFAULT_ENERGY_SETTINGS = DEFAULT_HOME_ENERGY_SETTINGS;
+const normalizeEnergySettings = normalizeHomeEnergySettings;
 
 function recommendedBatteryDefaultKwh(value: number | null | undefined) {
   if (!Number.isFinite(value ?? NaN)) return null;
@@ -1564,13 +1556,32 @@ function LocationPage({ language, market, context, copy, onLocationChange, onAre
   );
 }
 
+const ENERGY_USE_COPY: Record<StudioLanguage, {
+  title: string; included: string; general: string; heatPump: string; airConditioner: string;
+  underfloor: string; radiators: string; waterHeating: string; ev: string; annualDistance: string;
+  distanceUnitKm: string; distanceUnitMiles: string;
+  heatPumpOptions: Record<Exclude<HeatPumpUse, "off">, string>;
+  airConditionerOptions: Record<Exclude<AirConditionerUse, "off">, string>;
+}> = {
+  en: { title: "Your electricity use", included: "Included", general: "General household electricity", heatPump: "Heat pump", airConditioner: "Air conditioner", underfloor: "Electric underfloor heating", radiators: "Electric radiators / heaters", waterHeating: "Electric water heating", ev: "EV charging", annualDistance: "Annual driving distance", distanceUnitKm: "km / year", distanceUnitMiles: "miles / year", heatPumpOptions: { "space-heating": "Space heating only", "hot-water": "Hot water only", "space-heating-hot-water": "Space heating & hot water" }, airConditionerOptions: { cooling: "Cooling only", heating: "Heating only", "heating-cooling": "Heating & cooling" } },
+  zh: { title: "您的用电设备", included: "默认包含", general: "一般家庭用电", heatPump: "热泵", airConditioner: "空调", underfloor: "电地暖", radiators: "电暖气 / 电加热器", waterHeating: "电热水器", ev: "电动车充电", annualDistance: "年行驶里程", distanceUnitKm: "公里 / 年", distanceUnitMiles: "英里 / 年", heatPumpOptions: { "space-heating": "仅空间采暖", "hot-water": "仅生活热水", "space-heating-hot-water": "空间采暖与生活热水" }, airConditionerOptions: { cooling: "仅制冷", heating: "仅制热", "heating-cooling": "制热与制冷" } },
+  "zh-Hant": { title: "您的用電設備", included: "預設包含", general: "一般家庭用電", heatPump: "熱泵", airConditioner: "空調", underfloor: "電地暖", radiators: "電暖氣 / 電加熱器", waterHeating: "電熱水器", ev: "電動車充電", annualDistance: "年行駛里程", distanceUnitKm: "公里 / 年", distanceUnitMiles: "英里 / 年", heatPumpOptions: { "space-heating": "僅空間供暖", "hot-water": "僅生活熱水", "space-heating-hot-water": "空間供暖與生活熱水" }, airConditionerOptions: { cooling: "僅製冷", heating: "僅製熱", "heating-cooling": "製熱與製冷" } },
+  fr: { title: "Votre consommation électrique", included: "Inclus", general: "Électricité générale du foyer", heatPump: "Pompe à chaleur", airConditioner: "Climatisation", underfloor: "Plancher chauffant électrique", radiators: "Radiateurs / chauffages électriques", waterHeating: "Chauffe-eau électrique", ev: "Recharge du véhicule électrique", annualDistance: "Distance annuelle parcourue", distanceUnitKm: "km / an", distanceUnitMiles: "miles / an", heatPumpOptions: { "space-heating": "Chauffage uniquement", "hot-water": "Eau chaude uniquement", "space-heating-hot-water": "Chauffage et eau chaude" }, airConditionerOptions: { cooling: "Froid uniquement", heating: "Chauffage uniquement", "heating-cooling": "Chauffage et froid" } },
+  ja: { title: "ご家庭の電力使用", included: "標準で含む", general: "一般家庭電力", heatPump: "ヒートポンプ", airConditioner: "エアコン", underfloor: "電気床暖房", radiators: "電気ラジエーター / ヒーター", waterHeating: "電気給湯", ev: "EV 充電", annualDistance: "年間走行距離", distanceUnitKm: "km / 年", distanceUnitMiles: "マイル / 年", heatPumpOptions: { "space-heating": "暖房のみ", "hot-water": "給湯のみ", "space-heating-hot-water": "暖房と給湯" }, airConditionerOptions: { cooling: "冷房のみ", heating: "暖房のみ", "heating-cooling": "冷暖房" } },
+  es: { title: "Su consumo eléctrico", included: "Incluido", general: "Electricidad general del hogar", heatPump: "Bomba de calor", airConditioner: "Aire acondicionado", underfloor: "Suelo radiante eléctrico", radiators: "Radiadores / calefactores eléctricos", waterHeating: "Agua caliente eléctrica", ev: "Carga de vehículo eléctrico", annualDistance: "Distancia anual recorrida", distanceUnitKm: "km / año", distanceUnitMiles: "millas / año", heatPumpOptions: { "space-heating": "Solo calefacción", "hot-water": "Solo agua caliente", "space-heating-hot-water": "Calefacción y agua caliente" }, airConditionerOptions: { cooling: "Solo refrigeración", heating: "Solo calefacción", "heating-cooling": "Calefacción y refrigeración" } },
+  it: { title: "Il vostro consumo elettrico", included: "Incluso", general: "Elettricità generale domestica", heatPump: "Pompa di calore", airConditioner: "Climatizzatore", underfloor: "Riscaldamento elettrico a pavimento", radiators: "Radiatori / stufe elettriche", waterHeating: "Acqua calda elettrica", ev: "Ricarica veicolo elettrico", annualDistance: "Distanza annua percorsa", distanceUnitKm: "km / anno", distanceUnitMiles: "miglia / anno", heatPumpOptions: { "space-heating": "Solo riscaldamento", "hot-water": "Solo acqua calda", "space-heating-hot-water": "Riscaldamento e acqua calda" }, airConditionerOptions: { cooling: "Solo raffrescamento", heating: "Solo riscaldamento", "heating-cooling": "Riscaldamento e raffrescamento" } },
+};
+
 function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage, marketKey: MarketKey, solarAreaM2: number) {
   const text = outerCopy(language);
+  const useText = ENERGY_USE_COPY[language];
   const services = [
-    settings.electricHeating ? text.services.electricHeating : null,
-    settings.heatPump ? text.services.heatPump : null,
-    settings.electricHotWater ? text.services.electricHotWater : null,
-    settings.evCharger ? text.services.evCharger : null,
+    settings.heatPumpUse !== "off" ? useText.heatPump : null,
+    settings.airConditionerUse !== "off" ? useText.airConditioner : null,
+    settings.electricUnderfloorHeating ? useText.underfloor : null,
+    settings.electricRadiators ? useText.radiators : null,
+    settings.electricWaterHeating ? useText.waterHeating : null,
+    settings.evCharging ? useText.ev : null,
   ].filter(Boolean) as string[];
   const estimatedDemand = estimateAnnualDemandKwh(settings);
   const annualDemand = settings.demandMode === "bill" && settings.annualDemandKwh ? Math.round(settings.annualDemandKwh) : estimatedDemand;
@@ -1620,8 +1631,9 @@ function EnergyPlanningPreview({ settings, language, marketKey, solarAreaM2 }: {
   );
 }
 
-function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, currency }: {
+function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, currency, marketKey }: {
   currency: string;
+  marketKey: MarketKey;
   settings: HomeEnergySettings;
   disabled: boolean;
   onChange: (next: Partial<HomeEnergySettings>) => void;
@@ -1630,7 +1642,8 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, cu
 }) {
   const [open, setOpen] = useState(true);
   const text = outerCopy(language);
-  const setNumber = (field: "annualDemandKwh" | "householdSize" | "batteryCapacityKwh" | "projectPriceGbp" | "batteryPriceGbp", value: string) => {
+  const useText = ENERGY_USE_COPY[language];
+  const setNumber = (field: "annualDemandKwh" | "householdSize" | "batteryCapacityKwh" | "projectPriceGbp" | "batteryPriceGbp" | "evAnnualDistanceKm", value: string) => {
     const numeric = value === "" ? null : Number(value);
     const nextValue = numeric === null || Number.isNaN(numeric) ? null : numeric;
     const next = { [field]: field === "batteryCapacityKwh" ? Math.max(1, Math.min(100, nextValue ?? settings.batteryCapacityKwh)) : nextValue } as Partial<HomeEnergySettings>;
@@ -1660,14 +1673,23 @@ function HomeEnergyPanel({ settings, disabled, onChange, onPrepare, language, cu
           <div className="occupancy-choice" role="group" aria-label={MISC_COPY[language].occupancyAria}><span>{text.dayQuestion}</span>{(["usually", "sometimes", "rarely"] as const).map((option) => <button key={option} type="button" className={settings.daytimeOccupancy === option ? "is-selected" : ""} onClick={() => onChange({ daytimeOccupancy: option })}>{text.occupancy[option]}</button>)}</div>
         </section>
         <section className="energy-field-group">
-          <div className="energy-field-heading"><span>{text.electricHome}</span><small>{text.selectAny}</small></div>
-          <div className="energy-service-list">
+          <div className="energy-field-heading"><span>{useText.title}</span><small>{text.selectAny}</small></div>
+          <div className="energy-use-list">
+            <div className="energy-use-row is-included"><span><Home size={16} />{useText.general}</span><small><Check size={12} />{useText.included}</small></div>
+            <div className={`energy-use-row energy-use-row--expandable ${settings.heatPumpUse !== "off" ? "is-selected" : ""}`}>
+              <label><input type="checkbox" checked={settings.heatPumpUse !== "off"} onChange={(event) => onChange({ heatPumpUse: event.target.checked ? "space-heating" : "off" })} /><span>{useText.heatPump}</span><Check size={13} /></label>
+              {settings.heatPumpUse !== "off" && <div className="energy-use-options" role="group" aria-label={useText.heatPump}>{(Object.entries(useText.heatPumpOptions) as [Exclude<HeatPumpUse, "off">, string][]).map(([value, label]) => <button key={value} type="button" aria-pressed={settings.heatPumpUse === value} className={settings.heatPumpUse === value ? "is-selected" : ""} onClick={() => onChange({ heatPumpUse: value })}>{label}</button>)}</div>}
+            </div>
+            <div className={`energy-use-row energy-use-row--expandable ${settings.airConditionerUse !== "off" ? "is-selected" : ""}`}>
+              <label><input type="checkbox" checked={settings.airConditionerUse !== "off"} onChange={(event) => onChange({ airConditionerUse: event.target.checked ? "cooling" : "off" })} /><span>{useText.airConditioner}</span><Check size={13} /></label>
+              {settings.airConditionerUse !== "off" && <div className="energy-use-options" role="group" aria-label={useText.airConditioner}>{(Object.entries(useText.airConditionerOptions) as [Exclude<AirConditionerUse, "off">, string][]).map(([value, label]) => <button key={value} type="button" aria-pressed={settings.airConditionerUse === value} className={settings.airConditionerUse === value ? "is-selected" : ""} onClick={() => onChange({ airConditionerUse: value })}>{label}</button>)}</div>}
+            </div>
             {([
-              ["electricHeating", text.services.electricHeating],
-              ["heatPump", text.services.heatPump],
-              ["electricHotWater", text.services.electricHotWater],
-              ["evCharger", text.services.evCharger],
-            ] as const).map(([field, label]) => <label key={field}><input type="checkbox" checked={settings[field]} onChange={(event) => onChange({ [field]: event.target.checked })} /><span>{label}</span><Check size={13} /></label>)}
+              ["electricUnderfloorHeating", useText.underfloor],
+              ["electricRadiators", useText.radiators],
+              ["electricWaterHeating", useText.waterHeating],
+              ["evCharging", useText.ev],
+            ] as const).map(([field, label]) => <div key={field} className={`energy-use-row ${settings[field] ? "is-selected" : ""}`}><label><input type="checkbox" checked={settings[field]} onChange={(event) => onChange({ [field]: event.target.checked })} /><span>{label}</span><Check size={13} /></label>{field === "evCharging" && settings.evCharging && <label className="energy-distance"><span>{useText.annualDistance}</span><input aria-label={useText.annualDistance} type="number" min="0" max={marketKey === "GB" ? "250000" : "400000"} step="500" value={marketKey === "GB" ? Math.round(settings.evAnnualDistanceKm / 1.609344) : Math.round(settings.evAnnualDistanceKm)} onChange={(event) => setNumber("evAnnualDistanceKm", String(Math.max(0, Number(event.target.value) || 0) * (marketKey === "GB" ? 1.609344 : 1)))} /><em>{marketKey === "GB" ? useText.distanceUnitMiles : useText.distanceUnitKm}</em></label>}</div>)}
           </div>
         </section>
         <section className="energy-field-group">
@@ -1750,7 +1772,7 @@ function EnergyPage({ settings, canCalculate, onChange, onPrepare, onNavigate, l
           </div>
           <div className="energy-note-card"><Lightbulb size={24} /><p><b>{text.energyNoteTitle}</b><small>{text.energyNoteBody}</small></p></div>
         </aside>
-        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} currency={REGION_CONFIG[regionForMarket(marketKey)].currency} />
+        <HomeEnergyPanel settings={settings} disabled={!canCalculate} onChange={onChange} onPrepare={onPrepare} language={language} marketKey={marketKey} currency={REGION_CONFIG[regionForMarket(marketKey)].currency} />
         <EnergyPlanningPreview settings={settings} language={language} marketKey={marketKey} solarAreaM2={facts?.solarAreaM2 ?? 0} />
       </div>
     </section>

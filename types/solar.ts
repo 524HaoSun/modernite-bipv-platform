@@ -112,6 +112,12 @@ export type EnergyProfile = {
   heatPump: boolean;
   electricHotWater: boolean;
   evCharger: boolean;
+  heatPumpUse?: "off" | "space-heating" | "hot-water" | "space-heating-hot-water";
+  airConditionerUse?: "off" | "cooling" | "heating" | "heating-cooling";
+  electricUnderfloorHeating?: boolean;
+  electricRadiators?: boolean;
+  electricWaterHeating?: boolean;
+  evAnnualDistanceKm?: number;
   importPence: number;
   exportPence: number;
   offPeakPence: number;

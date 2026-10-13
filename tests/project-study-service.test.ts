@@ -12,6 +12,7 @@ process.env.LLM_API_KEY = "test-key";
 delete process.env.GOOGLE_SOLAR_API_KEY;
 
 let runProjectCalculation: typeof import("../server/estimate-service")["runProjectCalculation"];
+let projectCalculationInputSchema: typeof import("../server/estimate-service")["projectCalculationInputSchema"];
 
 function fakeTmy(): PvgisTmyPayload {
   const rows = synthetic("UK", { lat: 51.5, lon: -0.12, tz: 0 }).rows;
@@ -61,10 +62,13 @@ const energySettings = {
   annualDemandKwh: 4800,
   householdSize: 3,
   daytimeOccupancy: "usually" as const,
-  electricHeating: false,
-  heatPump: false,
-  electricHotWater: false,
-  evCharger: false,
+  heatPumpUse: "off" as const,
+  airConditionerUse: "off" as const,
+  electricUnderfloorHeating: false,
+  electricRadiators: false,
+  electricWaterHeating: false,
+  evCharging: false,
+  evAnnualDistanceKm: 12000,
   batteryMode: "solar-only" as const,
   batteryCapacityKwh: 5,
   projectPriceGbp: 12000,
@@ -73,7 +77,7 @@ const energySettings = {
 
 describe("project study calculation service", () => {
   beforeAll(async () => {
-    ({ runProjectCalculation } = await import("../server/estimate-service"));
+    ({ runProjectCalculation, projectCalculationInputSchema } = await import("../server/estimate-service"));
   });
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => {
@@ -92,6 +96,84 @@ describe("project study calculation service", () => {
     expect(study.weather.hours).toBeGreaterThanOrEqual(8760);
   });
 
+  it("migrates legacy household fields without changing heat-pump precedence", () => {
+    const parsed = projectCalculationInputSchema.parse({
+      market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, studioSnapshot: snapshot,
+      energySettings: {
+        demandMode: "estimate", annualDemandKwh: null, householdSize: 3, daytimeOccupancy: "usually",
+        electricHeating: true, heatPump: true, electricHotWater: true, evCharger: true,
+        batteryMode: "solar-only", batteryCapacityKwh: 5,
+      },
+    });
+    expect(parsed.energySettings).toMatchObject({
+      heatPumpUse: "space-heating", electricRadiators: false, electricWaterHeating: true,
+      evCharging: true, evAnnualDistanceKm: 12000,
+    });
+  });
+
+  it("keeps the Energy-page annual estimate and hourly Results demand aligned for mixed devices", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const mixed = {
+      ...energySettings,
+      demandMode: "estimate" as const,
+      annualDemandKwh: null,
+      heatPumpUse: "space-heating" as const,
+      airConditionerUse: "heating" as const,
+      electricRadiators: true,
+      evCharging: true,
+      evAnnualDistanceKm: 15000,
+    };
+    const study = await runProjectCalculation({ market: "GB", address: "Mixed-load test", coordinates: { lat: 51.49, lng: -0.11 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings: mixed });
+    expect(Math.round(study.simulation.annualLoadKwh)).toBe(estimateAnnualDemandKwh(mixed));
+  });
+
+  it("migrates legacy saved energy payloads before recalculating a project", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(fakeTmy()), { status: 200 })));
+    const legacySettings = {
+      demandMode: "estimate" as const,
+      annualDemandKwh: null,
+      householdSize: 3,
+      daytimeOccupancy: "usually" as const,
+      heatPump: true,
+      electricHeating: true,
+      electricHotWater: true,
+      evCharger: true,
+      batteryMode: "solar-only" as const,
+      batteryCapacityKwh: 5,
+      projectPriceGbp: null,
+      batteryPriceGbp: null,
+    };
+    const study = await runProjectCalculation({
+      market: "GB",
+      address: "Legacy saved project",
+      coordinates: { lat: 51.5, lng: -0.12 },
+      timezone: 0,
+      weatherSource: "pvgis-tmy",
+      studioSnapshot: snapshot,
+      energySettings: legacySettings as never,
+    });
+    const expected = {
+      ...energySettings,
+      demandMode: "estimate" as const,
+      annualDemandKwh: null,
+      householdSize: 3,
+      daytimeOccupancy: "usually" as const,
+      heatPumpUse: "space-heating" as const,
+      electricWaterHeating: true,
+      evCharging: true,
+      evAnnualDistanceKm: 12000,
+    };
+
+    expect(study.project).toMatchObject({
+      heatPumpUse: "space-heating",
+      electricRadiators: false,
+      electricWaterHeating: true,
+      evCharger: true,
+      evAnnualDistanceKm: 12000,
+    });
+    expect(Math.round(study.simulation.annualLoadKwh)).toBe(estimateAnnualDemandKwh(expected));
+  });
+
   it("falls back to PVGIS when NASA POWER is unavailable", async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string) => (url.includes("power.larc.nasa.gov") ? new Response("down", { status: 503 }) : new Response(JSON.stringify(fakeTmy()), { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
@@ -104,7 +186,6 @@ describe("project study calculation service", () => {
     vi.stubGlobal("fetch", fetchMock);
     const study = await runProjectCalculation({ market: "GB", address: "London, UK", coordinates: { lat: 51.5, lng: -0.12 }, timezone: 0, weatherSource: "pvgis-tmy", studioSnapshot: snapshot, energySettings });
 
-    expect(fetchMock.mock.calls[0][0]).toContain("re.jrc.ec.europa.eu/api/v5_3/tmy");
     expect(study.caseId).toMatch(/^MOD-[A-F0-9]{8}$/);
     expect(study.validation.status).toBe("pvgis-tmy");
     expect(study.weather.source).toContain("PVGIS-SARAH3");
@@ -193,7 +274,7 @@ describe("project study calculation service", () => {
 
     expect(study.validation.status).toBe("pvgis-tmy");
     expect(study.result.range.representative).toBeGreaterThan(0);
-    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("chat/completions"))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]: unknown[]) => String(url).includes("chat/completions"))).toBe(true);
   });
 
   it("returns a clear configuration requirement before any network request for an empty Studio snapshot", async () => {

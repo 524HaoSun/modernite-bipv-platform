@@ -43,4 +43,20 @@ describe("customer battery dispatch model", () => {
     expect(result.totals.grid).toBeCloseTo(sum("grid"), 6);
     expect(result.totals.batteryLoss).toBeCloseTo(sum("batteryLoss"), 6);
   });
+
+  it("calibrates annual demand without breaking EV power or heat-pump COP constraints", () => {
+    const building: Building = { width: 9, depth: 8, floors: 2, usage: "residential" };
+    const surfaces: Surface[] = [{ id: "roof_tiles:south", profile: "windsor_black", area: 32, tilt: 35, az: 180, role: "none", linked: true, u: 0, g: 0 }];
+    const location = { lat: 51.5, lon: -0.12, tz: 0 };
+    const result = simulate({
+      ...defaults(building),
+      heatMode: "pump",
+      annualLoadTargetKwh: 6500,
+      devices: { ev: { enabled: true, distance: 12000, chargerKW: 7.4 } },
+    }, surfaces, synthetic("UK", location), location);
+
+    expect(result.totals.load).toBeCloseTo(6500, 6);
+    expect(Math.max(...result.hourly.map((row) => row.ev))).toBeLessThanOrEqual(7.4);
+    expect(result.totals.heat / result.totals.heatPump).toBeCloseTo(3, 6);
+  });
 });

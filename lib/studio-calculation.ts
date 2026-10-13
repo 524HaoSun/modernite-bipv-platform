@@ -29,6 +29,9 @@ export type StudioCalculationSnapshot = {
   surfaces: StudioSurfaceSnapshot[];
 };
 
+export type HeatPumpUse = "off" | "space-heating" | "hot-water" | "space-heating-hot-water";
+export type AirConditionerUse = "off" | "cooling" | "heating" | "heating-cooling";
+
 /**
  * Inputs collected after a user has completed the customer-owned Design Studio.
  * They affect demand, financial scenarios and the planning uncertainty band, but
@@ -39,16 +42,90 @@ export type HomeEnergySettings = {
   annualDemandKwh?: number | null;
   householdSize: number;
   daytimeOccupancy: "usually" | "sometimes" | "rarely";
-  electricHeating: boolean;
-  heatPump: boolean;
-  electricHotWater: boolean;
-  evCharger: boolean;
+  heatPumpUse: HeatPumpUse;
+  airConditionerUse: AirConditionerUse;
+  electricUnderfloorHeating: boolean;
+  electricRadiators: boolean;
+  electricWaterHeating: boolean;
+  evCharging: boolean;
+  evAnnualDistanceKm: number;
+  /** Legacy fields are read during saved-project migration only. */
+  electricHeating?: boolean;
+  heatPump?: boolean;
+  electricHotWater?: boolean;
+  evCharger?: boolean;
   batteryMode: "solar-only" | "solar-battery";
   batteryCapacityKwh: number;
   batteryCapacitySource?: "auto" | "user";
   projectPriceGbp?: number | null;
   batteryPriceGbp?: number | null;
 };
+
+export const DEFAULT_HOME_ENERGY_SETTINGS: HomeEnergySettings = {
+  demandMode: "estimate",
+  annualDemandKwh: null,
+  householdSize: 3,
+  daytimeOccupancy: "usually",
+  heatPumpUse: "space-heating",
+  airConditionerUse: "off",
+  electricUnderfloorHeating: false,
+  electricRadiators: false,
+  electricWaterHeating: false,
+  evCharging: true,
+  evAnnualDistanceKm: 12000,
+  batteryMode: "solar-battery",
+  batteryCapacityKwh: 7.5,
+  batteryCapacitySource: "auto",
+  projectPriceGbp: null,
+  batteryPriceGbp: null,
+};
+
+function withoutLegacyPriceDefaults(settings: Partial<HomeEnergySettings> | undefined): Partial<HomeEnergySettings> {
+  if (!settings || settings.projectPriceGbp !== 16000 || settings.batteryPriceGbp !== 5800) return settings ?? {};
+  return { ...settings, projectPriceGbp: null, batteryPriceGbp: null };
+}
+
+/** Migrates legacy saved/API payloads onto the current detailed household-energy model. */
+export function normalizeHomeEnergySettings(settings?: Partial<HomeEnergySettings>): HomeEnergySettings {
+  const source = withoutLegacyPriceDefaults(settings);
+  const heatPumpUse = source.heatPumpUse
+    ?? (source.heatPump === undefined ? DEFAULT_HOME_ENERGY_SETTINGS.heatPumpUse : source.heatPump ? "space-heating" : "off");
+  const merged = {
+    ...DEFAULT_HOME_ENERGY_SETTINGS,
+    ...source,
+    heatPumpUse,
+    airConditionerUse: source.airConditionerUse ?? "off",
+    electricUnderfloorHeating: source.electricUnderfloorHeating ?? false,
+    electricRadiators: source.electricRadiators ?? (source.heatPump ? false : source.electricHeating ?? false),
+    electricWaterHeating: source.electricWaterHeating ?? source.electricHotWater ?? false,
+    evCharging: source.evCharging ?? source.evCharger ?? DEFAULT_HOME_ENERGY_SETTINGS.evCharging,
+    evAnnualDistanceKm: Math.max(0, source.evAnnualDistanceKm ?? 12000),
+  };
+  const {
+    electricHeating: _electricHeating,
+    heatPump: _heatPump,
+    electricHotWater: _electricHotWater,
+    evCharger: _evCharger,
+    ...current
+  } = merged;
+  return { ...current, batteryCapacitySource: current.batteryCapacitySource ?? "auto" };
+}
+
+export function heatPumpProvidesSpaceHeating(settings: Pick<HomeEnergySettings, "heatPumpUse">): boolean {
+  return settings.heatPumpUse === "space-heating" || settings.heatPumpUse === "space-heating-hot-water";
+}
+
+export function heatPumpProvidesHotWater(settings: Pick<HomeEnergySettings, "heatPumpUse">): boolean {
+  return settings.heatPumpUse === "hot-water" || settings.heatPumpUse === "space-heating-hot-water";
+}
+
+export function airConditionerProvidesHeating(settings: Pick<HomeEnergySettings, "airConditionerUse">): boolean {
+  return settings.airConditionerUse === "heating" || settings.airConditionerUse === "heating-cooling";
+}
+
+export function airConditionerProvidesCooling(settings: Pick<HomeEnergySettings, "airConditionerUse">): boolean {
+  return settings.airConditionerUse === "cooling" || settings.airConditionerUse === "heating-cooling";
+}
 
 /** Indicative installed BIPV price per m² of active product and battery price per usable kWh, in local currency. */
 export const PLANNING_COST_RATES: Record<Region, { perM2: number; batteryPerKwh: number }> = {
@@ -102,16 +179,34 @@ export function planningCosts(region: Region, solarAreaM2: number, settings?: Pi
 }
 
 /** Household electricity estimate used when no bill is entered; the hourly model is calibrated to it. */
-export function estimateAnnualDemandKwh(settings: Pick<HomeEnergySettings, "householdSize" | "daytimeOccupancy" | "electricHeating" | "heatPump" | "electricHotWater" | "evCharger">): number {
+export function estimateAnnualDemandKwh(settings: HomeEnergySettings): number {
+  const heatPumpHeating = heatPumpProvidesSpaceHeating(settings);
+  const airConditionerHeating = airConditionerProvidesHeating(settings);
+  const efficientSelections = Number(heatPumpHeating) + Number(airConditionerHeating);
+  const efficientHeatingCop = (Number(heatPumpHeating) * 3 + Number(airConditionerHeating) * 3.5) / Math.max(1, efficientSelections);
+  const efficientHeatingKwh = efficientSelections ? 7000 / efficientHeatingCop : 0;
+  const efficientHeatingSystems = Number(efficientSelections > 0);
+  const directHeatingSystems = Number(settings.electricUnderfloorHeating) + Number(settings.electricRadiators);
+  const heatingSystems = efficientHeatingSystems + directHeatingSystems;
+  const heatingKwh = heatingSystems > 0
+    ? (efficientHeatingKwh + 7000 * directHeatingSystems) / heatingSystems
+    : 0;
+  const hotWaterSystems = Number(heatPumpProvidesHotWater(settings)) + Number(settings.electricWaterHeating);
+  const hotWaterKwh = hotWaterSystems > 0
+    ? 1300 * ((Number(heatPumpProvidesHotWater(settings)) / 3) + Number(settings.electricWaterHeating)) / hotWaterSystems
+    : 0;
+  const coolingKwh = airConditionerProvidesCooling(settings) ? 900 : 0;
+  const evKwh = settings.evCharging ? Math.max(0, settings.evAnnualDistanceKm) * 0.18 / 0.9 : 0;
   return Math.max(
     1600,
     Math.round(
       1450
       + settings.householdSize * 900
       + (settings.daytimeOccupancy === "usually" ? 500 : settings.daytimeOccupancy === "rarely" ? -250 : 0)
-      + (settings.electricHeating ? 7000 : settings.heatPump ? 3800 : 0)
-      + (settings.electricHotWater ? 1300 : 0)
-      + (settings.evCharger ? 2100 : 0),
+      + heatingKwh
+      + hotWaterKwh
+      + coolingKwh
+      + evKwh,
     ),
   );
 }
@@ -226,10 +321,16 @@ export function buildPlanningInput(input: {
       demandSource: settings?.demandMode === "bill" ? "bill" : settings ? "llm" : "deterministic",
       householdSize,
       daytimeOccupancy: settings?.daytimeOccupancy ?? "sometimes",
-      electricHeating: settings?.electricHeating ?? false,
-      heatPump: settings?.heatPump ?? false,
-      electricHotWater: settings?.electricHotWater ?? false,
-      evCharger: settings?.evCharger ?? false,
+      electricHeating: settings ? settings.electricUnderfloorHeating || settings.electricRadiators : false,
+      heatPump: settings ? heatPumpProvidesSpaceHeating(settings) || airConditionerProvidesHeating(settings) : false,
+      electricHotWater: settings ? heatPumpProvidesHotWater(settings) || settings.electricWaterHeating : false,
+      evCharger: settings?.evCharging ?? false,
+      heatPumpUse: settings?.heatPumpUse,
+      airConditionerUse: settings?.airConditionerUse,
+      electricUnderfloorHeating: settings?.electricUnderfloorHeating ?? false,
+      electricRadiators: settings?.electricRadiators ?? false,
+      electricWaterHeating: settings?.electricWaterHeating ?? false,
+      evAnnualDistanceKm: settings?.evAnnualDistanceKm,
       importPence: regional.tariffDefaults.import,
       exportPence: regional.tariffDefaults.export,
       offPeakPence: regional.tariffDefaults.offPeak,

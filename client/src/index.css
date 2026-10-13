@@ -333,6 +333,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .home-energy-form { display: grid; gap: 0; border-top: 1px solid #dbe7d9; }.energy-intro { margin: 0; padding: 16px 20px 18px; color: #627969; font-size: 11px; line-height: 1.55; }.energy-field-group { padding: 17px 20px 19px; border-top: 1px solid #e2ebe0; }.energy-field-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; margin-bottom: 11px; }.energy-field-heading span { color: #365a47; font-size: 12px; font-weight: 780; }.energy-field-heading small { color: #809384; font-size: 9px; }.energy-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }.energy-choice-grid button { display: grid; gap: 3px; min-height: 65px; padding: 11px; border: 1px solid #d2e1d1; border-radius: 9px; color: #4e6b58; background: #f8fbf7; text-align: left; transition: transform .16s var(--gateway-ease), border-color .16s var(--gateway-ease), background .16s var(--gateway-ease); }.energy-choice-grid button:hover { border-color: #9ebda0; transform: translateY(-1px); }.energy-choice-grid button.is-selected { border-color: #416f56; color: #214d3d; background: #e9f4e9; box-shadow: inset 0 0 0 1px rgba(65,111,86,.14); }.energy-choice-grid b { font-size: 11px; }.energy-choice-grid small { color: #78917d; font-size: 9px; line-height: 1.4; }.energy-choice-grid--two button { position: relative; padding-left: 13px; }.energy-choice-grid--two button > svg { position: absolute; top: 11px; right: 11px; color: #65926e; }
 .energy-number { display: grid; grid-template-columns: 1fr minmax(76px, 112px) auto; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; border: 1px solid #d8e5d7; border-radius: 8px; color: #617a68; background: #fff; font-size: 10px; }.energy-number > svg { grid-row: 1; color: #679070; }.energy-number:has(> svg) { grid-template-columns: auto 1fr minmax(64px, 75px); }.energy-number input { width: 100%; min-width: 0; border: 0; outline: 0; color: #264f40; background: transparent; font-size: 12px; font-weight: 700; text-align: right; }.energy-number em { color: #7a9180; font-size: 8px; font-style: normal; }.energy-household { display: grid; grid-template-columns: 1fr; }.occupancy-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 11px; }.occupancy-choice > span { width: 100%; margin-bottom: 2px; color: #597260; font-size: 10px; }.occupancy-choice button { min-height: 28px; padding: 0 8px; border: 1px solid #d1dfd0; border-radius: 999px; color: #607967; background: #f8fbf7; font-size: 9px; text-transform: capitalize; }.occupancy-choice button.is-selected { border-color: #4f7c5a; color: white; background: #416f56; }
 .energy-service-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }.energy-service-list label { display: flex; align-items: center; gap: 7px; min-height: 35px; padding: 0 8px; border: 1px solid #d9e5d8; border-radius: 7px; color: #5e7665; background: #fbfdfa; font-size: 9px; cursor: pointer; }.energy-service-list input { position: absolute; opacity: 0; }.energy-service-list span { min-width: 0; flex: 1; }.energy-service-list svg { display: none; color: #3c7954; }.energy-service-list label:has(input:checked) { border-color: #8bb493; color: #315d47; background: #edf7ec; }.energy-service-list label:has(input:checked) svg { display: block; }.energy-number-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.cash-position-options { padding: 0 20px 18px; color: #607666; font-size: 10px; }.cash-position-options summary { cursor: pointer; color: #3e6550; font-weight: 750; }.cash-position-options .energy-number { margin-top: 10px; }.cash-position-options > small { display: block; margin-top: 8px; color: #829184; font-size: 9px; line-height: 1.5; }.energy-prepare-study { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 51px; margin: 0 20px 20px; border: 1px solid #234e40; border-radius: 8px; color: white; background: #234e40; box-shadow: 0 9px 18px rgba(35,78,64,.16); font-size: 11px; font-weight: 780; }.energy-prepare-study:hover { background: #2e624f; }.energy-prepare-study:disabled { border-color: #a0b7a1; background: #9ab09b; box-shadow: none; cursor: wait; }
+.energy-use-list { display: grid; gap: 8px; }
+.energy-use-row { border: 1px solid #d9e5d8; border-radius: 8px; color: #526e5d; background: rgba(251,253,250,.92); transition: border-color .16s var(--gateway-ease), background .16s var(--gateway-ease); }
+.energy-use-row > label, .energy-use-row.is-included { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 11px; font-size: 10px; font-weight: 680; }
+.energy-use-row > label { cursor: pointer; }
+.energy-use-row > label > input { position: absolute; opacity: 0; }
+.energy-use-row > label > span, .energy-use-row.is-included > span { display: inline-flex; min-width: 0; flex: 1; align-items: center; gap: 8px; }
+.energy-use-row > label > svg { display: none; flex: 0 0 auto; color: #267755; }
+.energy-use-row.is-selected { border-color: #85ad8c; color: #245440; background: #eff7ee; }
+.energy-use-row:has(input:focus-visible) { outline: 3px solid rgba(14,100,74,.28); outline-offset: 2px; }
+.energy-use-row.is-selected > label > svg { display: block; }
+.energy-use-row.is-included { justify-content: space-between; border-color: #c9ddca; color: #315d47; background: #f4f9f3; }
+.energy-use-row.is-included small { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; color: #64806d; font-size: 8px; font-weight: 760; text-transform: uppercase; }
+.energy-use-options { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px; padding: 0 8px 9px; }
+.energy-use-options button { min-height: 34px; padding: 6px 7px; border: 1px solid #d6e3d5; border-radius: 6px; color: #657d6b; background: rgba(255,255,255,.74); font-size: 8px; line-height: 1.25; }
+.energy-use-options button:hover { border-color: #9ab79c; }
+.energy-use-options button.is-selected { border-color: #3e7256; color: #214e3b; background: #e2f0e3; box-shadow: inset 0 0 0 1px rgba(62,114,86,.1); }
+.energy-distance { display: grid !important; grid-template-columns: minmax(0,1fr) 74px auto; gap: 7px !important; min-height: auto !important; margin: 0 8px 9px; padding: 8px !important; border: 1px solid rgba(123,161,128,.28); border-radius: 6px; background: rgba(255,255,255,.68); cursor: default !important; }
+.energy-distance span { font-size: 8px; font-weight: 650; }
+.energy-distance input { position: static !important; width: 100%; min-width: 0; height: 28px; padding: 0 6px; border: 1px solid #cadbca; border-radius: 5px; color: #214e3b; background: white; opacity: 1 !important; font: inherit; text-align: right; }
+.energy-distance em { color: #78917d; font-size: 8px; font-style: normal; white-space: nowrap; }
 .design-assistant { position: fixed; z-index: 32; right: 20px; bottom: 18px; width: min(342px, calc(100vw - 40px)); overflow: hidden; border: 1px solid #bcd4bd; border-radius: 14px; background: rgba(249, 253, 248, .96); box-shadow: 0 17px 36px rgba(31, 66, 47, .18); backdrop-filter: blur(16px); }.design-assistant-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 0 13px; color: #244f40; cursor: pointer; font-size: 11px; font-weight: 750; }.design-assistant-toggle > span { display: inline-flex; align-items: center; gap: 8px; }.design-assistant-toggle input { position: absolute; opacity: 0; }.design-assistant-toggle > svg { transition: transform .2s var(--gateway-ease); }.design-assistant.is-open .design-assistant-toggle > svg { transform: rotate(180deg); }.design-assistant-panel { display: grid; gap: 10px; max-height: min(50dvh, 390px); padding: 0 13px 13px; overflow-y: auto; border-top: 1px solid #dce8da; }.design-assistant-panel > p { margin: 12px 0 0; color: #69816e; font-size: 10px; line-height: 1.55; }
 
 /* Result comparison visuals */
@@ -340,6 +360,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
 @media (max-width: 980px) { .studio-aftercare { grid-template-columns: 1fr; gap: 16px; }.studio-aftercare-copy { max-width: 680px; padding-top: 0; }.studio-aftercare-copy h2 { max-width: none; }.site-map-reference { max-width: 220px; } }
 @media (max-width: 760px) { .customer-studio-stage { flex-basis: calc(100dvh - 60px); min-height: calc(100dvh - 60px); }.studio-aftercare { padding: 38px 17px 64px; }.studio-aftercare-copy h2 { font-size: 35px; }.energy-choice-grid, .energy-service-list, .energy-number-pair, .scenario-options { grid-template-columns: 1fr; }.home-energy-toggle { min-height: 64px; padding: 0 15px; }.home-energy-form .energy-field-group, .energy-intro { padding-right: 15px; padding-left: 15px; }.cash-position-options { padding-right: 15px; padding-left: 15px; }.energy-prepare-study { margin-right: 15px; margin-left: 15px; }.design-assistant { right: 12px; bottom: 12px; width: min(360px, calc(100vw - 24px)); }.site-map-reference { top: 112px; right: 12px; left: auto; max-width: 196px; }.site-map-reference p { display: none; }.site-draw-cue { top: auto; right: 12px; bottom: 108px; }.site-area-readout p { display: none; }.energy-demand-card { align-items: start; flex-direction: column; }.monthly-profile-card { overflow: hidden; }.monthly-profile-chart { min-width: 560px; }.orientation-legend { gap: 7px 10px; }.cash-position-stat { display: none; } }
+@media (max-width: 760px) { .gateway-shell--energy .energy-use-options { grid-template-columns: 1fr; }.gateway-shell--energy .energy-use-options button { min-height: 44px; font-size: 9px; text-align: left; }.gateway-shell--energy .energy-distance { grid-template-columns: 1fr 86px; }.gateway-shell--energy .energy-distance em { grid-column: 2; } }
 
 /* SolarLLM-inspired host journey: configure the supplied Studio, personalise energy, then explain results. */
 .energy-page { min-height: calc(100dvh - 76px); padding: clamp(28px, 5.2vh, 60px) clamp(24px, 8vw, 132px) 84px; overflow-y: auto; background: radial-gradient(circle at 88% 8%, rgba(209,228,211,.72), transparent 30%), radial-gradient(circle at 6% 76%, rgba(218,232,225,.68), transparent 33%), var(--v28-paper); }
@@ -5694,6 +5715,7 @@ html:lang(ja) .eyebrow {
     radial-gradient(circle at 100% 0%, rgba(247, 198, 70, .19), transparent 30%),
     linear-gradient(180deg, rgba(255,255,255,.9), rgba(244,250,244,.86));
 }
+
 .gateway-shell .energy-preview-meter {
   position: relative;
   overflow: hidden;
@@ -12003,5 +12025,82 @@ html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite
 @media (max-width: 760px) {
   .gateway-header .journey-rail button {
     font-size: 11px !important;
+  }
+}
+
+/* Energy page mobile containment.
+   Scoped to the Energy route so Design Studio's customer-approved layout stays untouched. */
+@media (max-width: 760px) {
+  .gateway-shell--energy,
+  .gateway-shell--energy .gateway-page,
+  .gateway-shell--energy .energy-page,
+  .gateway-shell--energy .energy-page-intro,
+  .gateway-shell--energy .energy-page-workbench,
+  .gateway-shell--energy .home-energy-panel,
+  .gateway-shell--energy .home-energy-form,
+  .gateway-shell--energy .energy-field-group,
+  .gateway-shell--energy .energy-choice-grid,
+  .gateway-shell--energy .energy-service-list,
+  .gateway-shell--energy .energy-number,
+  .gateway-shell--energy .energy-number-pair,
+  .gateway-shell--energy .energy-use-options,
+  .gateway-shell--energy .energy-distance {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .gateway-shell--energy {
+    overflow-x: hidden !important;
+  }
+
+  .gateway-shell--energy .energy-page {
+    padding-inline: 16px !important;
+    overflow-x: hidden !important;
+  }
+
+  .gateway-shell--energy .energy-page-intro,
+  .gateway-shell--energy .energy-page-workbench,
+  .gateway-shell--energy .home-energy-form,
+  .gateway-shell--energy .energy-choice-grid,
+  .gateway-shell--energy .energy-service-list,
+  .gateway-shell--energy .energy-number-pair,
+  .gateway-shell--energy .energy-use-options {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .gateway-shell--energy .energy-principles {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .gateway-shell--energy .energy-principles > span {
+    min-height: 0 !important;
+  }
+
+  .gateway-shell--energy .energy-field-group {
+    grid-column: 1 !important;
+  }
+
+  .gateway-shell--energy .energy-number {
+    grid-template-columns: minmax(0, 1fr) minmax(70px, 88px) auto !important;
+  }
+
+  .gateway-shell--energy .energy-number:has(> svg) {
+    grid-template-columns: auto minmax(0, 1fr) minmax(64px, 82px) !important;
+  }
+
+  .gateway-shell--energy .energy-distance {
+    grid-template-columns: minmax(0, 1fr) minmax(78px, 90px) !important;
+  }
+
+  .gateway-shell--energy .energy-page-intro h1,
+  .gateway-shell--energy .energy-page-intro p,
+  .gateway-shell--energy .energy-choice-grid b,
+  .gateway-shell--energy .energy-choice-grid small,
+  .gateway-shell--energy .energy-service-list span,
+  .gateway-shell--energy .energy-field-heading span,
+  .gateway-shell--energy .energy-field-heading small {
+    overflow-wrap: anywhere !important;
   }
 }

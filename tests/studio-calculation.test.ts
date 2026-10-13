@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPlanningInput, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts } from "../lib/studio-calculation";
+import { buildPlanningInput, estimateAnnualDemandKwh, mapStudioSnapshotToSurfaces, planningCosts, type HomeEnergySettings } from "../lib/studio-calculation";
 
 describe("Studio snapshot calculation mapping", () => {
   const snapshot = {
@@ -46,9 +46,46 @@ describe("Studio snapshot calculation mapping", () => {
   });
 
   it("estimates household demand from people, daytime occupancy and electric loads", () => {
-    const base = { householdSize: 3, daytimeOccupancy: "sometimes" as const, electricHeating: false, heatPump: false, electricHotWater: false, evCharger: false };
+    const base: HomeEnergySettings = {
+      demandMode: "estimate",
+      annualDemandKwh: null,
+      householdSize: 3,
+      daytimeOccupancy: "sometimes",
+      heatPumpUse: "off",
+      airConditionerUse: "off",
+      electricUnderfloorHeating: false,
+      electricRadiators: false,
+      electricWaterHeating: false,
+      evCharging: false,
+      evAnnualDistanceKm: 12000,
+      batteryMode: "solar-only",
+      batteryCapacityKwh: 7.5,
+    };
     expect(estimateAnnualDemandKwh(base)).toBe(4150);
     expect(estimateAnnualDemandKwh({ ...base, householdSize: 5, daytimeOccupancy: "usually" })).toBe(6450);
-    expect(estimateAnnualDemandKwh({ ...base, heatPump: true, evCharger: true })).toBe(10050);
+    expect(estimateAnnualDemandKwh({ ...base, heatPumpUse: "space-heating", evCharging: true })).toBe(8883);
+  });
+
+  it("models detailed heating, hot-water, cooling and EV choices without duplicating thermal loads", () => {
+    const base: HomeEnergySettings = {
+      demandMode: "estimate", annualDemandKwh: null, householdSize: 3, daytimeOccupancy: "sometimes",
+      heatPumpUse: "off", airConditionerUse: "off", electricUnderfloorHeating: false,
+      electricRadiators: false, electricWaterHeating: false, evCharging: false, evAnnualDistanceKm: 12000,
+      batteryMode: "solar-only", batteryCapacityKwh: 7.5,
+    };
+    const heatPump = estimateAnnualDemandKwh({ ...base, heatPumpUse: "space-heating" });
+    const directHeat = estimateAnnualDemandKwh({ ...base, electricRadiators: true });
+    const mixedHeat = estimateAnnualDemandKwh({ ...base, heatPumpUse: "space-heating", electricRadiators: true });
+    expect(heatPump).toBe(6483);
+    expect(directHeat).toBe(11150);
+    expect(mixedHeat).toBe(8817);
+    expect(mixedHeat).toBeLessThan(heatPump + directHeat - estimateAnnualDemandKwh(base));
+    expect(estimateAnnualDemandKwh({ ...base, heatPumpUse: "hot-water" })).toBe(4583);
+    expect(estimateAnnualDemandKwh({ ...base, electricWaterHeating: true })).toBe(5450);
+    expect(estimateAnnualDemandKwh({ ...base, airConditionerUse: "cooling" })).toBe(5050);
+    expect(estimateAnnualDemandKwh({ ...base, airConditionerUse: "heating" })).toBe(6150);
+    expect(estimateAnnualDemandKwh({ ...base, heatPumpUse: "space-heating", airConditionerUse: "heating" })).toBe(6304);
+    expect(estimateAnnualDemandKwh({ ...base, evCharging: true, evAnnualDistanceKm: 10000 })).toBe(6150);
+    expect(estimateAnnualDemandKwh({ ...base, evCharging: true, evAnnualDistanceKm: 20000 })).toBe(8150);
   });
 });

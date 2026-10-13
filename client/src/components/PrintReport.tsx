@@ -183,8 +183,8 @@ function EnergyBalance({ study, scenario, f }: { study: ProjectCalculation; scen
   const { t } = f;
   const kpis = deriveResultsKpis(study, scenario.id);
   const parts = [
-    { key: "home", label: t.usedHome, value: kpis.directSolarKwh, color: "#0b6047", detail: t.usedHomeDetail },
-    { key: "battery", label: t.batteryShift, value: kpis.batteryToLoadKwh, color: "#e3ac2f", detail: scenario.id === "solar-battery" ? t.batteryShiftOn : t.batteryShiftOff },
+    { key: "home", label: t.usedDirectly, value: kpis.directSolarKwh, color: "#0b6047", detail: t.usedDirectlyDetail },
+    { key: "battery", label: t.storedLater, value: kpis.batteryToLoadKwh, color: "#e3ac2f", detail: scenario.id === "solar-battery" ? t.storedLaterDetail : t.batteryShiftOff },
     { key: "export", label: t.exported, value: kpis.exportKwh, color: "#9cc884", detail: t.exportedDetail },
   ];
   const total = Math.max(1, parts.reduce((sum, part) => sum + part.value, 0));

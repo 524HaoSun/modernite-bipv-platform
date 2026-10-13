@@ -361,8 +361,8 @@ function EnergyFlowPanel({ study, scenario, f }: { study: ProjectCalculation; sc
   const exported = kpis.exportKwh;
   const total = Math.max(1, directUse + batteryUse + exported);
   const flows = [
-    { key: "home", label: t.usedHome, value: directUse, color: "#0b6047", detail: t.usedHomeDetail },
-    { key: "battery", label: t.batteryShift, value: batteryUse, color: "#efba45", detail: scenario.id === "solar-battery" ? t.batteryShiftOn : t.batteryShiftOff },
+    { key: "home", label: t.usedDirectly, value: directUse, color: "#0b6047", detail: t.usedDirectlyDetail },
+    { key: "battery", label: t.storedLater, value: batteryUse, color: "#efba45", detail: scenario.id === "solar-battery" ? t.storedLaterDetail : t.batteryShiftOff },
     { key: "export", label: t.exported, value: exported, color: "#8fbf79", detail: t.exportedDetail },
   ];
   return <section className="result-section energy-flow-panel">
