@@ -15,7 +15,7 @@ export function directUseShare(profile: EnergyProfile): number {
   return Math.max(0.25, Math.min(0.72, base + uplift));
 }
 
-type SimulatedSolarEnergy = { directSolarKwh: number; storedSolarKwh?: number; exportKwh: number; offPeakChargeKwh?: number; offPeakDischargeKwh?: number };
+type SimulatedSolarEnergy = { directSolarKwh: number; storedSolarKwh?: number; exportKwh: number; offPeakChargeKwh?: number; offPeakDischargeKwh?: number; directSolarValue?: number; storedSolarValue?: number };
 type SimulatedBatteryEnergy = { offPeakChargeKwh: number; offPeakDischargeKwh: number };
 
 type ScenarioInput = {
@@ -35,6 +35,12 @@ type ScenarioInput = {
     solarOnly?: SimulatedSolarEnergy;
     solarBattery?: SimulatedSolarEnergy;
     batteryOnly?: SimulatedBatteryEnergy;
+  };
+  /** Year-specific balances from continuous hourly dispatch, including PV degradation and battery limits. */
+  simulatedEnergyByYear?: {
+    solarOnly?: SimulatedSolarEnergy[];
+    solarBattery?: SimulatedSolarEnergy[];
+    batteryOnly?: SimulatedBatteryEnergy[];
   };
 };
 
@@ -65,19 +71,21 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
     const generation = hasSolar ? degradedGeneration(annualGenerationKwh, year) : 0;
     const generationScale = annualGenerationKwh > 0 ? generation / annualGenerationKwh : 0;
     const energyShares = hasBattery ? input.simulatedEnergyShares?.solarBattery : input.simulatedEnergyShares?.solarOnly;
-    const energyKwh = id === "solar-only" ? input.simulatedEnergyKwh?.solarOnly : id === "solar-battery" ? input.simulatedEnergyKwh?.solarBattery : input.simulatedEnergyKwh?.batteryOnly;
+    const firstYearEnergyKwh = id === "solar-only" ? input.simulatedEnergyKwh?.solarOnly : id === "solar-battery" ? input.simulatedEnergyKwh?.solarBattery : input.simulatedEnergyKwh?.batteryOnly;
+    const yearlyEnergyKwh = id === "solar-only" ? input.simulatedEnergyByYear?.solarOnly?.[index] : id === "solar-battery" ? input.simulatedEnergyByYear?.solarBattery?.[index] : input.simulatedEnergyByYear?.batteryOnly?.[index];
+    const energyKwh = yearlyEnergyKwh ?? firstYearEnergyKwh;
     const solarEnergyKwh = isSolarEnergy(energyKwh) ? energyKwh : undefined;
     const effectiveDirectShare = energyShares?.self ?? (hasBattery ? input.simulatedDirectShares?.solarBattery ?? Math.min(0.9, directShare + 0.18) : directShare);
     const fallbackSelfUse = Math.min(generation * effectiveDirectShare, energy.annualDemandKwh ?? 0);
     const directSolarKwh = hasSolar && solarEnergyKwh
-      ? Math.max(0, solarEnergyKwh.directSolarKwh * generationScale)
+      ? Math.max(0, solarEnergyKwh.directSolarKwh * (yearlyEnergyKwh ? 1 : generationScale))
       : fallbackSelfUse;
     const storedSolarKwh = hasSolar && solarEnergyKwh
-      ? Math.max(0, (solarEnergyKwh.storedSolarKwh ?? 0) * generationScale)
+      ? Math.max(0, (solarEnergyKwh.storedSolarKwh ?? 0) * (yearlyEnergyKwh ? 1 : generationScale))
       : 0;
     const directUse = Math.min(directSolarKwh + storedSolarKwh, energy.annualDemandKwh ?? Number.POSITIVE_INFINITY);
     const exportKwh = hasSolar && solarEnergyKwh
-      ? Math.max(0, solarEnergyKwh.exportKwh * generationScale)
+      ? Math.max(0, solarEnergyKwh.exportKwh * (yearlyEnergyKwh ? 1 : generationScale))
       : energyShares ? Math.max(0, generation * energyShares.export) : Math.max(0, generation - directUse);
     const importRate = (energy.importPence / unitPriceDivisor) * (1 + costs.importGrowthPercent / 100) ** (year - 1);
     const peakAvoidedRate = ((energy.peakPence > 0 ? energy.peakPence : energy.importPence) / unitPriceDivisor) * (1 + costs.importGrowthPercent / 100) ** (year - 1);
@@ -87,8 +95,9 @@ function projectScenario(id: FinancialScenario["id"], input: ScenarioInput): Fin
     const offPeakChargeKwh = Math.max(0, (energyKwh && "offPeakChargeKwh" in energyKwh ? energyKwh.offPeakChargeKwh ?? 0 : 0));
     const offPeakDischargeKwh = Math.max(0, (energyKwh && "offPeakDischargeKwh" in energyKwh ? energyKwh.offPeakDischargeKwh ?? 0 : fallbackArbitrageDischarge));
     const inferredOffPeakChargeKwh = offPeakChargeKwh || (fallbackArbitrageDischarge > 0 ? fallbackArbitrageDischarge / Math.max(0.01, costs.batteryEfficiencyPercent / 100) : 0);
-    const directSolarSavings = directSolarKwh * importRate;
-    const storedSolarSavings = storedSolarKwh * importRate;
+    const importGrowth = (1 + costs.importGrowthPercent / 100) ** (year - 1);
+    const directSolarSavings = solarEnergyKwh?.directSolarValue !== undefined ? solarEnergyKwh.directSolarValue * importGrowth : directSolarKwh * importRate;
+    const storedSolarSavings = solarEnergyKwh?.storedSolarValue !== undefined ? solarEnergyKwh.storedSolarValue * importGrowth : storedSolarKwh * importRate;
     const offPeakBatterySavings = offPeakDischargeKwh * peakAvoidedRate - inferredOffPeakChargeKwh * offPeakRate;
     const billSaving = directSolarSavings + storedSolarSavings + offPeakBatterySavings;
     const exportIncome = exportKwh * exportRate;

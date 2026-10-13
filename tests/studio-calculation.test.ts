@@ -31,6 +31,19 @@ describe("Studio snapshot calculation mapping", () => {
     expect(input.surfaces).toHaveLength(2);
   });
 
+  it("maps each market to its planning time-of-use windows", () => {
+    const cases = [
+      ["UK", { offPeakStartHour: 0, offPeakHours: 7, peakStartHour: 16, peakHours: 3 }],
+      ["EU", { offPeakStartHour: 23, offPeakHours: 7, peakStartHour: 17, peakHours: 3 }],
+      ["CA", { offPeakStartHour: 23, offPeakHours: 8, peakStartHour: 16, peakHours: 5 }],
+      ["JP", { offPeakStartHour: 1, offPeakHours: 5, peakStartHour: 13, peakHours: 3 }],
+    ] as const;
+    for (const [region, expected] of cases) {
+      const input = buildPlanningInput({ region, label: region, coordinates: { lat: 51.5, lng: -0.12 }, snapshot });
+      expect(input.energy).toMatchObject(expected);
+    }
+  });
+
   it("prices the design from its product area in the market currency when no quote is entered", () => {
     const area = 26.5 + 9.2 + 4;
     expect(planningCosts("UK", area).projectPrice).toBe(12700);

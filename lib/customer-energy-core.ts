@@ -394,34 +394,73 @@ export function dispatch(rows: HourlyRow[], nominal: number, power: number, coll
 export type TariffDispatchOptions = {
   collect?: boolean;
   timezone?: number;
+  offPeakStartHour?: number;
   offPeakHours?: number;
+  peakStartHour?: number;
+  peakHours?: number;
+  standardRate?: number;
+  offPeakRate?: number;
+  peakRate?: number;
   reserveSolarCapacity?: boolean;
+  cyclic?: boolean;
+  initialSolarKwh?: number;
+  initialGridKwh?: number;
 };
 
 function localHour(timestamp: number, timezone = 0) {
-  return new Date(timestamp + timezone * 3600000).getUTCHours();
+  const hour = Math.floor(timestamp / 3600000 + timezone);
+  return ((hour % 24) + 24) % 24;
 }
 
-function futureBalance(rows: HourlyRow[], startIndex: number, timezone: number) {
-  if (startIndex >= rows.length) return { surplus: 0, deficit: 0 };
-  const startDay = Math.floor((rows[startIndex]!.t + timezone * 3600000) / 86400000);
-  let surplus = 0, deficit = 0;
-  for (let i = startIndex; i < rows.length; i++) {
-    const row = rows[i]!;
-    if (Math.floor((row.t + timezone * 3600000) / 86400000) !== startDay) break;
+function offPeakCycle(timestamp: number, timezone: number, startHour: number, duration: number) {
+  const localHours = Math.floor(timestamp / 3600000 + timezone);
+  const day = Math.floor(localHours / 24);
+  const hour = ((localHours % 24) + 24) % 24;
+  return startHour + duration > 24 && hour >= startHour ? day + 1 : day;
+}
+
+function hourInWindow(hour: number, startHour: number, duration: number) {
+  const normalizedStart = ((startHour % 24) + 24) % 24;
+  const normalizedDuration = Math.max(0, Math.min(24, duration));
+  if (normalizedDuration === 0) return false;
+  if (normalizedDuration === 24) return true;
+  return ((hour - normalizedStart + 24) % 24) < normalizedDuration;
+}
+
+function futureGridStorageNeed(rows: HourlyRow[], startIndex: number, timezone: number, offPeakStartHour: number, offPeakHours: number, peakStartHour: number, peakHours: number, eta: number) {
+  let futureSolarStored = 0, gridStoredNeeded = 0;
+  let leftCurrentOffPeakWindow = false;
+  for (let offset = 0; offset < Math.min(rows.length, 48); offset++) {
+    const row = rows[(startIndex + offset) % rows.length]!;
+    const isOffPeak = hourInWindow(localHour(row.t, timezone), offPeakStartHour, offPeakHours);
+    if (!leftCurrentOffPeakWindow && isOffPeak) continue;
+    if (!isOffPeak) leftCurrentOffPeakWindow = true;
+    else break;
     const direct = Math.min(row.pv, row.load);
-    surplus += Math.max(0, row.pv - direct);
-    deficit += Math.max(0, row.load - direct);
+    futureSolarStored += Math.max(0, row.pv - direct) * eta;
+    if (hourInWindow(localHour(row.t, timezone), peakStartHour, peakHours)) {
+      const requiredStored = Math.max(0, row.load - direct) / eta;
+      const solarStoredUsed = Math.min(futureSolarStored, requiredStored);
+      futureSolarStored -= solarStoredUsed;
+      gridStoredNeeded += requiredStored - solarStoredUsed;
+    }
   }
-  return { surplus, deficit };
+  return gridStoredNeeded;
 }
 
-export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, power: number, options: TariffDispatchOptions = {}) {
+function runTariffDispatch(rows: HourlyRow[], nominal: number, power: number, options: TariffDispatchOptions, initialSolar: number, initialGrid: number) {
   const a = SYSTEM_ASSUMPTIONS, eta = Math.sqrt(a.roundTrip), usable = nominal * a.usableFraction;
   const offPeakHours = Math.max(0, Math.min(24, Math.round(options.offPeakHours ?? 0)));
+  const offPeakStartHour = Math.max(0, Math.min(23, Math.round(options.offPeakStartHour ?? 0)));
+  const peakHours = Math.max(0, Math.min(24, Math.round(options.peakHours ?? 0)));
+  const peakStartHour = Math.max(0, Math.min(23, Math.round(options.peakStartHour ?? 16)));
   const timezone = options.timezone ?? 0;
-  let storedSolar = 0, storedGrid = 0, delivered = 0;
+  let storedSolar = Math.max(0, Math.min(usable, initialSolar));
+  let storedGrid = Math.max(0, Math.min(usable - storedSolar, initialGrid));
+  let delivered = 0;
   const out: Record<string, number>[] = [];
+  const totals = { self: 0, direct: 0, storedSolar: 0, storedGrid: 0, gridCharge: 0, solarLoss: 0, gridLoss: 0, export: 0, grid: 0, directValue: 0, storedSolarValue: 0 };
+  const futureNeedByCycle = new Map<number, number>();
   for (let index = 0; index < rows.length; index++) {
     const row = rows[index]!;
     const direct = Math.min(row.pv, row.load);
@@ -434,33 +473,44 @@ export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, pow
     powerLeft -= solarCharge;
     stored = storedSolar + storedGrid;
     const hour = localHour(row.t, timezone);
-    const isOffPeak = offPeakHours > 0 && hour < offPeakHours;
+    const isOffPeak = hourInWindow(hour, offPeakStartHour, offPeakHours);
+    const isPeak = hourInWindow(hour, peakStartHour, peakHours);
+    const avoidedRate = isPeak ? (options.peakRate ?? options.standardRate ?? 0) : isOffPeak ? (options.offPeakRate ?? options.standardRate ?? 0) : (options.standardRate ?? 0);
     let gridCharge = 0;
     if (isOffPeak && powerLeft > 0 && usable > stored) {
-      const future = options.reserveSolarCapacity === false ? { surplus: 0, deficit: usable * eta } : futureBalance(rows, index + 1, timezone);
-      const targetStored = Math.max(0, Math.min(usable, future.deficit / eta) - Math.min(usable, future.surplus * eta));
+      const cycle = offPeakCycle(row.t, timezone, offPeakStartHour, offPeakHours);
+      let targetStored = options.reserveSolarCapacity === false ? usable : futureNeedByCycle.get(cycle);
+      if (targetStored === undefined) {
+        targetStored = Math.min(usable, futureGridStorageNeed(rows, index + 1, timezone, offPeakStartHour, offPeakHours, peakStartHour, peakHours, eta));
+        futureNeedByCycle.set(cycle, targetStored);
+      }
       gridCharge = Math.max(0, Math.min(powerLeft, (Math.max(stored, targetStored) - stored) / eta, (usable - stored) / eta));
       storedGrid += gridCharge * eta;
-      powerLeft -= gridCharge;
       stored = storedSolar + storedGrid;
     }
-    const canDischarge = !isOffPeak;
-    const discharge = canDischarge ? Math.max(0, Math.min(deficit, power, stored * eta)) : 0;
-    const solarShare = stored > 0 ? storedSolar / stored : 0;
-    const gridShare = stored > 0 ? storedGrid / stored : 0;
-    const solarDischarge = Math.min(storedSolar * eta, discharge * solarShare);
-    const gridDischarge = Math.min(storedGrid * eta, discharge * gridShare);
-    const residual = Math.max(0, discharge - solarDischarge - gridDischarge);
-    const extraSolar = Math.min(storedSolar * eta - solarDischarge, residual);
-    const extraGrid = Math.min(storedGrid * eta - gridDischarge, residual - extraSolar);
-    const solarToLoad = solarDischarge + extraSolar;
-    const gridToLoad = gridDischarge + extraGrid;
+    const dischargeLimit = isOffPeak ? 0 : Math.max(0, Math.min(deficit, power));
+    const gridToLoad = isPeak ? Math.min(storedGrid * eta, dischargeLimit) : 0;
+    const solarToLoad = Math.min(storedSolar * eta, dischargeLimit - gridToLoad);
+    const discharge = solarToLoad + gridToLoad;
     storedSolar -= solarToLoad / eta;
     storedGrid -= gridToLoad / eta;
     storedSolar = Math.max(0, storedSolar);
     storedGrid = Math.max(0, storedGrid);
     stored = Math.max(0, Math.min(usable, storedSolar + storedGrid));
     delivered += discharge;
+    const solarLoss = solarCharge * (1 - eta) + solarToLoad * (1 / eta - 1);
+    const gridLoss = gridCharge * (1 - eta) + gridToLoad * (1 / eta - 1);
+    totals.self += direct + solarToLoad;
+    totals.direct += direct;
+    totals.storedSolar += solarToLoad;
+    totals.storedGrid += gridToLoad;
+    totals.gridCharge += gridCharge;
+    totals.solarLoss += solarLoss;
+    totals.gridLoss += gridLoss;
+    totals.export += surplus - solarCharge;
+    totals.grid += deficit - discharge + gridCharge;
+    totals.directValue += direct * avoidedRate;
+    totals.storedSolarValue += solarToLoad * avoidedRate;
     if (options.collect) out.push({
       pv: row.pv,
       load: row.load,
@@ -473,7 +523,9 @@ export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, pow
       batterySolarDischarge: solarToLoad,
       batteryGridDischarge: gridToLoad,
       gridBatteryCharge: gridCharge,
-      batteryLoss: solarCharge * (1 - eta) + gridCharge * (1 - eta) + discharge * (1 / eta - 1),
+      batterySolarLoss: solarLoss,
+      batteryGridLoss: gridLoss,
+      batteryLoss: solarLoss + gridLoss,
       batteryStored: stored,
       batterySolarStored: storedSolar,
       batteryGridStored: storedGrid,
@@ -482,7 +534,49 @@ export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, pow
       noBatteryExport: surplus,
     });
   }
-  return { delivered, stored: storedSolar + storedGrid, rows: out };
+  return { delivered, stored: storedSolar + storedGrid, storedSolar, storedGrid, initialSolar, initialGrid, totals, rows: out };
+}
+
+export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, power: number, options: TariffDispatchOptions = {}) {
+  let initialSolar = Math.max(0, options.initialSolarKwh ?? 0);
+  let initialGrid = Math.max(0, options.initialGridKwh ?? 0);
+  if (options.cyclic && nominal > 0 && rows.length > 0) {
+    const usable = nominal * SYSTEM_ASSUMPTIONS.usableFraction;
+    const toleranceKwh = Math.max(1e-7, nominal * 1e-9);
+    const requestedSolar = Math.min(usable, initialSolar);
+    const requestedGrid = Math.min(usable - requestedSolar, initialGrid);
+    const candidates = [
+      { solar: requestedSolar, grid: requestedGrid },
+      { solar: usable, grid: 0 },
+      { solar: 0, grid: usable },
+    ];
+    let solved: { solar: number; grid: number } | undefined;
+
+    // The annual dispatch map is bounded by the empty, solar-full and
+    // grid-full states. Trying each boundary avoids thousands of warm-up years
+    // when a profile has only a tiny annual surplus or deficit. Never return a
+    // non-cyclic state merely because an iteration cap was reached.
+    for (const candidate of candidates) {
+      let solar = candidate.solar;
+      let grid = candidate.grid;
+      for (let iteration = 0; iteration < 64; iteration++) {
+        const pass = runTariffDispatch(rows, nominal, power, { ...options, collect: false }, solar, grid);
+        const delta = Math.abs(pass.storedSolar - solar) + Math.abs(pass.storedGrid - grid);
+        if (delta <= toleranceKwh) {
+          solved = { solar, grid };
+          break;
+        }
+        solar = pass.storedSolar;
+        grid = pass.storedGrid;
+      }
+      if (solved) break;
+    }
+
+    if (!solved) throw new Error("Battery cyclic SOC did not converge");
+    initialSolar = solved.solar;
+    initialGrid = solved.grid;
+  }
+  return runTariffDispatch(rows, nominal, power, options, initialSolar, initialGrid);
 }
 
 export function batterySize(rows: HourlyRow[], inverter: number, offsetHours = 0) {

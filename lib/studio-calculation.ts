@@ -334,9 +334,11 @@ export function buildPlanningInput(input: {
       importPence: regional.tariffDefaults.import,
       exportPence: regional.tariffDefaults.export,
       offPeakPence: regional.tariffDefaults.offPeak,
-      offPeakHours: 5,
+      offPeakStartHour: regional.tariffDefaults.offPeakStartHour,
+      offPeakHours: regional.tariffDefaults.offPeakHours,
       peakPence: regional.tariffDefaults.peak,
-      peakHours: 3,
+      peakStartHour: regional.tariffDefaults.peakStartHour,
+      peakHours: regional.tariffDefaults.peakHours,
     },
     costs: {
       schemePriceGbp: prices.projectPrice > 0 ? prices.projectPrice : null,

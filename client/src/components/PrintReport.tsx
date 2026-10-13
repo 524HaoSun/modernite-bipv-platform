@@ -187,8 +187,10 @@ function EnergyBalance({ study, scenario, f }: { study: ProjectCalculation; scen
     { key: "home", label: t.usedDirectly, value: kpis.directSolarKwh, color: "#0b6047", detail: t.usedDirectlyDetail },
     { key: "battery", label: t.storedLater, value: kpis.batteryToLoadKwh, color: "#e3ac2f", detail: scenario.id === "solar-battery" ? t.storedLaterDetail : t.batteryShiftOff },
     { key: "export", label: t.exported, value: kpis.exportKwh, color: "#9cc884", detail: t.exportedDetail },
+    ...(kpis.batterySolarLossKwh > 0.05 ? [{ key: "loss", label: t.batteryLosses, value: kpis.batterySolarLossKwh, color: "#9aa9a2", detail: t.batteryLossesDetail }] : []),
+    ...(kpis.netSolarStoredKwh > 0.05 ? [{ key: "stored", label: t.storedAtYearEnd, value: kpis.netSolarStoredKwh, color: "#6d91a8", detail: t.storedAtYearEndDetail }] : []),
   ];
-  const total = Math.max(1, parts.reduce((sum, part) => sum + part.value, 0));
+  const total = Math.max(1, study.simulation.annualGenerationKwh ?? study.result.range.representative);
   return <section className="pr-section pr-keep pr-balance">
     <Heading label={t.flowLabel} title={t.flowTitle} aside={`${f.n(study.result.range.representative)} ${t.perYear}`} />
     <div className="pr-balance-bar">{parts.filter((part) => part.value > 0).map((part) => <i key={part.key} style={{ width: `${(part.value / total) * 100}%`, background: part.color }} />)}</div>

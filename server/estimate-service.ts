@@ -60,6 +60,7 @@ export async function runProjectCalculation(input: ProjectCalculationInput, opti
   if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && PROFILES[surface.profile])) {
     throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
   }
+  const economicDeadline = deadline(ECONOMIC_GUIDANCE_TIMEOUT_MS, "Economic guidance timed out");
   const timezone = Number.isFinite(input.timezone) ? input.timezone! : Math.round(input.coordinates.lng / 15);
   const location = { lat: input.coordinates.lat, lon: input.coordinates.lng, tz: timezone, zone: input.timezoneName ?? "" };
   const year = new Date().getUTCFullYear() - 1;
@@ -85,14 +86,14 @@ export async function runProjectCalculation(input: ProjectCalculationInput, opti
     googleSolar,
   };
   const preliminaryStudy = runCustomerStudy(baseStudyInput);
-  const economicPlan = await withTimeout(
-    estimateProjectEconomics({ ...input, energySettings }, preliminaryStudy),
-    ECONOMIC_GUIDANCE_TIMEOUT_MS,
-    "Economic guidance timed out",
-  ).catch((error: unknown) => {
+  const economicPlan = await Promise.race([
+    estimateProjectEconomics({ ...input, energySettings }, preliminaryStudy, economicDeadline.signal),
+    economicDeadline.promise,
+  ]).catch((error: unknown) => {
     console.warn("[study] economic guidance fallback:", error instanceof Error ? error.message : String(error));
     return null;
   });
+  economicDeadline.cancel();
   const study = economicPlan ? runCustomerStudy({ ...baseStudyInput, economicPlan }) : preliminaryStudy;
   const caseId = `MOD-${randomUUID().slice(0, 8).toUpperCase()}`;
   study.result.caseNumber = caseId;
@@ -119,17 +120,23 @@ function clamp(value: number | null | undefined, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+function deadline(ms: number, message: string) {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(message)), ms);
+  const controller = new AbortController();
+  const promise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error(message);
+      controller.abort(error);
+      reject(error);
+    }, ms);
   });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) clearTimeout(timer);
-  });
+  // The deadline starts before weather and calculation; attach a handler now so
+  // an early rejection cannot become an unhandled promise before it is raced.
+  void promise.catch(() => undefined);
+  return { promise, signal: controller.signal, cancel: () => { if (timer) clearTimeout(timer); } };
 }
 
-async function estimateProjectEconomics(input: ProjectCalculationInput, study: CustomerStudy): Promise<CustomerEconomicsPlan | null> {
+async function estimateProjectEconomics(input: ProjectCalculationInput, study: CustomerStudy, signal?: AbortSignal): Promise<CustomerEconomicsPlan | null> {
   const settings = input.energySettings;
   if (!settings) return null;
   const factual = {
@@ -209,6 +216,7 @@ async function estimateProjectEconomics(input: ProjectCalculationInput, study: C
         },
       },
     },
+    signal,
   });
   const parsed = economicPlanSchema.parse(JSON.parse(textContent(response.choices[0]?.message.content ?? "")));
   return {

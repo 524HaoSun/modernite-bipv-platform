@@ -121,8 +121,10 @@ export type EnergyProfile = {
   importPence: number;
   exportPence: number;
   offPeakPence: number;
+  offPeakStartHour?: number;
   offPeakHours: number;
   peakPence: number;
+  peakStartHour?: number;
   peakHours: number;
 };
 

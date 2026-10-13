@@ -17,7 +17,16 @@ export type RegionConfig = {
   initialMap: { lat: number; lng: number; zoom: number };
   bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number };
   irradianceDatabase: "PVGIS-SARAH3" | "PVGIS-NSRDB" | "PVGIS-ERA5";
-  tariffDefaults: { import: number; export: number; offPeak: number; peak: number };
+  tariffDefaults: {
+    import: number;
+    export: number;
+    offPeak: number;
+    peak: number;
+    offPeakStartHour: number;
+    offPeakHours: number;
+    peakStartHour: number;
+    peakHours: number;
+  };
   recommendedFinishId: string;
   geocodingBias: string;
 };
@@ -27,28 +36,28 @@ export const REGION_CONFIG: Record<Region, RegionConfig> = {
     region: "UK", labelKey: "regions.uk", defaultLanguage: "en", currency: "GBP", priceDivisor: 100,
     initialMap: { lat: 54.3, lng: -2.8, zoom: 5 },
     bounds: { minLat: 49.8, maxLat: 60.9, minLng: -8.7, maxLng: 1.8 },
-    irradianceDatabase: "PVGIS-SARAH3", tariffDefaults: { import: 25, export: 12, offPeak: 8, peak: 35 },
+    irradianceDatabase: "PVGIS-SARAH3", tariffDefaults: { import: 25, export: 12, offPeak: 8, peak: 35, offPeakStartHour: 0, offPeakHours: 7, peakStartHour: 16, peakHours: 3 },
     recommendedFinishId: "graphite-grey", geocodingBias: "gb",
   },
   EU: {
     region: "EU", labelKey: "regions.eu", defaultLanguage: "fr", currency: "EUR", priceDivisor: 100,
     initialMap: { lat: 50.7, lng: 10.3, zoom: 4 },
     bounds: { minLat: 34, maxLat: 71.5, minLng: -25, maxLng: 45 },
-    irradianceDatabase: "PVGIS-SARAH3", tariffDefaults: { import: 28, export: 10, offPeak: 12, peak: 38 },
+    irradianceDatabase: "PVGIS-SARAH3", tariffDefaults: { import: 28, export: 10, offPeak: 12, peak: 38, offPeakStartHour: 23, offPeakHours: 7, peakStartHour: 17, peakHours: 3 },
     recommendedFinishId: "terracotta", geocodingBias: "fr",
   },
   CA: {
     region: "CA", labelKey: "regions.ca", defaultLanguage: "en", currency: "CAD", priceDivisor: 100,
     initialMap: { lat: 56.1, lng: -106.3, zoom: 3 },
     bounds: { minLat: 41.5, maxLat: 83.2, minLng: -141.1, maxLng: -52.5 },
-    irradianceDatabase: "PVGIS-NSRDB", tariffDefaults: { import: 14, export: 9, offPeak: 7, peak: 20 },
+    irradianceDatabase: "PVGIS-NSRDB", tariffDefaults: { import: 14, export: 9, offPeak: 7, peak: 20, offPeakStartHour: 23, offPeakHours: 8, peakStartHour: 16, peakHours: 5 },
     recommendedFinishId: "black", geocodingBias: "ca",
   },
   JP: {
     region: "JP", labelKey: "regions.jp", defaultLanguage: "ja", currency: "JPY", priceDivisor: 1,
     initialMap: { lat: 36.2, lng: 138.3, zoom: 5 },
     bounds: { minLat: 24, maxLat: 45.6, minLng: 122.9, maxLng: 146 },
-    irradianceDatabase: "PVGIS-ERA5", tariffDefaults: { import: 31, export: 8, offPeak: 18, peak: 40 },
+    irradianceDatabase: "PVGIS-ERA5", tariffDefaults: { import: 31, export: 8, offPeak: 18, peak: 40, offPeakStartHour: 1, offPeakHours: 5, peakStartHour: 13, peakHours: 3 },
     recommendedFinishId: "night-blue", geocodingBias: "jp",
   },
 };

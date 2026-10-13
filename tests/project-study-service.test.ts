@@ -262,8 +262,10 @@ describe("project study calculation service", () => {
 
   it("does not keep the calculation page waiting when economic guidance stalls", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+    let economicSignal: AbortSignal | undefined;
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url.includes("re.jrc.ec.europa.eu")) return new Response(JSON.stringify(fakeTmy()), { status: 200 });
+      economicSignal = init?.signal ?? undefined;
       return new Promise<Response>(() => undefined);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -275,6 +277,7 @@ describe("project study calculation service", () => {
     expect(study.validation.status).toBe("pvgis-tmy");
     expect(study.result.range.representative).toBeGreaterThan(0);
     expect(fetchMock.mock.calls.some(([url]: unknown[]) => String(url).includes("chat/completions"))).toBe(true);
+    expect(economicSignal?.aborted).toBe(true);
   });
 
   it("returns a clear configuration requirement before any network request for an empty Studio snapshot", async () => {

@@ -1,6 +1,7 @@
 import { REGION_CONFIG } from "../data/constants";
 import type { EstimateResult, LedgerEntry, ProductScheduleLine, SurfaceResult } from "../types/solar";
 import * as core from "./customer-energy-core";
+import { degradedGeneration } from "./degradation";
 import { calculateFinancialScenarios } from "./financial";
 import { compassName } from "./geometry";
 import type { GoogleSolarReference } from "./google-solar";
@@ -67,6 +68,10 @@ export type SimulationSummary = {
     storedSolarKwh?: number;
     offPeakChargeKwh?: number;
     offPeakDischargeKwh?: number;
+    solarLossKwh?: number;
+    gridLossKwh?: number;
+    startingSolarStoredKwh?: number;
+    endingSolarStoredKwh?: number;
   };
   kpis: {
     solarOnly: ScenarioKpis;
@@ -253,6 +258,21 @@ function scenarioKpis(annualGeneration: number, annualDemand: number, selfConsum
   };
 }
 
+function summarizeTariffDispatch(result: ReturnType<typeof core.dispatchWithGridCharging>) {
+  if (result.totals) return result.totals;
+  return result.rows.reduce((acc, row) => ({
+    self: acc.self + row.self,
+    direct: acc.direct + row.directSelf,
+    storedSolar: acc.storedSolar + (row.batterySolarDischarge ?? 0),
+    storedGrid: acc.storedGrid + (row.batteryGridDischarge ?? 0),
+    gridCharge: acc.gridCharge + (row.gridBatteryCharge ?? 0),
+    solarLoss: acc.solarLoss + (row.batterySolarLoss ?? 0),
+    gridLoss: acc.gridLoss + (row.batteryGridLoss ?? 0),
+    export: acc.export + row.export,
+    grid: acc.grid + row.grid + (row.gridBatteryCharge ?? 0),
+  }), { self: 0, direct: 0, storedSolar: 0, storedGrid: 0, gridCharge: 0, solarLoss: 0, gridLoss: 0, export: 0, grid: 0 });
+}
+
 export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const region = regionForMarket(input.market);
   const surfaces = surfacesFromSnapshot(input.snapshot);
@@ -299,26 +319,28 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   if (input.economicPlan?.annualMaintenanceGbp !== undefined && input.economicPlan.annualMaintenanceGbp !== null) planning.costs.annualMaintenanceGbp = input.economicPlan.annualMaintenanceGbp;
   if (input.economicPlan?.inverterReplacementGbp !== undefined && input.economicPlan.inverterReplacementGbp !== null) planning.costs.inverterReplacementGbp = input.economicPlan.inverterReplacementGbp;
   if (input.economicPlan?.batteryReplacementPercent !== undefined && input.economicPlan.batteryReplacementPercent !== null) planning.costs.batteryReplacementPercent = input.economicPlan.batteryReplacementPercent;
-  const withBattery = core.dispatchWithGridCharging(sim.hourly, batteryNominal, batteryPower, { collect: true, timezone: input.timezone, offPeakHours: planning.energy.offPeakHours });
+  const energyRows = sim.hourly.map((row) => ({ t: row.t, pv: row.pv, load: row.load }));
+  const tariffOptions = {
+    collect: false,
+    timezone: input.timezone,
+    offPeakStartHour: planning.energy.offPeakStartHour,
+    offPeakHours: planning.energy.offPeakHours,
+    peakStartHour: planning.energy.peakStartHour,
+    peakHours: planning.energy.peakHours,
+    standardRate: planning.energy.importPence,
+    offPeakRate: planning.energy.offPeakPence,
+    peakRate: planning.energy.peakPence > 0 ? planning.energy.peakPence : planning.energy.importPence,
+    cyclic: true,
+  };
+  const withBattery = core.dispatchWithGridCharging(energyRows, batteryNominal, batteryPower, tariffOptions);
   const batteryOnly = core.dispatchWithGridCharging(
-    sim.hourly.map((row) => ({ ...row, pv: 0 })),
+    energyRows.map((row) => ({ t: row.t, pv: 0, load: row.load })),
     batteryNominal,
     batteryPower,
-    { collect: true, timezone: input.timezone, offPeakHours: planning.energy.offPeakHours, reserveSolarCapacity: false },
+    { ...tariffOptions, reserveSolarCapacity: false },
   );
-  const batterySums = withBattery.rows.reduce((acc, row) => ({
-    self: acc.self + row.self,
-    direct: acc.direct + row.directSelf,
-    storedSolar: acc.storedSolar + (row.batterySolarDischarge ?? 0),
-    storedGrid: acc.storedGrid + (row.batteryGridDischarge ?? 0),
-    gridCharge: acc.gridCharge + (row.gridBatteryCharge ?? 0),
-    export: acc.export + row.export,
-    grid: acc.grid + row.grid + (row.gridBatteryCharge ?? 0),
-  }), { self: 0, direct: 0, storedSolar: 0, storedGrid: 0, gridCharge: 0, export: 0, grid: 0 });
-  const batteryOnlySums = batteryOnly.rows.reduce((acc, row) => ({
-    gridCharge: acc.gridCharge + (row.gridBatteryCharge ?? 0),
-    storedGrid: acc.storedGrid + (row.batteryGridDischarge ?? 0),
-  }), { gridCharge: 0, storedGrid: 0 });
+  const batterySums = summarizeTariffDispatch(withBattery);
+  const batteryOnlySums = summarizeTariffDispatch(batteryOnly);
 
   const annualGeneration = t.pv;
   const annualDemand = t.load;
@@ -328,6 +350,49 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   };
   const currency = REGION_CONFIG[region];
   const prices = planningCosts(region, activeSolarAreaM2(input.snapshot), effectiveEnergySettings);
+  let priorSolarStorage = withBattery.storedSolar;
+  let priorGridStorage = withBattery.storedGrid;
+  const simulatedEnergyByYear = Array.from({ length: 25 }, (_, index) => {
+    const year = index + 1;
+    const generation = degradedGeneration(annualGeneration, year);
+    const factor = annualGeneration > 0 ? generation / annualGeneration : 0;
+    const rows = year === 1 ? energyRows : energyRows.map((row) => ({ t: row.t, pv: row.pv * factor, load: row.load }));
+    const solarOnly = rows.reduce((acc, row) => {
+      const direct = Math.min(row.pv, row.load);
+      const hour = ((Math.floor(row.t / 3600000 + input.timezone) % 24) + 24) % 24;
+      const inWindow = (start: number, duration: number) => duration > 0 && (duration >= 24 || ((hour - start + 24) % 24) < duration);
+      const rate = inWindow(planning.energy.peakStartHour ?? 16, planning.energy.peakHours)
+        ? (planning.energy.peakPence > 0 ? planning.energy.peakPence : planning.energy.importPence)
+        : inWindow(planning.energy.offPeakStartHour ?? 0, planning.energy.offPeakHours)
+          ? planning.energy.offPeakPence
+          : planning.energy.importPence;
+      acc.directSolarKwh += direct;
+      acc.exportKwh += Math.max(0, row.pv - direct);
+      acc.directSolarValue += direct * rate / currency.priceDivisor;
+      return acc;
+    }, { directSolarKwh: 0, storedSolarKwh: 0, exportKwh: 0, directSolarValue: 0, storedSolarValue: 0 });
+    const dispatched = year === 1 ? withBattery : core.dispatchWithGridCharging(rows, batteryNominal, batteryPower, {
+      ...tariffOptions,
+      cyclic: false,
+      initialSolarKwh: priorSolarStorage,
+      initialGridKwh: priorGridStorage,
+    });
+    priorSolarStorage = dispatched.storedSolar;
+    priorGridStorage = dispatched.storedGrid;
+    const sums = year === 1 ? batterySums : summarizeTariffDispatch(dispatched);
+    return {
+      solarOnly,
+      solarBattery: {
+        directSolarKwh: sums.direct,
+        storedSolarKwh: sums.storedSolar,
+        exportKwh: sums.export,
+        offPeakChargeKwh: sums.gridCharge,
+        offPeakDischargeKwh: sums.storedGrid,
+        directSolarValue: sums.directValue / currency.priceDivisor,
+        storedSolarValue: sums.storedSolarValue / currency.priceDivisor,
+      },
+    };
+  });
   const scenarios = calculateFinancialScenarios({
     annualGenerationKwh: annualGeneration,
     energy: planning.energy,
@@ -352,6 +417,8 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
         directSolarKwh: t.self,
         storedSolarKwh: 0,
         exportKwh: t.export,
+        directSolarValue: simulatedEnergyByYear[0]!.solarOnly.directSolarValue,
+        storedSolarValue: 0,
       },
       solarBattery: {
         directSolarKwh: batterySums.direct,
@@ -359,11 +426,18 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
         exportKwh: batterySums.export,
         offPeakChargeKwh: batterySums.gridCharge,
         offPeakDischargeKwh: batterySums.storedGrid,
+        directSolarValue: batterySums.directValue / currency.priceDivisor,
+        storedSolarValue: batterySums.storedSolarValue / currency.priceDivisor,
       },
       batteryOnly: {
         offPeakChargeKwh: batteryOnlySums.gridCharge,
         offPeakDischargeKwh: batteryOnlySums.storedGrid,
       },
+    },
+    simulatedEnergyByYear: {
+      solarOnly: simulatedEnergyByYear.map((year) => year.solarOnly),
+      solarBattery: simulatedEnergyByYear.map((year) => year.solarBattery),
+      batteryOnly: Array.from({ length: 25 }, () => ({ offPeakChargeKwh: batteryOnlySums.gridCharge, offPeakDischargeKwh: batteryOnlySums.storedGrid })),
     },
   });
   const bestScenario = scenarios.filter((scenario) => scenario.available).sort((a, b) => b.net25YearGbp - a.net25YearGbp)[0] ?? scenarios[0];
@@ -526,6 +600,10 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
         storedSolarKwh: batterySums.storedSolar,
         offPeakChargeKwh: batterySums.gridCharge,
         offPeakDischargeKwh: batterySums.storedGrid,
+        solarLossKwh: batterySums.solarLoss,
+        gridLossKwh: batterySums.gridLoss,
+        startingSolarStoredKwh: withBattery.initialSolar,
+        endingSolarStoredKwh: withBattery.storedSolar,
       },
       kpis,
       buildingNorthDeg: north,

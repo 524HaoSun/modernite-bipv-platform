@@ -86,6 +86,37 @@ describe("Financial model (§14.10)", () => {
     expect(first?.billSavingGbp).toBeCloseTo(-7.5, 6);
   });
 
+  it("uses each year's hourly re-dispatch instead of scaling the first-year battery split", () => {
+    const solarOnly = Array.from({ length: 25 }, (_, index) => ({ directSolarKwh: index === 1 ? 250 : 400, storedSolarKwh: 0, exportKwh: index === 1 ? 650 : 600 }));
+    const solarBattery = Array.from({ length: 25 }, (_, index) => ({ directSolarKwh: index === 1 ? 240 : 400, storedSolarKwh: index === 1 ? 180 : 250, exportKwh: index === 1 ? 480 : 250, offPeakChargeKwh: index === 1 ? 120 : 100, offPeakDischargeKwh: index === 1 ? 100 : 90 }));
+    const scenarios = calculateFinancialScenarios({
+      annualGenerationKwh: 1000,
+      energy: { ...energy, annualDemandKwh: 1400, offPeakPence: 7, offPeakHours: 7, peakPence: 35, peakHours: 8 },
+      costs,
+      unitPriceDivisor: 100,
+      simulatedEnergyByYear: { solarOnly, solarBattery },
+    });
+    const year2 = scenarios.find((scenario) => scenario.id === "solar-battery")?.annualCashFlows[1];
+
+    expect(year2).toMatchObject({ directUseKwh: 240, storedSolarKwh: 180, exportKwh: 480, offPeakChargeKwh: 120, offPeakDischargeKwh: 100 });
+  });
+
+  it("uses hourly tariff-weighted solar values when the dispatch provides them", () => {
+    const scenarios = calculateFinancialScenarios({
+      annualGenerationKwh: 1000,
+      energy: { ...energy, annualDemandKwh: 1200, offPeakPence: 7, offPeakHours: 7, peakPence: 35, peakHours: 3 },
+      costs,
+      unitPriceDivisor: 100,
+      simulatedEnergyByYear: {
+        solarBattery: Array.from({ length: 25 }, () => ({ directSolarKwh: 300, storedSolarKwh: 200, exportKwh: 400, directSolarValue: 60, storedSolarValue: 55, offPeakChargeKwh: 0, offPeakDischargeKwh: 0 })),
+      },
+    });
+    const first = scenarios.find((scenario) => scenario.id === "solar-battery")?.annualCashFlows[0];
+
+    expect(first?.directSolarSavingsGbp).toBe(60);
+    expect(first?.storedSolarSavingsGbp).toBe(55);
+  });
+
   it("builds annual economic value from bill saving, export income and monetizable value", () => {
     const touEnergy = { ...energy, offPeakPence: 8, offPeakHours: 7, peakPence: 32, peakHours: 5 };
     const batteryOnly = calculateFinancialScenarios({ annualGenerationKwh: 0, energy: touEnergy, costs, unitPriceDivisor: 100 }).find((scenario) => scenario.id === "battery-only");
