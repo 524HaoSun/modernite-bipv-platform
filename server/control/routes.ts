@@ -22,6 +22,7 @@ import {
   setSession,
   logout,
   sendLoginEmail,
+  sendProjectResumeEmail,
   emailLoginStatus,
   limit,
 } from "./auth";
@@ -246,6 +247,38 @@ export function registerControlRoutes(
       );
     })
   );
+  router.get(
+    "/admin/projects",
+    endpoint((_req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      res.json(
+        store.db
+          .prepare(
+            `SELECT p.id,p.name,p.revision,p.updated_at,u.email
+             FROM projects p JOIN users u ON u.id=p.owner
+             ORDER BY p.updated_at DESC LIMIT 500`
+          )
+          .all()
+      );
+    })
+  );
+  router.get(
+    "/admin/reports",
+    endpoint((_req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      res.json(
+        store.db
+          .prepare(
+            `SELECT r.id,r.project_id,r.revision,r.created_at,p.name,u.email
+             FROM reports r
+             JOIN projects p ON p.id=r.project_id
+             JOIN users u ON u.id=r.owner
+             ORDER BY r.created_at DESC LIMIT 500`
+          )
+          .all()
+      );
+    })
+  );
   router.post(
     "/admin/users/:id",
     endpoint((req, res, store, user) => {
@@ -328,6 +361,65 @@ export function registerControlRoutes(
         })
       );
     })
+  );
+  router.post(
+    "/projects/capture",
+    endpoint(async (req, res, store) => {
+      const input = z
+        .object({
+          email: email.optional().or(z.literal("")),
+          name: z.string().trim().min(1).max(100).default("My solar project"),
+          configuration: z.unknown(),
+        })
+        .parse(req.body);
+      limit(
+        store,
+        `capture:${createHash("sha256").update(req.ip || "unknown").digest("hex")}`,
+        20,
+        3600000
+      );
+      const recipient = input.email || undefined;
+      const owner =
+        (recipient && store.byEmail(recipient)) ||
+        store.createUser(
+          recipient || `guest-${randomUUID()}@anonymous.invalid`,
+          recipient ? "" : "Guest calculation"
+        );
+      const saved = savePrivateProject(store, owner, {
+        name: input.name,
+        configuration: input.configuration,
+      });
+      const calculated = await calculatePrivateProject(
+        store,
+        owner,
+        saved.id,
+        saved.revision,
+        false
+      );
+      let emailSent = false;
+      if (recipient) {
+        try {
+          await sendProjectResumeEmail(recipient, {
+            id: calculated.id,
+            name: input.name,
+          });
+          emailSent = true;
+          store.audit(owner.id, "project.resume_email_sent", calculated.id);
+        } catch (error) {
+          console.warn("[projects] Saved project but could not send resume email");
+        }
+      }
+      res.status(201).json({
+        id: calculated.id,
+        revision: calculated.revision,
+        emailSent,
+        message: recipient
+          ? emailSent
+            ? "Your project is saved. Check your email for the secure return link."
+            : "Your project is saved, but the return email could not be sent."
+          : "Your calculation is saved privately. Add an email next time to return to it on another device.",
+      });
+    }, false)
   );
   router.get(
     "/projects/:id",

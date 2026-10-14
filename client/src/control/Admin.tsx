@@ -7,6 +7,8 @@ import {
   Users,
   ClipboardList,
   MessageSquare,
+  FolderKanban,
+  FileText,
   LogOut,
   Search,
   ArrowUpRight,
@@ -25,6 +27,8 @@ const titles: Record<string, string> = {
   inquiries: "Customer inquiries",
   users: "People & access",
   audit: "Activity log",
+  projects: "Saved calculations",
+  reports: "Generated reports",
 };
 const icons: Record<string, any> = {
   catalogue: Package,
@@ -34,6 +38,8 @@ const icons: Record<string, any> = {
   inquiries: MessageSquare,
   users: Users,
   audit: ClipboardList,
+  projects: FolderKanban,
+  reports: FileText,
 };
 const labels: Record<string, string> = {
   wp: "Power density · Wp/m²",
@@ -220,7 +226,7 @@ export default function Admin() {
     ...(has("product", "technical", "super") ? ["technical"] : []),
     ...(has("pricing", "super") ? ["pricing"] : []),
     ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
-    ...(has("sales") ? ["inquiries"] : []),
+    ...(has("sales", "super") ? ["inquiries", "projects", "reports"] : []),
     ...(has("super") ? ["users"] : []),
     ...(has("product", "technical", "pricing", "sales", "super")
       ? ["audit"]
@@ -249,7 +255,7 @@ export default function Admin() {
         setReleases(r);
         if (c[tab]) setEdit(structuredClone(c[tab].data));
       }
-      if (["inquiries", "users", "audit"].includes(tab))
+      if (["inquiries", "users", "audit", "projects", "reports"].includes(tab))
         setRows(await api(`/admin/${tab}`));
       setImpact(null);
     } catch (e) {
@@ -1218,6 +1224,32 @@ export default function Admin() {
                 Staff must be provisioned with an authenticator before a staff
                 role can be assigned.
               </p>
+            </section>
+          )}
+          {tab === "projects" && (
+            <section className="control-card">
+              <div className="control-search">
+                <Search size={16} />
+                <input placeholder="Search projects or email…" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <table>
+                <thead><tr><th>Project</th><th>Customer</th><th>Revision</th><th>Last saved</th></tr></thead>
+                <tbody>{rows.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())).map(r => (
+                  <tr key={r.id}><td><strong>{r.name}</strong><small>{r.id}</small></td><td>{r.email}</td><td>{r.revision}</td><td>{new Date(r.updated_at).toLocaleString()}</td></tr>
+                ))}</tbody>
+              </table>
+              {!loading && !rows.length && <Empty title="No saved calculations yet" body="Website calculations will appear here after a visitor saves a project." />}
+            </section>
+          )}
+          {tab === "reports" && (
+            <section className="control-card">
+              <table>
+                <thead><tr><th>Report</th><th>Project</th><th>Customer</th><th>Created</th></tr></thead>
+                <tbody>{rows.map(r => (
+                  <tr key={r.id}><td><strong>{r.id.slice(0, 8)}</strong><small>Revision {r.revision}</small></td><td>{r.name}</td><td>{r.email}</td><td>{new Date(r.created_at).toLocaleString()}</td></tr>
+                ))}</tbody>
+              </table>
+              {!loading && !rows.length && <Empty title="No reports yet" body="Reports appear here when a saved project report is generated." />}
             </section>
           )}
           {tab === "audit" && (

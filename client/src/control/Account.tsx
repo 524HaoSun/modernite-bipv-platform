@@ -17,6 +17,8 @@ export default function Account() {
     [inquiries, setInquiries] = useState<any[]>([]),
     [showInquiry, setShowInquiry] = useState(false),
     [useLatest, setUseLatest] = useState(false);
+  const resumeProject = new URLSearchParams(window.location.search).get("project");
+  const resumeEmail = new URLSearchParams(window.location.search).get("email") || "";
   useEffect(() => {
     api("/session")
       .then(r => setUser(r.user))
@@ -36,6 +38,10 @@ export default function Account() {
   useEffect(() => {
     if (user) void reload().catch(e => setError(e.message));
   }, [user]);
+  useEffect(() => {
+    if (user && resumeProject)
+      void open(resumeProject).catch(e => setError(e.message));
+  }, [user, resumeProject]);
   async function action(fn: () => Promise<any>, message: string) {
     setBusy(true);
     setError("");
@@ -71,7 +77,7 @@ export default function Account() {
   if (!user)
     return (
       <div className="control">
-        <Auth onLogin={setUser} />
+        <Auth onLogin={setUser} initialEmail={resumeEmail} />
       </div>
     );
   return (

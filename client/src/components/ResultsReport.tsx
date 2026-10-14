@@ -440,6 +440,50 @@ function ShareActions({ share, language }: { share: ResultsShare; language: stri
   </>;
 }
 
+function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  if (isDemo) return null;
+  const save = async () => {
+    setBusy(true);
+    setMessage("");
+    try {
+      const raw = window.localStorage.getItem("modernite-private-project-input");
+      if (!raw) throw new Error("Your project configuration is not ready yet. Return to Solar Studio and calculate again.");
+      const result = await fetch("/api/control/projects/capture", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          name: "My solar project",
+          configuration: JSON.parse(raw),
+        }),
+      });
+      const body = await result.json();
+      if (!result.ok) throw new Error(body.error || "Could not save your project");
+      setMessage(body.message);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not save your project");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return <section className="study-summary-card" style={{ marginTop: 14 }}>
+    <p className="mini-label">SAVE THIS PROJECT</p>
+    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation is recorded securely. Email is optional; add it to receive a secure link to return later.</p>
+    <label style={{ display: "grid", gap: 6, fontSize: 13, margin: "12px 0" }}>
+      Email address <small>(optional)</small>
+      <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" disabled={busy} />
+    </label>
+    <button type="button" className="button-primary wide" onClick={() => void save()} disabled={busy}>
+      {busy ? "Saving…" : email.trim() ? "Save and email my link" : "Save calculation"}
+    </button>
+    {message && <p className="result-share-note" aria-live="polite">{message}</p>}
+  </section>;
+}
+
 export function ResultsPage({ study, preferredBatteryMode, onNavigate, language, marketKey, share }: {
   study: ProjectCalculation;
   preferredBatteryMode: "solar-only" | "solar-battery" | string;
@@ -569,6 +613,7 @@ export function ResultsPage({ study, preferredBatteryMode, onNavigate, language,
             <button type="button" className="button-secondary wide" onClick={() => window.dispatchEvent(new CustomEvent("modernite:finalize-request", { detail: "configuration" }))}><Download size={15} /> {t.saveConfig}</button>
           </>}
           <button type="button" className="button-secondary wide" onClick={() => window.print()}><Printer size={15} /> {t.print}</button>
+          <SaveProjectActions isDemo={isDemo} />
         </section>
         <ResultAdvisor isDemo={isDemo} t={t} />
       </aside></div>
