@@ -324,7 +324,7 @@ export default function Admin() {
     setNotice("");
     try {
       await api("/logout", {});
-      setUser(null);
+      window.location.assign("/admin");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -1323,14 +1323,18 @@ export default function Admin() {
                             </button>
                             <button
                               disabled={busy}
-                              onClick={() =>
-                                action(
+                              onClick={() => {
+                                if (r.id === user.id) {
+                                  void signOut();
+                                  return;
+                                }
+                                void action(
                                   () => api(`/admin/users/${r.id}/revoke`, {}),
                                   "All sessions revoked"
-                                )
-                              }
+                                );
+                              }}
                             >
-                              Revoke sessions
+                              {r.id === user.id ? "Sign out current session" : "Revoke sessions"}
                             </button>
                             {r.username && (
                               <button
