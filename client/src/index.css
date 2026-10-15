@@ -12969,24 +12969,8 @@ html.is-print-render .results-advisor {
 /* Results Advisor: a right-side reading companion for the project study */
 .gateway-shell .results-side-rail {
   align-self: start;
-  position: sticky;
-  top: 92px;
   display: grid;
   gap: 16px;
-  max-height: calc(100dvh - 112px);
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
-  overscroll-behavior: contain;
-}
-
-.gateway-shell .results-side-rail::-webkit-scrollbar {
-  width: 6px;
-}
-
-.gateway-shell .results-side-rail::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(28, 94, 70, 0.28);
 }
 
 .gateway-shell .results-advisor {
