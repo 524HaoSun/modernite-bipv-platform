@@ -218,7 +218,7 @@ export function verifyCode(
 export function createStaffAccount(
   store: ControlStore,
   actor: ControlUser,
-  input: { username: string; name: string; password: string; role: Extract<Role, "editor" | "approval"> }
+  input: { username: string; name: string; password: string; role: Extract<Role, "editor" | "approval" | "super"> }
 ) {
   const username = input.username.trim().toLowerCase();
   if (store.db.prepare("SELECT username FROM staff_credentials WHERE username=?").get(username))

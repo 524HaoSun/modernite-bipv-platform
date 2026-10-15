@@ -293,7 +293,7 @@ export function registerControlRoutes(
           username: staffUsername,
           name: z.string().trim().min(2).max(100),
           password: staffPassword,
-          role: z.enum(["editor", "approval"]),
+          role: z.enum(["editor", "approval", "super"]),
         })
         .parse(req.body);
       res.status(201).json(createStaffAccount(store, user!, input));

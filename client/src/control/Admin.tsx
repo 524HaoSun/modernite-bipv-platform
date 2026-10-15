@@ -1178,8 +1178,8 @@ export default function Admin() {
                   className="control-primary"
                   disabled={busy}
                   onClick={() => {
-                    const role = window.prompt("Account type: editor or approval", "editor");
-                    if (role !== "editor" && role !== "approval") return;
+                    const role = window.prompt("Account type: editor, approval or super", "editor");
+                    if (role !== "editor" && role !== "approval" && role !== "super") return;
                     const username = window.prompt("Username (letters, numbers, _ or -)");
                     if (!username) return;
                     const name = window.prompt("Display name", role === "editor" ? "Editor" : "Approval") || role;
