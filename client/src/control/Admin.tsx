@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Plus,
+  BarChart3,
 } from "lucide-react";
 import type { ControlUser, Domain, Release } from "../../../shared/control";
 import { api } from "./api";
@@ -27,6 +28,7 @@ const titles: Record<string, string> = {
   users: "People & access",
   audit: "Activity log",
   projects: "Saved calculations",
+  analytics: "Website analytics",
 };
 const icons: Record<string, any> = {
   catalogue: Package,
@@ -37,6 +39,7 @@ const icons: Record<string, any> = {
   users: Users,
   audit: ClipboardList,
   projects: FolderKanban,
+  analytics: BarChart3,
 };
 const labels: Record<string, string> = {
   wp: "Power density · Wp/m²",
@@ -241,13 +244,14 @@ export default function Admin() {
     [detail, setDetail] = useState<Release | null>(null),
     [projectDetail, setProjectDetail] = useState<any>(null),
     [catalogueType, setCatalogueType] = useState("roof_tiles");
+  const [analytics, setAnalytics] = useState<any>(null);
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
     ...(has("product", "super") ? ["catalogue"] : []),
     ...(has("product", "technical", "super") ? ["technical"] : []),
     ...(has("pricing", "super") ? ["pricing"] : []),
     ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
-    ...(has("sales", "super") ? ["inquiries", "projects"] : []),
+    ...(has("sales", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
     ...(has("product", "technical", "pricing", "sales", "super")
       ? ["audit"]
@@ -278,6 +282,7 @@ export default function Admin() {
       }
       if (["inquiries", "users", "audit", "projects"].includes(tab))
         setRows(await api(`/admin/${tab}`));
+      if (tab === "analytics") setAnalytics(await api("/admin/analytics"));
       setImpact(null);
     } catch (e) {
       setError((e as Error).message);
@@ -1288,6 +1293,26 @@ export default function Admin() {
                 <details><summary>Full saved calculation data</summary><pre className="control-json">{JSON.stringify(projectDetail.payload, null, 2)}</pre></details>
               </div>}
               {!loading && !rows.length && <Empty title="No saved calculations yet" body="Website calculations will appear here after a visitor saves a project." />}
+            </section>
+          )}
+          {tab === "analytics" && analytics && (
+            <section className="control-card">
+              <p className="control-help">Visits are counted once per visitor, page and calendar day. Report and calculation totals include all records saved in this database.</p>
+              <div className="control-fields control-analytics-summary">
+                <div><small>Total visits</small><strong>{analytics.totals.visits.toLocaleString()}</strong></div>
+                <div><small>Unique visitors</small><strong>{analytics.totals.uniqueVisitors.toLocaleString()}</strong></div>
+                <div><small>Visits · last 7 days</small><strong>{analytics.totals.visitsLast7Days.toLocaleString()}</strong></div>
+                <div><small>Saved calculations</small><strong>{analytics.totals.savedCalculations.toLocaleString()}</strong></div>
+                <div><small>Generated reports</small><strong>{analytics.totals.generatedReports.toLocaleString()}</strong></div>
+                <div><small>Quote requests</small><strong>{analytics.totals.quoteRequests.toLocaleString()}</strong></div>
+                <div><small>Advisor conversations</small><strong>{analytics.totals.advisorConversations.toLocaleString()}</strong></div>
+              </div>
+              <h3>Recent activity</h3>
+              <table>
+                <thead><tr><th>Day</th><th>Visits</th><th>Visitors</th><th>Reports</th><th>Calculations</th></tr></thead>
+                <tbody>{analytics.daily.map((day: any) => <tr key={day.day}><td>{day.day}</td><td>{day.visits}</td><td>{day.visitors}</td><td>{day.reports}</td><td>{day.calculations}</td></tr>)}</tbody>
+              </table>
+              {!analytics.daily.length && <Empty title="No activity yet" body="Website visits will start appearing when visitors open the Solar Studio." />}
             </section>
           )}
           {tab === "audit" && (

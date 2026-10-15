@@ -51,6 +51,10 @@ import {
 const email = z.string().trim().toLowerCase().email().max(254);
 const reason = z.string().trim().min(8).max(2000);
 const id = z.string().min(1).max(100);
+const analyticsVisit = z.object({
+  visitor: z.string().uuid(),
+  path: z.string().trim().min(1).max(200),
+});
 export function registerControlRoutes(
   app: Express,
   getStore: () => ControlStore = controlStore,
@@ -99,6 +103,25 @@ export function registerControlRoutes(
   router.get(
     "/session",
     endpoint((_req, res, _store, user) => res.json({ user }), false)
+  );
+  router.post(
+    "/analytics/visit",
+    endpoint((req, res, store) => {
+      const input = analyticsVisit.parse(req.body);
+      const today = new Date().toISOString().slice(0, 10);
+      const alreadyRecorded = store.db
+        .prepare(
+          "SELECT id FROM analytics_events WHERE event='visit' AND visitor=? AND path=? AND substr(created_at,1,10)=?"
+        )
+        .get(input.visitor, input.path, today);
+      if (!alreadyRecorded)
+        store.db
+          .prepare(
+            "INSERT INTO analytics_events(id,event,visitor,path,created_at) VALUES(?,?,?,?,?)"
+          )
+          .run(randomUUID(), "visit", input.visitor, input.path, new Date().toISOString());
+      res.status(201).json({ ok: true });
+    }, false)
   );
   router.get("/login/status", (_req, res) => res.json(loginStatus()));
   router.post(
@@ -260,6 +283,67 @@ export function registerControlRoutes(
           )
           .all()
       );
+    })
+  );
+  router.get(
+    "/admin/analytics",
+    endpoint((_req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      const scalar = (sql: string, ...params: any[]) =>
+        Number((store.db.prepare(sql).get(...params) as { count: number }).count);
+      const sinceSevenDays = new Date(Date.now() - 6 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const daily = store.db
+        .prepare(
+          `SELECT substr(created_at,1,10) AS day,
+                  COUNT(*) AS visits,
+                  COUNT(DISTINCT visitor) AS visitors
+           FROM analytics_events
+           WHERE event='visit' AND substr(created_at,1,10) >= ?
+           GROUP BY substr(created_at,1,10)
+           ORDER BY day DESC`
+        )
+        .all(sinceSevenDays) as { day: string; visits: number; visitors: number }[];
+      const reports = store.db
+        .prepare(
+          `SELECT substr(created_at,1,10) AS day, COUNT(*) AS reports
+           FROM reports WHERE substr(created_at,1,10) >= ?
+           GROUP BY substr(created_at,1,10)`
+        )
+        .all(sinceSevenDays) as { day: string; reports: number }[];
+      const calculations = store.db
+        .prepare(
+          `SELECT substr(updated_at,1,10) AS day, COUNT(*) AS calculations
+           FROM projects WHERE substr(updated_at,1,10) >= ?
+           GROUP BY substr(updated_at,1,10)`
+        )
+        .all(sinceSevenDays) as { day: string; calculations: number }[];
+      const dayMap = new Map(daily.map(day => [day.day, day]));
+      for (const report of reports) {
+        const row = dayMap.get(report.day) ?? { day: report.day, visits: 0, visitors: 0 };
+        (row as typeof row & { reports?: number }).reports = report.reports;
+        dayMap.set(report.day, row);
+      }
+      for (const calculation of calculations) {
+        const row = dayMap.get(calculation.day) ?? { day: calculation.day, visits: 0, visitors: 0 };
+        (row as typeof row & { calculations?: number }).calculations = calculation.calculations;
+        dayMap.set(calculation.day, row);
+      }
+      res.json({
+        totals: {
+          visits: scalar("SELECT COUNT(*) AS count FROM analytics_events WHERE event='visit'"),
+          uniqueVisitors: scalar("SELECT COUNT(DISTINCT visitor) AS count FROM analytics_events WHERE event='visit'"),
+          visitsLast7Days: scalar("SELECT COUNT(*) AS count FROM analytics_events WHERE event='visit' AND substr(created_at,1,10)>=?", sinceSevenDays),
+          savedCalculations: scalar("SELECT COUNT(*) AS count FROM projects"),
+          generatedReports: scalar("SELECT COUNT(*) AS count FROM reports"),
+          quoteRequests: scalar("SELECT COUNT(*) AS count FROM inquiries WHERE source='quote'"),
+          advisorConversations: scalar("SELECT COUNT(*) AS count FROM inquiries WHERE source='advisor'"),
+        },
+        daily: Array.from(dayMap.values())
+          .map(row => ({ ...row, reports: (row as { reports?: number }).reports ?? 0, calculations: (row as { calculations?: number }).calculations ?? 0 }))
+          .sort((a, b) => b.day.localeCompare(a.day)),
+      });
     })
   );
   router.get(

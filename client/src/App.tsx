@@ -137,6 +137,19 @@ const BUILDING_PREVIEW_URL = publicPath("assets/detached-house_f79b6b45.png");
 const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
+const ANALYTICS_VISITOR_STORAGE_KEY = "modernite-analytics-visitor-v1";
+
+function analyticsVisitorId() {
+  try {
+    const existing = window.localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY);
+    if (existing) return existing;
+    const visitor = crypto.randomUUID();
+    window.localStorage.setItem(ANALYTICS_VISITOR_STORAGE_KEY, visitor);
+    return visitor;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 type GatewayRoute =
   | "entry"
@@ -4801,6 +4814,17 @@ export default function App() {
   );
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
+  useEffect(() => {
+    void fetch(publicPath("api/control/analytics/visit"), {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitor: analyticsVisitorId(),
+        path: window.location.pathname,
+      }),
+    }).catch(() => undefined);
+  }, []);
   useEffect(() => {
     const capture = () => {
       if (!context.location) return;

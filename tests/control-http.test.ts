@@ -316,4 +316,29 @@ describe("control HTTP boundaries", () => {
       store.db.prepare("SELECT revision FROM reports").get()?.revision
     ).toBe(1);
   });
+  it("records anonymous website visits and exposes aggregate analytics to sales", async () => {
+    const visitor = "6d7a2c1e-837e-4f14-b3d3-52aebcbb8567";
+    expect(
+      (
+        await req("/analytics/visit", { visitor, path: "/" })
+      ).status
+    ).toBe(201);
+    expect(
+      (
+        await req("/analytics/visit", { visitor, path: "/" })
+      ).status
+    ).toBe(201);
+    const sales = await login("analytics-sales@example.test", ["sales"]);
+    const analytics = await (
+      await req("/admin/analytics", undefined, sales.cookie)
+    ).json();
+    expect(analytics.totals).toMatchObject({
+      visits: 1,
+      uniqueVisitors: 1,
+      generatedReports: 0,
+      savedCalculations: 0,
+    });
+    expect(analytics.daily).toHaveLength(1);
+    expect(analytics.daily[0]).toMatchObject({ visits: 1, visitors: 1 });
+  });
 });
