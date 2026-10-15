@@ -91,6 +91,12 @@ export function limit(
 }
 export type LoginStatus = { available: boolean; message: string };
 export function emailLoginStatus(): LoginStatus {
+  if (process.env.CONTROL_PREVIEW === "1")
+    return {
+      available: false,
+      preview: true,
+      message: "This isolated preview uses a disposable database and does not send email.",
+    } as LoginStatus;
   const available = Boolean(
     process.env.CONTROL_AUTH_KEY &&
       process.env.CONTROL_AUTH_KEY.length >= 32 &&

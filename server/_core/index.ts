@@ -12,6 +12,9 @@ import { serveStatic, setupVite } from "./vite";
 import { registerWeatherRoutes } from "../weather-service";
 import { registerStudioAdvisorRoute } from "../studio-advisor";
 import { registerProjectReportRoute } from "../project-share-service";
+import { controlStore } from "../control/store";
+import { setSession } from "../control/auth";
+import { createHash, randomBytes } from "node:crypto";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,6 +42,26 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerControlRoutes(app);
+  if (process.env.CONTROL_PREVIEW === "1") {
+    app.post("/api/control/preview/login", (req, res) => {
+      const allowed = process.env.PUBLIC_BASE_URL;
+      if (req.headers.origin !== allowed || !req.is("application/json"))
+        return void res.status(403).json({ error: "Open this demo from the preview URL" });
+      const store = controlStore();
+      let user = store.byEmail("admin@example.test");
+      if (!user)
+        user = store.createUser("admin@example.test", "Preview administrator", [
+          "super", "product", "technical", "pricing", "sales",
+        ]);
+      const token = randomBytes(32).toString("base64url");
+      const expires = Date.now() + 4 * 60 * 60 * 1000;
+      store.db
+        .prepare("INSERT INTO sessions VALUES(?,?,?)")
+        .run(createHash("sha256").update(token).digest("hex"), user.id, expires);
+      setSession(res, token, expires);
+      res.json({ user });
+    });
+  }
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerWeatherRoutes(app);
