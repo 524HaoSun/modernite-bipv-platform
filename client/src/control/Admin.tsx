@@ -247,13 +247,13 @@ export default function Admin() {
   const [analytics, setAnalytics] = useState<any>(null);
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
-    ...(has("product", "super") ? ["catalogue"] : []),
-    ...(has("product", "technical", "super") ? ["technical"] : []),
-    ...(has("pricing", "super") ? ["pricing"] : []),
-    ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
+    ...(has("product", "editor", "super") ? ["catalogue"] : []),
+    ...(has("product", "technical", "editor", "super") ? ["technical"] : []),
+    ...(has("pricing", "editor", "super") ? ["pricing"] : []),
+    ...(has("product", "technical", "pricing", "editor", "approval", "super") ? ["releases"] : []),
     ...(has("sales", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
-    ...(has("product", "technical", "pricing", "sales", "super")
+    ...(has("product", "technical", "pricing", "editor", "approval", "sales", "super")
       ? ["audit"]
       : []),
   ];
@@ -271,7 +271,7 @@ export default function Admin() {
   async function reload() {
     setLoading(true);
     try {
-      if (has("product", "technical", "pricing", "super")) {
+      if (has("product", "technical", "pricing", "editor", "approval", "super")) {
         const [c, r] = await Promise.all([
           api("/admin/current"),
           api("/admin/releases"),
@@ -392,6 +392,7 @@ export default function Admin() {
   const canReview = (domain: Domain) =>
     has(
       "super",
+      "approval",
       domain === "catalogue"
         ? "product"
         : domain === "technical"
@@ -1160,6 +1161,27 @@ export default function Admin() {
           )}
           {tab === "users" && (
             <section className="control-card">
+              <div className="control-row">
+                <button
+                  className="control-primary"
+                  disabled={busy}
+                  onClick={() => {
+                    const role = window.prompt("Account type: editor or approval", "editor");
+                    if (role !== "editor" && role !== "approval") return;
+                    const username = window.prompt("Username (letters, numbers, _ or -)");
+                    if (!username) return;
+                    const name = window.prompt("Display name", role === "editor" ? "Editor" : "Approval") || role;
+                    const password = window.prompt("Password (at least 12 characters)");
+                    if (!password) return;
+                    void action(
+                      () => api("/admin/staff-accounts", { username, name, password, role }),
+                      "Staff account created"
+                    );
+                  }}
+                >
+                  Create staff account
+                </button>
+              </div>
               <div className="control-search">
                 <Search size={16} />
                 <input
@@ -1217,7 +1239,7 @@ export default function Admin() {
                               disabled={busy || r.id === user.id}
                               onClick={() => {
                                 const roles = window.prompt(
-                                  "Roles separated by commas: customer, dealer, sales, product, technical, pricing, super",
+                                  "Roles separated by commas: customer, dealer, sales, product, technical, pricing, editor, approval, super",
                                   r.roles.join(",")
                                 );
                                 if (!roles) return;
@@ -1258,8 +1280,7 @@ export default function Admin() {
                 </tbody>
               </table>
               <p className="control-help">
-                Staff must be provisioned with an authenticator before a staff
-                role can be assigned.
+                Create an Editor or Approval account here. Passwords are stored securely and are never shown again.
               </p>
             </section>
           )}

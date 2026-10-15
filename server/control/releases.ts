@@ -10,17 +10,17 @@ import {
 } from "../../shared/control";
 import { ControlStore, fail, requireRole, hasRole } from "./store";
 const writers: Record<Domain, Role[]> = {
-  catalogue: ["product", "super"],
-  technical: ["product", "technical", "super"],
-  pricing: ["pricing", "super"],
+  catalogue: ["product", "editor", "super"],
+  technical: ["product", "technical", "editor", "super"],
+  pricing: ["pricing", "editor", "super"],
 };
 const reviewers: Record<Domain, Role[]> = {
-  catalogue: ["product", "super"],
-  technical: ["technical", "super"],
-  pricing: ["pricing", "super"],
+  catalogue: ["approval", "product", "super"],
+  technical: ["approval", "technical", "super"],
+  pricing: ["approval", "pricing", "super"],
 };
 export function canReadDomain(user: ControlUser, domain: Domain) {
-  return hasRole(user, ...writers[domain]);
+  return hasRole(user, ...writers[domain], "approval");
 }
 export function submitRelease(
   store: ControlStore,

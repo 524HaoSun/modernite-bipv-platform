@@ -25,6 +25,8 @@ import {
   sendProjectResumeEmail,
   emailLoginStatus,
   limit,
+  createStaffAccount,
+  passwordLogin,
 } from "./auth";
 import {
   domains,
@@ -55,6 +57,8 @@ const analyticsVisit = z.object({
   visitor: z.string().uuid(),
   path: z.string().trim().min(1).max(200),
 });
+const staffUsername = z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_-]{2,31}$/);
+const staffPassword = z.string().min(12).max(200);
 export function registerControlRoutes(
   app: Express,
   getStore: () => ControlStore = controlStore,
@@ -169,6 +173,15 @@ export function registerControlRoutes(
     }, false)
   );
   router.post(
+    "/login/password",
+    endpoint((req, res, store) => {
+      const input = z.object({ username: staffUsername, password: staffPassword }).parse(req.body);
+      const result = passwordLogin(store, input.username, input.password);
+      setSession(res, result.token, result.expires);
+      res.json({ user: result.user });
+    }, false)
+  );
+  router.post(
     "/logout",
     endpoint((req, res, store) => {
       logout(store, req, res);
@@ -182,7 +195,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/releases",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "product", "technical", "pricing", "super");
+      requireRole(user!, "product", "technical", "pricing", "editor", "approval", "super");
       const rows = store.db
         .prepare("SELECT id FROM releases ORDER BY created_at DESC LIMIT 500")
         .all();
@@ -196,7 +209,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/current",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "product", "technical", "pricing", "super");
+      requireRole(user!, "product", "technical", "pricing", "editor", "approval", "super");
       res.json(
         Object.fromEntries(
           domains
@@ -233,7 +246,7 @@ export function registerControlRoutes(
   router.post(
     "/admin/impact",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "product", "technical", "super");
+      requireRole(user!, "product", "technical", "editor", "super");
       res.json(
         impact(
           parseDomain("technical", req.body) as Technical,
@@ -245,7 +258,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/audit",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "product", "technical", "pricing", "sales", "super");
+      requireRole(user!, "product", "technical", "pricing", "editor", "approval", "sales", "super");
       const rows = store.db
         .prepare("SELECT * FROM audit ORDER BY id DESC LIMIT 250")
         .all();
@@ -268,6 +281,21 @@ export function registerControlRoutes(
           .all()
           .map(r => store.user(String(r.id)))
       );
+    })
+  );
+  router.post(
+    "/admin/staff-accounts",
+    endpoint((req, res, store, user) => {
+      requireRole(user!, "super");
+      const input = z
+        .object({
+          username: staffUsername,
+          name: z.string().trim().min(2).max(100),
+          password: staffPassword,
+          role: z.enum(["editor", "approval"]),
+        })
+        .parse(req.body);
+      res.status(201).json(createStaffAccount(store, user!, input));
     })
   );
   router.get(
@@ -389,7 +417,10 @@ export function registerControlRoutes(
       const factor = store.db
         .prepare("SELECT totp FROM users WHERE id=?")
         .get(target.id);
-      if (input.roles.some(r => r !== "customer") && !factor?.totp)
+      const credential = store.db
+        .prepare("SELECT user_id FROM staff_credentials WHERE user_id=?")
+        .get(target.id);
+      if (input.roles.some(r => r !== "customer") && !factor?.totp && !credential)
         fail(
           409,
           "Enroll this person's authenticator using the server provisioning command before granting staff access"

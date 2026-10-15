@@ -17,7 +17,10 @@ export function Auth({
     [sent, setSent] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [passwordMode, setPasswordMode] = useState(false),
+    [username, setUsername] = useState(""),
+    [password, setPassword] = useState("");
   const [availability, setAvailability] = useState<{
     available: boolean;
     message: string;
@@ -79,6 +82,18 @@ export function Auth({
       setBusy(false);
     }
   }
+  async function signInWithPassword() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api("/login/password", { username, password });
+      onLogin(result.user);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="control-auth">
       <a className="control-brand" href="/">
@@ -111,7 +126,7 @@ export function Auth({
             {availability.message}
           </div>
         )}
-        {availability?.preview && (
+        {availability?.preview && !passwordMode && (
           <div style={{ marginTop: 20 }}>
             {error && (
               <div role="alert" className="control-error">
@@ -133,9 +148,51 @@ export function Auth({
                 </button>
               )}
             </div>
+            <button type="button" disabled={busy} onClick={() => setPasswordMode(true)}>
+              Sign in with staff password
+            </button>
           </div>
         )}
-        {!availability?.preview && (
+        {passwordMode && (
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              void signInWithPassword();
+            }}
+          >
+            <label>
+              Staff username
+              <input
+                autoComplete="username"
+                required
+                value={username}
+                disabled={busy}
+                onChange={e => setUsername(e.target.value)}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                minLength={12}
+                value={password}
+                disabled={busy}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </label>
+            {error && <div role="alert" className="control-error">{error}</div>}
+            <button className="control-primary" disabled={busy}>
+              {busy ? "Signing in…" : "Sign in"}
+              <ArrowRight size={17} />
+            </button>
+            <button type="button" disabled={busy} onClick={() => setPasswordMode(false)}>
+              Use email sign-in
+            </button>
+          </form>
+        )}
+        {!availability?.preview && !passwordMode && (
           <form
             onSubmit={e => {
               e.preventDefault();

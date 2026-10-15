@@ -41,6 +41,7 @@ export class ControlStore {
       CREATE TABLE IF NOT EXISTS notes(id TEXT PRIMARY KEY,inquiry_id TEXT NOT NULL REFERENCES inquiries(id),actor TEXT NOT NULL,body TEXT NOT NULL,created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS reports(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS quotes(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project_id TEXT NOT NULL,revision INTEGER NOT NULL,price_version TEXT NOT NULL,payload TEXT NOT NULL,created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS staff_credentials(username TEXT PRIMARY KEY,user_id TEXT UNIQUE NOT NULL REFERENCES users(id),password_hash TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS analytics_events(id TEXT PRIMARY KEY,event TEXT NOT NULL,visitor TEXT NOT NULL,path TEXT NOT NULL,created_at TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS analytics_events_event_created_at ON analytics_events(event,created_at);
       CREATE INDEX IF NOT EXISTS analytics_events_visitor_created_at ON analytics_events(visitor,created_at);

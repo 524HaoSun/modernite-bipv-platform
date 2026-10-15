@@ -3,6 +3,7 @@ import {
   createHmac,
   randomBytes,
   randomInt,
+  scryptSync,
   timingSafeEqual,
   createCipheriv,
   createDecipheriv,
@@ -10,7 +11,7 @@ import {
 import { parse } from "cookie";
 import type { Request, Response } from "express";
 import { ControlError, ControlStore, fail } from "./store";
-import type { ControlUser } from "../../shared/control";
+import type { ControlUser, Role } from "../../shared/control";
 export const SESSION_COOKIE = "modernite_session";
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
@@ -61,6 +62,28 @@ export function totp(secret: string, step = Math.floor(Date.now() / 30000)) {
 }
 const equal = (a: string, b: string) =>
   a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+function passwordHash(password: string) {
+  const salt = randomBytes(16).toString("base64url");
+  const digest = scryptSync(password, salt, 64).toString("base64url");
+  return `scrypt$${salt}$${digest}`;
+}
+function passwordMatches(password: string, saved: string) {
+  const [algorithm, salt, digest] = saved.split("$");
+  if (algorithm !== "scrypt" || !salt || !digest) return false;
+  const actual = scryptSync(password, salt, 64).toString("base64url");
+  return equal(actual, digest);
+}
+function createSession(store: ControlStore, user: ControlUser) {
+  const token = randomBytes(32).toString("base64url");
+  const expires =
+    Date.now() + (user.roles.some(r => r !== "customer") ? 4 : 24) * 3600000;
+  store.db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
+  store.db
+    .prepare("INSERT INTO sessions VALUES(?,?,?)")
+    .run(hash(token), user.id, expires);
+  store.audit(user.id, "session.created", user.id);
+  return { user, token, expires };
+}
 function codeHash(email: string, code: string) {
   return createHmac("sha256", key()).update(`${email}:${code}`).digest("hex");
 }
@@ -181,16 +204,7 @@ export function verifyCode(
     }
     user ??= store.createUser(email);
     store.db.prepare("DELETE FROM codes WHERE email=?").run(email);
-    const token = randomBytes(32).toString("base64url"),
-      expires =
-        Date.now() +
-        (user.roles.some(r => r !== "customer") ? 4 : 24) * 3600000;
-    store.db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
-    store.db
-      .prepare("INSERT INTO sessions VALUES(?,?,?)")
-      .run(hash(token), user.id, expires);
-    store.audit(user.id, "session.created", user.id);
-    return { user, token, expires };
+    return createSession(store, user);
   });
   return (
     result ??
@@ -199,6 +213,45 @@ export function verifyCode(
       "The code is invalid or expired. Staff must also enter a valid authenticator code."
     )
   );
+}
+
+export function createStaffAccount(
+  store: ControlStore,
+  actor: ControlUser,
+  input: { username: string; name: string; password: string; role: Extract<Role, "editor" | "approval"> }
+) {
+  const username = input.username.trim().toLowerCase();
+  if (store.db.prepare("SELECT username FROM staff_credentials WHERE username=?").get(username))
+    fail(409, "That staff username is already in use");
+  const email = `${username}@staff.modernite.invalid`;
+  if (store.byEmail(email)) fail(409, "That staff username is already in use");
+  const password = passwordHash(input.password);
+  return store.transaction(() => {
+    const user = store.createUser(email, input.name, [input.role]);
+    const now = new Date().toISOString();
+    store.db
+      .prepare("INSERT INTO staff_credentials(username,user_id,password_hash,created_at,updated_at) VALUES(?,?,?,?,?)")
+      .run(username, user.id, password, now, now);
+    store.audit(actor.id, "staff.account_created", user.id, null, {
+      username,
+      role: input.role,
+    });
+    return { user, username };
+  });
+}
+
+export function passwordLogin(store: ControlStore, username: string, password: string) {
+  const normalized = username.trim().toLowerCase();
+  limit(store, `password:${hash(normalized)}`, 10, 3600000);
+  const row = store.db
+    .prepare(
+      "SELECT c.password_hash,c.user_id FROM staff_credentials c WHERE c.username=?"
+    )
+    .get(normalized) as { password_hash: string; user_id: string } | undefined;
+  const user = row ? store.user(row.user_id) : null;
+  if (!row || !user || !user.active || !passwordMatches(password, row.password_hash))
+    fail(401, "The username or password is incorrect");
+  return store.transaction(() => createSession(store, user));
 }
 export function sessionUser(
   store: ControlStore,
