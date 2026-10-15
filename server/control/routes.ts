@@ -276,11 +276,15 @@ export function registerControlRoutes(
     "/admin/users",
     endpoint((_req, res, store, user) => {
       requireRole(user!, "super");
+      const rows = store.db
+        .prepare(
+          `SELECT u.id,c.username
+           FROM users u LEFT JOIN staff_credentials c ON c.user_id=u.id
+           ORDER BY c.username IS NULL,u.created_at DESC LIMIT 500`
+        )
+        .all() as { id: string; username: string | null }[];
       res.json(
-        store.db
-          .prepare("SELECT id FROM users ORDER BY created_at DESC LIMIT 500")
-          .all()
-          .map(r => store.user(String(r.id)))
+        rows.map(row => ({ ...store.user(row.id), username: row.username }))
       );
     })
   );

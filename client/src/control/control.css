@@ -516,6 +516,20 @@
   border-radius: 10px;
   overflow: auto;
 }
+.control-staff-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  margin: 18px 0 26px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafcf7;
+}
+.control-staff-form button {
+  min-height: 40px;
+}
 .control table {
   border-collapse: collapse;
   width: 100%;
@@ -849,6 +863,10 @@
   }
   .control-card {
     padding: 16px;
+  }
+  .control-staff-form {
+    grid-template-columns: 1fr;
+    padding: 14px;
   }
   .control-diff {
     grid-template-columns: 1fr;

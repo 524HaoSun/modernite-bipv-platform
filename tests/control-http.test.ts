@@ -354,6 +354,11 @@ describe("control HTTP boundaries", () => {
       superUser.cookie
     );
     expect(created.status).toBe(201);
+    expect(
+      (await (await req("/admin/users", undefined, superUser.cookie)).json()).some(
+        (account: { username?: string }) => account.username === "editor"
+      )
+    ).toBe(true);
     await req(
       "/admin/staff-accounts",
       {

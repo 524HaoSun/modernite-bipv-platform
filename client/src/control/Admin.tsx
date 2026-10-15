@@ -245,6 +245,12 @@ export default function Admin() {
     [projectDetail, setProjectDetail] = useState<any>(null),
     [catalogueType, setCatalogueType] = useState("roof_tiles");
   const [analytics, setAnalytics] = useState<any>(null);
+  const [staffDraft, setStaffDraft] = useState({
+    username: "",
+    name: "",
+    password: "",
+    role: "editor",
+  });
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
     ...(has("product", "editor", "approval", "super") ? ["catalogue"] : []),
@@ -1181,27 +1187,64 @@ export default function Admin() {
           )}
           {tab === "users" && (
             <section className="control-card">
-              <div className="control-row">
-                <button
-                  className="control-primary"
-                  disabled={busy}
-                  onClick={() => {
-                    const role = window.prompt("Account type: editor, approval or super", "editor");
-                    if (role !== "editor" && role !== "approval" && role !== "super") return;
-                    const username = window.prompt("Username (letters, numbers, _ or -)");
-                    if (!username) return;
-                    const name = window.prompt("Display name", role === "editor" ? "Editor" : "Approval") || role;
-                    const password = window.prompt("Password (at least 12 characters)");
-                    if (!password) return;
-                    void action(
-                      () => api("/admin/staff-accounts", { username, name, password, role }),
-                      "Staff account created"
-                    );
-                  }}
-                >
-                  Create staff account
+              <h2>Create staff account</h2>
+              <form
+                className="control-staff-form"
+                onSubmit={event => {
+                  event.preventDefault();
+                  void action(async () => {
+                    await api("/admin/staff-accounts", staffDraft);
+                    setStaffDraft({ username: "", name: "", password: "", role: "editor" });
+                  }, "Staff account created");
+                }}
+              >
+                <label>
+                  Username
+                  <input
+                    required
+                    pattern="[A-Za-z][A-Za-z0-9_-]{2,31}"
+                    placeholder="e.g. editor-jane"
+                    value={staffDraft.username}
+                    onChange={event => setStaffDraft(current => ({ ...current, username: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Display name
+                  <input
+                    required
+                    minLength={2}
+                    placeholder="e.g. Jane Smith"
+                    value={staffDraft.name}
+                    onChange={event => setStaffDraft(current => ({ ...current, name: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Account type
+                  <select
+                    value={staffDraft.role}
+                    onChange={event => setStaffDraft(current => ({ ...current, role: event.target.value }))}
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="approval">Approval</option>
+                    <option value="super">Super administrator</option>
+                  </select>
+                </label>
+                <label>
+                  Password
+                  <input
+                    required
+                    type="password"
+                    minLength={12}
+                    autoComplete="new-password"
+                    placeholder="At least 12 characters"
+                    value={staffDraft.password}
+                    onChange={event => setStaffDraft(current => ({ ...current, password: event.target.value }))}
+                  />
+                </label>
+                <button className="control-primary" disabled={busy}>
+                  Create account
                 </button>
-              </div>
+              </form>
               <div className="control-search">
                 <Search size={16} />
                 <input
@@ -1223,15 +1266,38 @@ export default function Admin() {
                 <tbody>
                   {rows
                     .filter(r =>
-                      r.email.toLowerCase().includes(search.toLowerCase())
+                      `${r.username || ""} ${r.name} ${r.email}`
+                        .toLowerCase()
+                        .includes(search.toLowerCase())
                     )
                     .map(r => (
                       <tr key={r.id}>
                         <td>
-                          {r.email}
-                          <small>{r.name}</small>
+                          <strong>{r.username || r.email}</strong>
+                          <small>{r.name}{r.username ? ` · ${r.email}` : ""}</small>
                         </td>
-                        <td>{r.roles.join(", ")}</td>
+                        <td>
+                          {r.username ? (
+                            <select
+                              value={r.roles[0] || "customer"}
+                              disabled={busy || r.id === user.id}
+                              onChange={event =>
+                                void action(
+                                  () => api(`/admin/users/${r.id}`, {
+                                    roles: [event.target.value],
+                                    active: r.active,
+                                    reason: "Staff account type updated",
+                                  }),
+                                  "Account type updated"
+                                )
+                              }
+                            >
+                              <option value="editor">Editor</option>
+                              <option value="approval">Approval</option>
+                              <option value="super">Super administrator</option>
+                            </select>
+                          ) : r.roles.join(", ")}
+                        </td>
                         <td>{r.active ? "Active" : "Suspended"}</td>
                         <td>
                           <div className="control-table-actions">
@@ -1256,33 +1322,6 @@ export default function Admin() {
                               {r.active ? "Suspend" : "Reactivate"}
                             </button>
                             <button
-                              disabled={busy || r.id === user.id}
-                              onClick={() => {
-                                const roles = window.prompt(
-                                  "Roles separated by commas: customer, dealer, sales, product, technical, pricing, editor, approval, super",
-                                  r.roles.join(",")
-                                );
-                                if (!roles) return;
-                                const why = window.prompt(
-                                  "Reason for changing roles"
-                                );
-                                if (why)
-                                  void action(
-                                    () =>
-                                      api(`/admin/users/${r.id}`, {
-                                        roles: roles
-                                          .split(",")
-                                          .map(s => s.trim()),
-                                        active: r.active,
-                                        reason: why,
-                                      }),
-                                    "Roles updated and sessions revoked"
-                                  );
-                              }}
-                            >
-                              Edit roles
-                            </button>
-                            <button
                               disabled={busy}
                               onClick={() =>
                                 action(
@@ -1293,7 +1332,7 @@ export default function Admin() {
                             >
                               Revoke sessions
                             </button>
-                            {(r.roles.includes("editor") || r.roles.includes("approval")) && (
+                            {r.username && (
                               <button
                                 disabled={busy}
                                 onClick={() => {
@@ -1315,7 +1354,7 @@ export default function Admin() {
                 </tbody>
               </table>
               <p className="control-help">
-                Create an Editor or Approval account here. Passwords are stored securely and are never shown again.
+                Usernames appear immediately after creation. Passwords are stored securely and are never shown again.
               </p>
             </section>
           )}
