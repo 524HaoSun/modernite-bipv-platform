@@ -6,11 +6,13 @@ import { api } from "./api";
 export function Auth({
   onLogin,
   staff = false,
+  initialEmail = "",
 }: {
   onLogin: (user: ControlUser) => void;
   staff?: boolean;
+  initialEmail?: string;
 }) {
-  const [email, setEmail] = useState(""),
+  const [email, setEmail] = useState(initialEmail),
     [code, setCode] = useState(""),
     [authenticator, setAuthenticator] = useState(""),
     [sent, setSent] = useState(false),

@@ -121,16 +121,18 @@
 .control-brand {
   display: flex;
   align-items: center;
+  width: min(100%, 260px);
 }
 .control-brand-logo {
   display: block;
   height: 44px;
   width: auto;
+  max-width: 100%;
 }
-.control-brand small {
-  font-size: 8px;
-  letter-spacing: 2.1px;
-  margin-top: 3px;
+.control-brand img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .control-kicker {
   display: flex;
@@ -188,6 +190,9 @@
   display: flex;
   flex-direction: column;
   z-index: 20;
+}
+.control-sidebar .control-brand {
+  width: 100%;
 }
 .control-sidebar .control-brand-logo {
   height: 38px;
@@ -621,6 +626,22 @@
   padding: 24px 0;
   border-bottom: 1px solid var(--line);
 }
+
+.control-chat-transcript {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--control-line, #dbe7de);
+  border-radius: 10px;
+  background: #f8fbf8;
+}
+
+.control-chat-transcript p {
+  margin: 0;
+  white-space: pre-wrap;
+}
 .control-inquiry:first-child {
   padding-top: 0;
 }
@@ -718,8 +739,7 @@
     padding: 24px 14px;
   }
   .control-sidebar .control-brand {
-    font-size: 14px;
-    letter-spacing: 2px;
+    width: 100%;
   }
   .control-main {
     margin-left: 210px;

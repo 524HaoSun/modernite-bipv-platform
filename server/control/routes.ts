@@ -22,6 +22,7 @@ import {
   setSession,
   logout,
   sendLoginEmail,
+  sendProjectResumeEmail,
   limit,
 } from "./auth";
 import {
@@ -56,6 +57,10 @@ import {
 const email = z.string().trim().toLowerCase().email().max(254);
 const reason = z.string().trim().min(8).max(2000);
 const id = z.string().min(1).max(100);
+const analyticsVisit = z.object({
+  visitor: z.string().uuid(),
+  path: z.string().trim().min(1).max(200),
+});
 export function registerControlRoutes(
   app: Express,
   getStore: () => ControlStore = controlStore,
@@ -104,6 +109,25 @@ export function registerControlRoutes(
   router.get(
     "/session",
     endpoint((_req, res, _store, user) => res.json({ user }), false)
+  );
+  router.post(
+    "/analytics/visit",
+    endpoint((req, res, store) => {
+      const input = analyticsVisit.parse(req.body);
+      const today = new Date().toISOString().slice(0, 10);
+      const alreadyRecorded = store.db
+        .prepare(
+          "SELECT id FROM analytics_events WHERE event='visit' AND visitor=? AND path=? AND substr(created_at,1,10)=?"
+        )
+        .get(input.visitor, input.path, today);
+      if (!alreadyRecorded)
+        store.db
+          .prepare(
+            "INSERT INTO analytics_events(id,event,visitor,path,created_at) VALUES(?,?,?,?,?)"
+          )
+          .run(randomUUID(), "visit", input.visitor, input.path, new Date().toISOString());
+      res.status(201).json({ ok: true });
+    }, false)
   );
   router.get("/login/status", (_req, res) => res.json(loginStatus()));
   if (isControlPreview()) {
@@ -271,6 +295,107 @@ export function registerControlRoutes(
       );
     })
   );
+  router.get(
+    "/admin/projects",
+    endpoint((_req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      res.json(
+        store.db
+          .prepare(
+            `SELECT p.id,p.name,p.revision,p.updated_at,u.email
+             FROM projects p JOIN users u ON u.id=p.owner
+             ORDER BY p.updated_at DESC LIMIT 500`
+          )
+          .all()
+      );
+    })
+  );
+  router.get(
+    "/admin/analytics",
+    endpoint((_req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      const scalar = (sql: string, ...params: any[]) =>
+        Number((store.db.prepare(sql).get(...params) as { count: number }).count);
+      const sinceSevenDays = new Date(Date.now() - 6 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const daily = store.db
+        .prepare(
+          `SELECT substr(created_at,1,10) AS day,
+                  COUNT(*) AS visits,
+                  COUNT(DISTINCT visitor) AS visitors
+           FROM analytics_events
+           WHERE event='visit' AND substr(created_at,1,10) >= ?
+           GROUP BY substr(created_at,1,10)
+           ORDER BY day DESC`
+        )
+        .all(sinceSevenDays) as { day: string; visits: number; visitors: number }[];
+      const reports = store.db
+        .prepare(
+          `SELECT substr(created_at,1,10) AS day, COUNT(*) AS reports
+           FROM reports WHERE substr(created_at,1,10) >= ?
+           GROUP BY substr(created_at,1,10)`
+        )
+        .all(sinceSevenDays) as { day: string; reports: number }[];
+      const calculations = store.db
+        .prepare(
+          `SELECT substr(updated_at,1,10) AS day, COUNT(*) AS calculations
+           FROM projects WHERE substr(updated_at,1,10) >= ?
+           GROUP BY substr(updated_at,1,10)`
+        )
+        .all(sinceSevenDays) as { day: string; calculations: number }[];
+      const dayMap = new Map(daily.map(day => [day.day, day]));
+      for (const report of reports) {
+        const row = dayMap.get(report.day) ?? { day: report.day, visits: 0, visitors: 0 };
+        (row as typeof row & { reports?: number }).reports = report.reports;
+        dayMap.set(report.day, row);
+      }
+      for (const calculation of calculations) {
+        const row = dayMap.get(calculation.day) ?? { day: calculation.day, visits: 0, visitors: 0 };
+        (row as typeof row & { calculations?: number }).calculations = calculation.calculations;
+        dayMap.set(calculation.day, row);
+      }
+      res.json({
+        totals: {
+          visits: scalar("SELECT COUNT(*) AS count FROM analytics_events WHERE event='visit'"),
+          uniqueVisitors: scalar("SELECT COUNT(DISTINCT visitor) AS count FROM analytics_events WHERE event='visit'"),
+          visitsLast7Days: scalar("SELECT COUNT(*) AS count FROM analytics_events WHERE event='visit' AND substr(created_at,1,10)>=?", sinceSevenDays),
+          savedCalculations: scalar("SELECT COUNT(*) AS count FROM projects"),
+          generatedReports: scalar("SELECT COUNT(*) AS count FROM reports"),
+          quoteRequests: scalar("SELECT COUNT(*) AS count FROM inquiries WHERE source='quote'"),
+          advisorConversations: scalar("SELECT COUNT(*) AS count FROM inquiries WHERE source='advisor'"),
+        },
+        daily: Array.from(dayMap.values())
+          .map(row => ({ ...row, reports: (row as { reports?: number }).reports ?? 0, calculations: (row as { calculations?: number }).calculations ?? 0 }))
+          .sort((a, b) => b.day.localeCompare(a.day)),
+      });
+    })
+  );
+  router.get(
+    "/admin/projects/:id/detail",
+    endpoint((req, res, store, user) => {
+      requireRole(user!, "sales", "super");
+      const projectId = id.parse(req.params.id);
+      const project = store.db
+        .prepare(
+          `SELECT p.id,p.name,p.revision,p.updated_at,u.email
+           FROM projects p JOIN users u ON u.id=p.owner WHERE p.id=?`
+        )
+        .get(projectId) as any;
+      if (!project) fail(404, "Project not found");
+      const version = store.db
+        .prepare(
+          "SELECT payload,created_at FROM project_versions WHERE project_id=? AND revision=?"
+        )
+        .get(projectId, project.revision) as any;
+      if (!version) fail(404, "Project version not found");
+      res.json({
+        project,
+        savedAt: version.created_at,
+        payload: JSON.parse(String(version.payload)),
+      });
+    })
+  );
   router.post(
     "/admin/users/:id",
     endpoint((req, res, store, user) => {
@@ -353,6 +478,72 @@ export function registerControlRoutes(
         })
       );
     })
+  );
+  router.post(
+    "/projects/capture",
+    endpoint(async (req, res, store) => {
+      const input = z
+        .object({
+          email: email.optional().or(z.literal("")),
+          name: z.string().trim().min(1).max(100).default("My solar project"),
+          configuration: z.unknown(),
+        })
+        .parse(req.body);
+      limit(
+        store,
+        `capture:${createHash("sha256").update(req.ip || "unknown").digest("hex")}`,
+        20,
+        3600000
+      );
+      const recipient = input.email || undefined;
+      const owner =
+        (recipient && store.byEmail(recipient)) ||
+        store.createUser(
+          recipient || `guest-${randomUUID()}@anonymous.invalid`,
+          recipient ? "" : "Guest calculation"
+        );
+      const saved = savePrivateProject(store, owner, {
+        name: input.name,
+        configuration: input.configuration,
+      });
+      const calculated = await calculatePrivateProject(
+        store,
+        owner,
+        saved.id,
+        saved.revision,
+        false
+      );
+      const report = await createReport(
+        store,
+        owner,
+        calculated.id,
+        calculated.revision
+      );
+      let emailSent = false;
+      if (recipient) {
+        try {
+          await sendProjectResumeEmail(recipient, {
+            id: calculated.id,
+            name: input.name,
+          });
+          emailSent = true;
+          store.audit(owner.id, "project.resume_email_sent", calculated.id);
+        } catch (error) {
+          console.warn("[projects] Saved project but could not send resume email");
+        }
+      }
+      res.status(201).json({
+        id: calculated.id,
+        revision: calculated.revision,
+        reportId: report.reportId,
+        emailSent,
+        message: recipient
+          ? emailSent
+            ? "Your project is saved. Check your email for the secure return link."
+            : "Your project is saved, but the return email could not be sent."
+          : "Your calculation is saved privately. Add an email next time to return to it on another device.",
+      });
+    }, false)
   );
   router.get(
     "/projects/:id",
@@ -468,7 +659,7 @@ export function registerControlRoutes(
       store.transaction(() => {
         store.db
           .prepare(
-            "INSERT INTO inquiries(id,owner,project_id,revision,contact,message,created_at) VALUES(?,?,?,?,?,?,?)"
+            "INSERT INTO inquiries(id,owner,project_id,revision,contact,message,created_at,source) VALUES(?,?,?,?,?,?,?,?)"
           )
           .run(
             inquiryId,
@@ -483,7 +674,8 @@ export function registerControlRoutes(
               preferredContact: input.preferredContact,
             }),
             input.message,
-            new Date().toISOString()
+            new Date().toISOString(),
+            "quote"
           );
         store.audit(user!.id, "inquiry.created", inquiryId);
       });
@@ -505,7 +697,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/inquiries",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "sales");
+      requireRole(user!, "sales", "super");
       res.json(
         store.db
           .prepare(
@@ -528,6 +720,7 @@ export function registerControlRoutes(
                   status: r.status,
                   created_at: r.created_at,
                   assignee: null,
+                  source: r.source,
                 }
           )
       );
@@ -536,7 +729,7 @@ export function registerControlRoutes(
   router.post(
     "/admin/inquiries/:id",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "sales");
+      requireRole(user!, "sales", "super");
       const input = z
         .object({
           claim: z.boolean().optional(),

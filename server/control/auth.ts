@@ -257,3 +257,37 @@ export async function sendLoginEmail(email: string, code: string) {
     throw new Error("Email delivery failed");
   }
 }
+
+export async function sendProjectResumeEmail(
+  email: string,
+  project: { id: string; name: string }
+) {
+  const status = emailLoginStatus();
+  if (!status.available) fail(503, status.message);
+  const base = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
+  if (!base)
+    fail(503, "Project email needs the website address to be configured");
+  const resume = new URL("/account", base);
+  resume.searchParams.set("project", project.id);
+  resume.searchParams.set("email", email);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.LOGIN_EMAIL_FROM,
+      to: [email],
+      subject: `Your saved Modernité project: ${project.name}`,
+      text: `Your Modernité solar project has been saved. To return to it, open this secure link: ${resume.href}\n\nFor your privacy, we will ask you to verify this email address before opening the project.`,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) {
+    console.warn("[projects] Email provider rejected delivery", {
+      status: response.status,
+    });
+    throw new Error("Project email delivery failed");
+  }
+}

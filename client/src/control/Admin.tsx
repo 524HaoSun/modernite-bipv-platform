@@ -7,11 +7,13 @@ import {
   Users,
   ClipboardList,
   MessageSquare,
+  FolderKanban,
   LogOut,
   Search,
   ArrowUpRight,
   CheckCircle2,
   Plus,
+  BarChart3,
 } from "lucide-react";
 import type { ControlUser, Domain, Release } from "../../../shared/control";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -26,6 +28,8 @@ const titles: Record<string, string> = {
   inquiries: "Customer inquiries",
   users: "People & access",
   audit: "Activity log",
+  projects: "Saved calculations",
+  analytics: "Website analytics",
 };
 const icons: Record<string, any> = {
   catalogue: Package,
@@ -35,6 +39,8 @@ const icons: Record<string, any> = {
   inquiries: MessageSquare,
   users: Users,
   audit: ClipboardList,
+  projects: FolderKanban,
+  analytics: BarChart3,
 };
 const labels: Record<string, string> = {
   wp: "Power density · Wp/m²",
@@ -197,6 +203,29 @@ function Field({
     </label>
   );
 }
+
+function AdvisorTranscript({ message }: { message: string }) {
+  let messages: { role?: string; content?: string }[] = [];
+  try {
+    const parsed = JSON.parse(message) as { messages?: unknown };
+    if (Array.isArray(parsed.messages)) messages = parsed.messages;
+  } catch {
+    // A malformed historic record should not make the inquiries page unusable.
+  }
+
+  if (!messages.length) return <p>Conversation record is unavailable.</p>;
+  return (
+    <div className="control-chat-transcript">
+      {messages.map((message, index) => (
+        <p key={index}>
+          <strong>{message.role === "user" ? "Visitor" : "Modernité Advisor"}:</strong>{" "}
+          {message.content || "—"}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [user, setUser] = useState<ControlUser | null | undefined>(),
     [tab, setTab] = useState("catalogue"),
@@ -214,14 +243,16 @@ export default function Admin() {
     [source, setSource] = useState(""),
     [impact, setImpact] = useState<any[] | null>(null),
     [detail, setDetail] = useState<Release | null>(null),
+    [projectDetail, setProjectDetail] = useState<any>(null),
     [catalogueType, setCatalogueType] = useState("roof_tiles");
+  const [analytics, setAnalytics] = useState<any>(null);
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
     ...(has("product", "super") ? ["catalogue"] : []),
     ...(has("product", "technical", "super") ? ["technical"] : []),
     ...(has("pricing", "super") ? ["pricing"] : []),
     ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
-    ...(has("sales") ? ["inquiries"] : []),
+    ...(has("sales", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
     ...(has("product", "technical", "pricing", "sales", "super")
       ? ["audit"]
@@ -250,8 +281,9 @@ export default function Admin() {
         setReleases(r);
         if (c[tab]) setEdit(structuredClone(c[tab].data));
       }
-      if (["inquiries", "users", "audit"].includes(tab))
+      if (["inquiries", "users", "audit", "projects"].includes(tab))
         setRows(await api(`/admin/${tab}`));
+      if (tab === "analytics") setAnalytics(await api("/admin/analytics"));
       setImpact(null);
     } catch (e) {
       setError((e as Error).message);
@@ -292,6 +324,7 @@ export default function Admin() {
     setError("");
     setNotice("");
     setDetail(null);
+    setProjectDetail(null);
     setReason("");
     setSource("");
   }
@@ -1015,17 +1048,27 @@ export default function Admin() {
                 .map(r => (
                   <article key={r.id} className="control-inquiry">
                     <div className="control-row">
-                      <h3>{r.contact?.name || "Unassigned inquiry"}</h3>
+                      <h3>
+                        {r.source === "advisor"
+                          ? "AI advisor conversation"
+                          : r.contact?.name || "Unassigned inquiry"}
+                      </h3>
                       <span className="control-status">{r.status}</span>
                     </div>
                     {r.assignee ? (
                       <>
-                        <p>
-                          {r.contact.email} ·{" "}
-                          {r.contact.phone || "No phone supplied"} ·{" "}
-                          {r.contact.company}
-                        </p>
-                        <p>{r.message}</p>
+                        {r.source === "advisor" ? (
+                          <AdvisorTranscript message={r.message} />
+                        ) : (
+                          <>
+                            <p>
+                              {r.contact.email} ·{" "}
+                              {r.contact.phone || "No phone supplied"} ·{" "}
+                              {r.contact.company}
+                            </p>
+                            <p>{r.message}</p>
+                          </>
+                        )}
                         <small>
                           Project {r.project_id} · revision {r.revision} ·
                           preferred contact: {r.contact.preferredContact}
@@ -1216,6 +1259,58 @@ export default function Admin() {
                 Staff must be provisioned with an authenticator before a staff
                 role can be assigned.
               </p>
+            </section>
+          )}
+          {tab === "projects" && (
+            <section className="control-card">
+              <div className="control-search">
+                <Search size={16} />
+                <input placeholder="Search projects or email…" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <table>
+                <thead><tr><th>Project</th><th>Customer</th><th>Revision</th><th>Last saved</th><th>Details</th></tr></thead>
+                <tbody>{rows.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())).map(r => (
+                  <tr key={r.id}><td><strong>{r.name}</strong><small>{r.id}</small></td><td>{r.email}</td><td>{r.revision}</td><td>{new Date(r.updated_at).toLocaleString()}</td><td><button onClick={() => action(async () => setProjectDetail(await api(`/admin/projects/${r.id}/detail`)), "Calculation loaded")}>View calculation</button></td></tr>
+                ))}</tbody>
+              </table>
+              {projectDetail && <div className="control-inspect">
+                <h3>{projectDetail.project.name}</h3>
+                <p>{projectDetail.project.email} · Revision {projectDetail.project.revision} · saved {new Date(projectDetail.savedAt).toLocaleString()}</p>
+                <div className="control-fields">
+                  <div><small>Location</small><strong>{projectDetail.payload.input.address}</strong></div>
+                  <div><small>Market</small><strong>{projectDetail.payload.input.market}</strong></div>
+                  <div><small>Capacity</small><strong>{projectDetail.payload.study ? `${projectDetail.payload.study.result.totalCapacityKwp.toFixed(2)} kWp` : "Not calculated"}</strong></div>
+                  <div><small>Annual generation</small><strong>{projectDetail.payload.study ? `${Math.round(projectDetail.payload.study.result.range.representative).toLocaleString()} kWh/year` : "Not calculated"}</strong></div>
+                </div>
+                {projectDetail.payload.study && <table>
+                  <thead><tr><th>Surface</th><th>Product</th><th>Area</th><th>Capacity</th><th>Annual generation</th></tr></thead>
+                  <tbody>{projectDetail.payload.study.result.surfaces.map((surface: any) => <tr key={surface.surfaceId}>
+                    <td>{surface.surfaceLabel}</td><td>{surface.productName}</td><td>{surface.areaM2.toFixed(1)} m²</td><td>{surface.capacityKwp.toFixed(2)} kWp</td><td>{Math.round(surface.annualKwh).toLocaleString()} kWh</td>
+                  </tr>)}</tbody>
+                </table>}
+                <details><summary>Full saved calculation data</summary><pre className="control-json">{JSON.stringify(projectDetail.payload, null, 2)}</pre></details>
+              </div>}
+              {!loading && !rows.length && <Empty title="No saved calculations yet" body="Website calculations will appear here after a visitor saves a project." />}
+            </section>
+          )}
+          {tab === "analytics" && analytics && (
+            <section className="control-card">
+              <p className="control-help">Visits are counted once per visitor, page and calendar day. Report and calculation totals include all records saved in this database.</p>
+              <div className="control-fields control-analytics-summary">
+                <div><small>Total visits</small><strong>{analytics.totals.visits.toLocaleString()}</strong></div>
+                <div><small>Unique visitors</small><strong>{analytics.totals.uniqueVisitors.toLocaleString()}</strong></div>
+                <div><small>Visits · last 7 days</small><strong>{analytics.totals.visitsLast7Days.toLocaleString()}</strong></div>
+                <div><small>Saved calculations</small><strong>{analytics.totals.savedCalculations.toLocaleString()}</strong></div>
+                <div><small>Generated reports</small><strong>{analytics.totals.generatedReports.toLocaleString()}</strong></div>
+                <div><small>Quote requests</small><strong>{analytics.totals.quoteRequests.toLocaleString()}</strong></div>
+                <div><small>Advisor conversations</small><strong>{analytics.totals.advisorConversations.toLocaleString()}</strong></div>
+              </div>
+              <h3>Recent activity</h3>
+              <table>
+                <thead><tr><th>Day</th><th>Visits</th><th>Visitors</th><th>Reports</th><th>Calculations</th></tr></thead>
+                <tbody>{analytics.daily.map((day: any) => <tr key={day.day}><td>{day.day}</td><td>{day.visits}</td><td>{day.visitors}</td><td>{day.reports}</td><td>{day.calculations}</td></tr>)}</tbody>
+              </table>
+              {!analytics.daily.length && <Empty title="No activity yet" body="Website visits will start appearing when visitors open the Solar Studio." />}
             </section>
           )}
           {tab === "audit" && (
