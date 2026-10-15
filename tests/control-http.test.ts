@@ -371,13 +371,35 @@ describe("control HTTP boundaries", () => {
     expect(editorLogin.status).toBe(200);
     const editorCookie = editorLogin.headers.get("set-cookie") || "";
     expect((await req("/admin/users", undefined, editorCookie)).status).toBe(403);
+    expect((await req("/admin/inquiries", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, editorCookie)).status).toBe(200);
     const approvalLogin = await req("/login/password", {
       username: "approval",
       password: "Approval-password-2026",
     });
     expect(approvalLogin.status).toBe(200);
+    const approvalCookie = approvalLogin.headers.get("set-cookie") || "";
+    expect((await req("/admin/releases", undefined, approvalCookie)).status).toBe(200);
+    const current = await (await req("/admin/current", undefined, approvalCookie)).json();
+    expect((await req("/admin/inquiries", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, approvalCookie)).status).toBe(200);
+    const submission = {
+      domain: "catalogue",
+      data: current.catalogue.data,
+      baseId: current.catalogue.id,
+      reason: "Confirm catalogue values for release",
+      source: "Internal product confirmation",
+    };
+    expect((await req("/admin/submissions", submission, approvalCookie)).status).toBe(403);
+    const submitted = await (
+      await req("/admin/submissions", submission, editorCookie)
+    ).json();
     expect(
-      (await req("/admin/releases", undefined, approvalLogin.headers.get("set-cookie") || "")).status
+      (
+        await req(`/admin/releases/${submitted.id}/approve`, {}, approvalCookie)
+      ).status
     ).toBe(200);
   });
 });

@@ -247,11 +247,11 @@ export default function Admin() {
   const [analytics, setAnalytics] = useState<any>(null);
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
-    ...(has("product", "editor", "super") ? ["catalogue"] : []),
-    ...(has("product", "technical", "editor", "super") ? ["technical"] : []),
-    ...(has("pricing", "editor", "super") ? ["pricing"] : []),
+    ...(has("product", "editor", "approval", "super") ? ["catalogue"] : []),
+    ...(has("product", "technical", "editor", "approval", "super") ? ["technical"] : []),
+    ...(has("pricing", "editor", "approval", "super") ? ["pricing"] : []),
     ...(has("product", "technical", "pricing", "editor", "approval", "super") ? ["releases"] : []),
-    ...(has("sales", "super") ? ["inquiries", "projects", "analytics"] : []),
+    ...(has("sales", "editor", "approval", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
     ...(has("product", "technical", "pricing", "editor", "approval", "sales", "super")
       ? ["audit"]
@@ -393,6 +393,16 @@ export default function Admin() {
     has(
       "super",
       "approval",
+      domain === "catalogue"
+        ? "product"
+        : domain === "technical"
+          ? "technical"
+          : "pricing"
+    );
+  const canEditDomain = (domain: Domain) =>
+    has(
+      "editor",
+      "super",
       domain === "catalogue"
         ? "product"
         : domain === "technical"
@@ -588,7 +598,7 @@ export default function Admin() {
                               Ready to submit
                             </span>
                           </div>
-                          <div className="control-fields">
+                          <fieldset className="control-fields" disabled={!canEditDomain(tab as Domain)}>
                             <label>
                               Product type
                               <input
@@ -768,8 +778,9 @@ export default function Admin() {
                                 />
                               </>
                             )}
-                          </div>
+                          </fieldset>
                           {tab === "technical" && (
+                            <fieldset disabled={!canEditDomain(tab as Domain)}>
                             <details className="control-model">
                               <summary>
                                 Calculation model · applies to the complete
@@ -802,8 +813,9 @@ export default function Admin() {
                                 ))}
                               </div>
                             </details>
+                            </fieldset>
                           )}
-                          <div className="control-change">
+                          <fieldset className="control-change" disabled={!canEditDomain(tab as Domain)}>
                             <h3>Give this change context</h3>
                             <label>
                               Reason for change
@@ -869,7 +881,7 @@ export default function Admin() {
                               reviewer. It does not change live values until
                               approval.
                             </small>
-                          </div>
+                          </fieldset>
                           {impact && (
                             <div className="control-impact">
                               <h3>Sample impact · 10 m², 25°C ambient</h3>

@@ -267,7 +267,7 @@ export function registerControlRoutes(
         rows.filter(r =>
           r.domain
             ? canReadDomain(user!, r.domain as Domain)
-            : hasRole(user!, "super") || r.actor === user!.id
+            : hasRole(user!, "super", "editor", "approval", "sales") || r.actor === user!.id
         )
       );
     })
@@ -302,7 +302,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/projects",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "sales", "super");
+      requireRole(user!, "sales", "editor", "approval", "super");
       res.json(
         store.db
           .prepare(
@@ -317,7 +317,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/analytics",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "sales", "super");
+      requireRole(user!, "sales", "editor", "approval", "super");
       const scalar = (sql: string, ...params: any[]) =>
         Number((store.db.prepare(sql).get(...params) as { count: number }).count);
       const sinceSevenDays = new Date(Date.now() - 6 * 86_400_000)
@@ -378,7 +378,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/projects/:id/detail",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "sales", "super");
+      requireRole(user!, "sales", "editor", "approval", "super");
       const projectId = id.parse(req.params.id);
       const project = store.db
         .prepare(
@@ -712,7 +712,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/inquiries",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "sales", "super");
+      requireRole(user!, "sales", "editor", "approval", "super");
       res.json(
         store.db
           .prepare(
@@ -744,7 +744,7 @@ export function registerControlRoutes(
   router.post(
     "/admin/inquiries/:id",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "sales", "super");
+      requireRole(user!, "sales", "editor", "approval", "super");
       const input = z
         .object({
           claim: z.boolean().optional(),
