@@ -307,6 +307,24 @@ export default function Admin() {
       setBusy(false);
     }
   }
+  function completeLogin(nextUser: ControlUser) {
+    setError("");
+    setNotice("");
+    setUser(nextUser);
+  }
+  async function signOut() {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await api("/logout", {});
+      setUser(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   function changeTab(next: string) {
     if (
       edit &&
@@ -341,7 +359,7 @@ export default function Admin() {
   if (!user)
     return (
       <div className="control">
-        <Auth staff onLogin={setUser} />
+        <Auth staff onLogin={completeLogin} />
       </div>
     );
   if (!menus.length)
@@ -352,12 +370,7 @@ export default function Admin() {
           <p>Your account does not have an administration role.</p>
           <a href="/account">Open my projects</a>
           <button
-            onClick={() =>
-              action(async () => {
-                await api("/logout", {});
-                setUser(null);
-              }, "Signed out")
-            }
+            onClick={() => void signOut()}
           >
             Sign out
           </button>
@@ -444,12 +457,7 @@ export default function Admin() {
           <strong>{user.name || user.email}</strong>
           <small>{user.roles.join(" · ")}</small>
           <button
-            onClick={() =>
-              action(async () => {
-                await api("/logout", {});
-                setUser(null);
-              }, "Signed out")
-            }
+            onClick={() => void signOut()}
           >
             <LogOut size={15} /> Sign out
           </button>
