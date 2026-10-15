@@ -1273,6 +1273,21 @@ export default function Admin() {
                             >
                               Revoke sessions
                             </button>
+                            {(r.roles.includes("editor") || r.roles.includes("approval")) && (
+                              <button
+                                disabled={busy}
+                                onClick={() => {
+                                  const password = window.prompt("New password (at least 12 characters)");
+                                  if (!password) return;
+                                  void action(
+                                    () => api(`/admin/staff-accounts/${r.id}/password`, { password }),
+                                    "Password reset and existing sessions revoked"
+                                  );
+                                }}
+                              >
+                                Reset password
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

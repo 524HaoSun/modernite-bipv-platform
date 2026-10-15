@@ -27,6 +27,7 @@ import {
   limit,
   createStaffAccount,
   passwordLogin,
+  resetStaffPassword,
 } from "./auth";
 import {
   domains,
@@ -451,6 +452,20 @@ export function registerControlRoutes(
         store.db.prepare("DELETE FROM sessions WHERE user_id=?").run(target);
         store.audit(user!.id, "sessions.revoked", target);
       });
+      res.json({ ok: true });
+    })
+  );
+  router.post(
+    "/admin/staff-accounts/:id/password",
+    endpoint((req, res, store, user) => {
+      requireRole(user!, "super");
+      const target = id.parse(req.params.id);
+      resetStaffPassword(
+        store,
+        user!,
+        target,
+        z.object({ password: staffPassword }).parse(req.body).password
+      );
       res.json({ ok: true });
     })
   );

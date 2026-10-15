@@ -253,6 +253,28 @@ export function passwordLogin(store: ControlStore, username: string, password: s
     fail(401, "The username or password is incorrect");
   return store.transaction(() => createSession(store, user));
 }
+
+export function resetStaffPassword(
+  store: ControlStore,
+  actor: ControlUser,
+  userId: string,
+  password: string
+) {
+  const credential = store.db
+    .prepare("SELECT username FROM staff_credentials WHERE user_id=?")
+    .get(userId) as { username: string } | undefined;
+  if (!credential) fail(404, "This account does not use a staff password");
+  const nextHash = passwordHash(password);
+  store.transaction(() => {
+    store.db
+      .prepare("UPDATE staff_credentials SET password_hash=?,updated_at=? WHERE user_id=?")
+      .run(nextHash, new Date().toISOString(), userId);
+    store.db.prepare("DELETE FROM sessions WHERE user_id=?").run(userId);
+    store.audit(actor.id, "staff.password_reset", userId, null, {
+      username: credential.username,
+    });
+  });
+}
 export function sessionUser(
   store: ControlStore,
   req: Request
