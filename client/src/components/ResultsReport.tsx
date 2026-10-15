@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, BarChart3, BatteryCharging, Building2, CircleHelp, Cpu, Download, Gauge, Home, Leaf, MessageCircle,
   Link2, Loader2, Pencil, Printer, ShieldCheck, Sparkles, SunMedium, TrendingUp,
@@ -444,7 +444,7 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  if (isDemo) return null;
+  const captured = useRef(false);
   const save = async () => {
     setBusy(true);
     setMessage("");
@@ -470,9 +470,16 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
       setBusy(false);
     }
   };
+  useEffect(() => {
+    if (!isDemo && !captured.current) {
+      captured.current = true;
+      void save();
+    }
+  }, [isDemo]);
+  if (isDemo) return null;
   return <section className="study-summary-card" style={{ marginTop: 14 }}>
     <p className="mini-label">SAVE THIS PROJECT</p>
-    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation is recorded securely. Email is optional; add it to receive a secure link to return later.</p>
+    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation and report are saved automatically. Email is optional; add it to receive a secure link to return later.</p>
     <label style={{ display: "grid", gap: 6, fontSize: 13, margin: "12px 0" }}>
       Email address <small>(optional)</small>
       <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" disabled={busy} />

@@ -47,7 +47,7 @@ Customers verify their email using a single-use 10-minute code; resend and faile
 
 The Results page records a calculation when the visitor selects **Save calculation**. Email is optional: a visitor who supplies it receives a secure return link and verifies the same address before reopening the saved project; a visitor who leaves it empty still gets an anonymous record with no email delivery. The account workspace maintains immutable revisions, runs calculations with pinned or latest published releases, downloads a PDF report or configuration JSON, and submits an inquiry tied to a specific revision. Changing the version deliberately creates a new result. Concurrent edits produce a conflict rather than overwriting a saved version; users can save their edits as a separate project.
 
-Sales and super administrators can review saved calculations and generated PDF-report records in the Administration workspace. The project list only includes the minimum operational fields: project name, customer email where supplied, revision, and timestamps.
+Sales and super administrators can review saved calculations in the Administration workspace. Each saved calculation includes its report record, project name, customer email where supplied, revision, timestamps, inputs, and calculated output.
 
 The current account editor reopens the saved calculation configuration and supports editing its JSON. It does **not yet restore the full 3D Studio scene**: the protected legacy bridge exposes a snapshot, but no scene import method. Geometry reconstruction and a complete visual resume workflow need a coordinated change to that runtime.
 

@@ -8,7 +8,6 @@ import {
   ClipboardList,
   MessageSquare,
   FolderKanban,
-  FileText,
   LogOut,
   Search,
   ArrowUpRight,
@@ -28,7 +27,6 @@ const titles: Record<string, string> = {
   users: "People & access",
   audit: "Activity log",
   projects: "Saved calculations",
-  reports: "Generated reports",
 };
 const icons: Record<string, any> = {
   catalogue: Package,
@@ -39,7 +37,6 @@ const icons: Record<string, any> = {
   users: Users,
   audit: ClipboardList,
   projects: FolderKanban,
-  reports: FileText,
 };
 const labels: Record<string, string> = {
   wp: "Power density · Wp/m²",
@@ -219,6 +216,7 @@ export default function Admin() {
     [source, setSource] = useState(""),
     [impact, setImpact] = useState<any[] | null>(null),
     [detail, setDetail] = useState<Release | null>(null),
+    [projectDetail, setProjectDetail] = useState<any>(null),
     [catalogueType, setCatalogueType] = useState("roof_tiles");
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
@@ -226,7 +224,7 @@ export default function Admin() {
     ...(has("product", "technical", "super") ? ["technical"] : []),
     ...(has("pricing", "super") ? ["pricing"] : []),
     ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
-    ...(has("sales", "super") ? ["inquiries", "projects", "reports"] : []),
+    ...(has("sales", "super") ? ["inquiries", "projects"] : []),
     ...(has("super") ? ["users"] : []),
     ...(has("product", "technical", "pricing", "sales", "super")
       ? ["audit"]
@@ -255,7 +253,7 @@ export default function Admin() {
         setReleases(r);
         if (c[tab]) setEdit(structuredClone(c[tab].data));
       }
-      if (["inquiries", "users", "audit", "projects", "reports"].includes(tab))
+      if (["inquiries", "users", "audit", "projects"].includes(tab))
         setRows(await api(`/admin/${tab}`));
       setImpact(null);
     } catch (e) {
@@ -297,6 +295,7 @@ export default function Admin() {
     setError("");
     setNotice("");
     setDetail(null);
+    setProjectDetail(null);
     setReason("");
     setSource("");
   }
@@ -1233,23 +1232,29 @@ export default function Admin() {
                 <input placeholder="Search projects or email…" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <table>
-                <thead><tr><th>Project</th><th>Customer</th><th>Revision</th><th>Last saved</th></tr></thead>
+                <thead><tr><th>Project</th><th>Customer</th><th>Revision</th><th>Last saved</th><th>Details</th></tr></thead>
                 <tbody>{rows.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())).map(r => (
-                  <tr key={r.id}><td><strong>{r.name}</strong><small>{r.id}</small></td><td>{r.email}</td><td>{r.revision}</td><td>{new Date(r.updated_at).toLocaleString()}</td></tr>
+                  <tr key={r.id}><td><strong>{r.name}</strong><small>{r.id}</small></td><td>{r.email}</td><td>{r.revision}</td><td>{new Date(r.updated_at).toLocaleString()}</td><td><button onClick={() => action(async () => setProjectDetail(await api(`/admin/projects/${r.id}/detail`)), "Calculation loaded")}>View calculation</button></td></tr>
                 ))}</tbody>
               </table>
+              {projectDetail && <div className="control-inspect">
+                <h3>{projectDetail.project.name}</h3>
+                <p>{projectDetail.project.email} · Revision {projectDetail.project.revision} · saved {new Date(projectDetail.savedAt).toLocaleString()}</p>
+                <div className="control-fields">
+                  <div><small>Location</small><strong>{projectDetail.payload.input.address}</strong></div>
+                  <div><small>Market</small><strong>{projectDetail.payload.input.market}</strong></div>
+                  <div><small>Capacity</small><strong>{projectDetail.payload.study ? `${projectDetail.payload.study.result.totalCapacityKwp.toFixed(2)} kWp` : "Not calculated"}</strong></div>
+                  <div><small>Annual generation</small><strong>{projectDetail.payload.study ? `${Math.round(projectDetail.payload.study.result.range.representative).toLocaleString()} kWh/year` : "Not calculated"}</strong></div>
+                </div>
+                {projectDetail.payload.study && <table>
+                  <thead><tr><th>Surface</th><th>Product</th><th>Area</th><th>Capacity</th><th>Annual generation</th></tr></thead>
+                  <tbody>{projectDetail.payload.study.result.surfaces.map((surface: any) => <tr key={surface.surfaceId}>
+                    <td>{surface.surfaceLabel}</td><td>{surface.productName}</td><td>{surface.areaM2.toFixed(1)} m²</td><td>{surface.capacityKwp.toFixed(2)} kWp</td><td>{Math.round(surface.annualKwh).toLocaleString()} kWh</td>
+                  </tr>)}</tbody>
+                </table>}
+                <details><summary>Full saved calculation data</summary><pre className="control-json">{JSON.stringify(projectDetail.payload, null, 2)}</pre></details>
+              </div>}
               {!loading && !rows.length && <Empty title="No saved calculations yet" body="Website calculations will appear here after a visitor saves a project." />}
-            </section>
-          )}
-          {tab === "reports" && (
-            <section className="control-card">
-              <table>
-                <thead><tr><th>Report</th><th>Project</th><th>Customer</th><th>Created</th></tr></thead>
-                <tbody>{rows.map(r => (
-                  <tr key={r.id}><td><strong>{r.id.slice(0, 8)}</strong><small>Revision {r.revision}</small></td><td>{r.name}</td><td>{r.email}</td><td>{new Date(r.created_at).toLocaleString()}</td></tr>
-                ))}</tbody>
-              </table>
-              {!loading && !rows.length && <Empty title="No reports yet" body="Reports appear here when a saved project report is generated." />}
             </section>
           )}
           {tab === "audit" && (

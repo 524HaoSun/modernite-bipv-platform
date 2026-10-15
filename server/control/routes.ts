@@ -263,20 +263,28 @@ export function registerControlRoutes(
     })
   );
   router.get(
-    "/admin/reports",
-    endpoint((_req, res, store, user) => {
+    "/admin/projects/:id/detail",
+    endpoint((req, res, store, user) => {
       requireRole(user!, "sales", "super");
-      res.json(
-        store.db
-          .prepare(
-            `SELECT r.id,r.project_id,r.revision,r.created_at,p.name,u.email
-             FROM reports r
-             JOIN projects p ON p.id=r.project_id
-             JOIN users u ON u.id=r.owner
-             ORDER BY r.created_at DESC LIMIT 500`
-          )
-          .all()
-      );
+      const projectId = id.parse(req.params.id);
+      const project = store.db
+        .prepare(
+          `SELECT p.id,p.name,p.revision,p.updated_at,u.email
+           FROM projects p JOIN users u ON u.id=p.owner WHERE p.id=?`
+        )
+        .get(projectId) as any;
+      if (!project) fail(404, "Project not found");
+      const version = store.db
+        .prepare(
+          "SELECT payload,created_at FROM project_versions WHERE project_id=? AND revision=?"
+        )
+        .get(projectId, project.revision) as any;
+      if (!version) fail(404, "Project version not found");
+      res.json({
+        project,
+        savedAt: version.created_at,
+        payload: JSON.parse(String(version.payload)),
+      });
     })
   );
   router.post(
@@ -396,6 +404,12 @@ export function registerControlRoutes(
         saved.revision,
         false
       );
+      const report = await createReport(
+        store,
+        owner,
+        calculated.id,
+        calculated.revision
+      );
       let emailSent = false;
       if (recipient) {
         try {
@@ -412,6 +426,7 @@ export function registerControlRoutes(
       res.status(201).json({
         id: calculated.id,
         revision: calculated.revision,
+        reportId: report.reportId,
         emailSent,
         message: recipient
           ? emailSent
