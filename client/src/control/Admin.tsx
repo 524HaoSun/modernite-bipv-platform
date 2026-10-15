@@ -465,7 +465,7 @@ export default function Admin() {
           <button
             onClick={() => void signOut()}
           >
-            <LogOut size={15} /> Sign out
+            <LogOut size={15} /> Sign out {user.name || user.email}
           </button>
         </div>
       </aside>
@@ -1321,21 +1321,19 @@ export default function Admin() {
                             >
                               {r.active ? "Suspend" : "Reactivate"}
                             </button>
-                            <button
-                              disabled={busy}
-                              onClick={() => {
-                                if (r.id === user.id) {
-                                  void signOut();
-                                  return;
+                            {r.id !== user.id && (
+                              <button
+                                disabled={busy}
+                                onClick={() =>
+                                  void action(
+                                    () => api(`/admin/users/${r.id}/revoke`, {}),
+                                    "All sessions revoked"
+                                  )
                                 }
-                                void action(
-                                  () => api(`/admin/users/${r.id}/revoke`, {}),
-                                  "All sessions revoked"
-                                );
-                              }}
-                            >
-                              {r.id === user.id ? "Sign out current session" : "Revoke sessions"}
-                            </button>
+                              >
+                                Revoke sessions
+                              </button>
+                            )}
                             {r.username && (
                               <button
                                 disabled={busy}
