@@ -12,11 +12,15 @@ The demo site `https://modernite.wenda.global` runs with `CONTROL_PREVIEW=1`, `C
 
 The normal sign-in screen checks `/api/control/login/status` before accepting an email. If delivery is unconfigured, the form is disabled and explains that setup is required. The server also rejects requests in that state, without generating a code or returning a delivery-success message. Provider authorization failures surface as configuration problems without logging recipients, codes or keys.
 
+Optional Google sign-in for `/account` is env-gated. When `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and either `PUBLIC_BASE_URL` or `GOOGLE_OAUTH_REDIRECT_URI` are set, `/api/control/login/status` reports `googleOAuth: true` and the Auth screen shows **Continue with Google**. Routes: `/api/control/oauth/google/start` and `/api/control/oauth/google/callback`. Default redirect URI is `${PUBLIC_BASE_URL}/api/control/oauth/google/callback`. Register that URI in the Google Cloud OAuth client. Failures redirect to `/account?oauth_error=…`. Staff still require TOTP when using email codes; Google OAuth creates or resumes a customer session only.
+
 Set these server environment variables before account login can work:
 
 - `CONTROL_AUTH_KEY`: a securely generated value of at least 32 characters. Preserve it across deployments; it encrypts TOTP enrollment secrets. Keep a protected recovery copy with the database backups.
 - `RESEND_API_KEY` and `LOGIN_EMAIL_FROM`: a Resend key and a verified sender address. No email is sent during development tests.
-- `PUBLIC_BASE_URL`: the exact production origin, such as `https://modernite.wenda.global`. Production account writes fail closed if it is missing or the Origin header differs.
+- `PUBLIC_BASE_URL`: the exact production origin, such as `https://modernite.wenda.global`. Production account writes fail closed if it is missing or the Origin header differs. Also used as the Google OAuth redirect base when `GOOGLE_OAUTH_REDIRECT_URI` is unset.
+- `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` (optional): enable Continue with Google. Leave unset until credentials are ready; email OTP can still work alone.
+- `GOOGLE_OAUTH_REDIRECT_URI` (optional): override the callback URL if it must differ from `${PUBLIC_BASE_URL}/api/control/oauth/google/callback`.
 - `CONTROL_DB_PATH`: an absolute path on persistent, private storage, for example `/opt/modernite/data/control.sqlite`. Do not place it inside a deployment release directory or public assets directory. The default `.data/control.sqlite` is suitable for local use.
 
 Provision each staff member on the server using a distinct authenticator secret already enrolled in their authenticator app. Supply `CONTROL_TOTP_SECRET` through the operator's secure environment; do not put it in shell arguments, logs, version control, or the browser. Then run:
@@ -32,7 +36,7 @@ The provisioning command is source tooling; the standalone production bundle doe
 
 ## Product and release workflow
 
-- Catalogue: names, public descriptions, and availability for the 17 profile IDs used by the actual Studio runtime.
+- Catalogue: names, public descriptions, and availability for the 17 profile IDs used by the actual Studio runtime. The public `GET /api/control/catalogue` endpoint feeds server calculations and, when the Design Studio iframe is ready, the host injects published names and Wp/m² into `ModerniteEnergyCore.PROFILES` so on-screen product labels match the administration SSOT. Coefficients a/b remain server-side for formal studies.
 - Technical: rated power, paired a/b coefficients, U/g and applicability, measurement and area bases, and versioned efficiency/temperature model. Product administrators can propose product technical changes; changing the model requires technical authority.
 - Pricing: internal costs, BOM, fixed prices, markup or margin methods, discount limits, wastage handling, minimum margins, quantity tiers, units, currency, tax basis, and effective dates. Initial costs and prices remain unset. Missing or expired prices block formal quotes.
 - Every submitted change records its base release, source and reason. A different authorized reviewer approves it, which immediately makes it active. A stale base or revoked review authority blocks approval. To revisit a historic release, submit its values again from the current version.
@@ -47,7 +51,7 @@ Tile dimension deductions are recorded with the model but intentionally read-onl
 
 Customers verify their email using a single-use 10-minute code; resend and failed-attempt limits persist in SQLite. Staff additionally use TOTP with replay prevention. Session cookies are HttpOnly, SameSite Strict, and Secure in production. Suspension and revocation are checked on every request.
 
-The Results page records a calculation when the visitor selects **Save calculation**. Email is optional: a visitor who supplies it receives a secure return link and verifies the same address before reopening the saved project; a visitor who leaves it empty still gets an anonymous record with no email delivery. The account workspace maintains immutable revisions, runs calculations with pinned or latest published releases, downloads a PDF report or configuration JSON, and submits an inquiry tied to a specific revision. Changing the version deliberately creates a new result. Concurrent edits produce a conflict rather than overwriting a saved version; users can save their edits as a separate project.
+The Results page records a calculation when the visitor selects **Save calculation** (also auto-captured once for non-demo studies). Email is optional: a visitor who supplies it receives a secure return link and verifies the same address before reopening the saved project; a visitor who leaves it empty still gets an anonymous record with no email delivery. After save, Results links to `/account?project=…&email=…` and offers **Save and request a quotation**, which opens the account inquiry form (`inquire=1`). The account workspace maintains immutable revisions, runs calculations with pinned or latest published releases, downloads a PDF report or configuration JSON, and submits an inquiry tied to a specific revision. Changing the version deliberately creates a new result. Concurrent edits produce a conflict rather than overwriting a saved version; users can save their edits as a separate project.
 
 Sales and super administrators can review saved calculations in the Administration workspace. Each saved calculation includes its report record, project name, customer email where supplied, revision, timestamps, inputs, and calculated output.
 

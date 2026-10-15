@@ -63,6 +63,7 @@ const ResultsPage = lazy(() => import("@/components/ResultsReport").then((module
 const PrintReport = lazy(() => import("@/components/PrintReport").then((module) => ({ default: module.PrintReport })));
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
+import { applyCatalogueToStudio, fetchPublicCatalogue } from "@/lib/control-catalogue";
 import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
@@ -150,6 +151,9 @@ type StudioWindow = Window & {
     acceptWeather?: (weather: Weather) => void;
     getOrientation?: () => number;
     setOrientation?: (azimuth: number) => void;
+  };
+  ModerniteEnergyCore?: {
+    PROFILES: Record<string, [string, number, number, number]>;
   };
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
@@ -1887,6 +1891,22 @@ function StudioPage({
     if (!studioDocument || !studioWindow) return;
 
     const root = studioDocument.documentElement;
+    if (root.dataset.hostCatalogue !== "pending" && root.dataset.hostCatalogue !== "applied") {
+      root.dataset.hostCatalogue = "pending";
+      void fetchPublicCatalogue().then((catalogue) => {
+        if (!catalogue || !frameRef.current?.contentWindow) {
+          root.dataset.hostCatalogue = "";
+          return;
+        }
+        const live = frameRef.current.contentWindow as StudioWindow;
+        const result = applyCatalogueToStudio(live.ModerniteEnergyCore, catalogue);
+        root.dataset.hostCatalogue = "applied";
+        root.dataset.hostCatalogueVersion = catalogue.catalogueVersion;
+        if (result.updated > 0) {
+          live.dispatchEvent(new Event("modernite-model-change"));
+        }
+      });
+    }
     const lastMarket = root.dataset.hostMarket;
     if (lastMarket !== studioRegion) {
       const regionControl = studioDocument.querySelector<HTMLButtonElement>(`[data-region="${studioRegion}"]`);

@@ -115,6 +115,30 @@ describe("control HTTP boundaries", () => {
     );
   });
 
+  it("exposes the public catalogue without internal pricing fields", async () => {
+    const response = await req("/catalogue");
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.products?.length).toBeGreaterThan(0);
+    expect(body.products[0]).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        name: expect.any(String),
+        wp: expect.any(Number),
+      })
+    );
+    expect(JSON.stringify(body)).not.toContain('"cost"');
+    expect(JSON.stringify(body)).not.toContain('"markup"');
+  });
+
+  it("keeps Google OAuth start disabled until credentials are configured", async () => {
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    const response = await req("/oauth/google/start?returnTo=/account");
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toMatch(/not configured/i);
+  });
+
   it("sets secure session semantics and never returns the verification code", async () => {
     const sent = await req("/login/request", { email: "login@example.test" });
     expect(sent.status).toBe(200);

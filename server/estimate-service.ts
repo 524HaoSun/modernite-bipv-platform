@@ -57,7 +57,8 @@ function resolveRuntime(input: ProjectCalculationInput, options?: CalculationOpt
 export async function runProjectCalculation(input: ProjectCalculationInput, options?: CalculationOptions): Promise<ProjectCalculation> {
   const runtime = resolveRuntime(input, options);
   const energySettings = input.energySettings ? normalizeHomeEnergySettings(input.energySettings) : undefined;
-  if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && PROFILES[surface.profile])) {
+  const profiles = runtime.productRuntime?.profiles ?? PROFILES;
+  if (!input.studioSnapshot.surfaces.some((surface) => surface.enabled !== false && surface.area > 0 && profiles[surface.profile])) {
     throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
   }
   const economicDeadline = deadline(ECONOMIC_GUIDANCE_TIMEOUT_MS, "Economic guidance timed out");

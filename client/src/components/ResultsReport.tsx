@@ -695,15 +695,27 @@ function ShareActions({ share, language, scenarioId }: { share: ResultsShare; la
   </>;
 }
 
+function accountResumeHref(projectId: string, email: string, inquire = false) {
+  const params = new URLSearchParams();
+  params.set("project", projectId);
+  if (email.trim()) params.set("email", email.trim().toLowerCase());
+  if (inquire) params.set("inquire", "1");
+  return `/account?${params.toString()}`;
+}
+
 function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [savedId, setSavedId] = useState<string | null>(null);
   const captured = useRef(false);
-  const save = async () => {
+  const save = async (opts?: { inquire?: boolean }) => {
     setBusy(true);
     setMessage("");
     try {
+      if (opts?.inquire && !email.trim()) {
+        throw new Error("Add your email so we can reopen this project and take your quotation request.");
+      }
       const raw = window.localStorage.getItem("modernite-private-project-input");
       if (!raw) throw new Error("Your project configuration is not ready yet. Return to Solar Studio and calculate again.");
       const result = await fetch("/api/control/projects/capture", {
@@ -716,9 +728,14 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
           configuration: JSON.parse(raw),
         }),
       });
-      const body = await result.json();
+      const body = await result.json() as { id?: string; error?: string; message?: string };
       if (!result.ok) throw new Error(body.error || "Could not save your project");
-      setMessage(body.message);
+      if (body.id) setSavedId(body.id);
+      setMessage(body.message || "Your calculation is saved.");
+      if (opts?.inquire && body.id) {
+        window.location.assign(accountResumeHref(body.id, email, true));
+        return;
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save your project");
     } finally {
@@ -734,7 +751,7 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
   if (isDemo) return null;
   return <section className="study-summary-card" style={{ marginTop: 14 }}>
     <p className="mini-label">SAVE THIS PROJECT</p>
-    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation and report are saved automatically. Email is optional; add it to receive a secure link to return later.</p>
+    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation and report are saved automatically. Add an email to reopen this study later, or continue to your account to request a quotation.</p>
     <label style={{ display: "grid", gap: 6, fontSize: 13, margin: "12px 0" }}>
       Email address <small>(optional)</small>
       <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" disabled={busy} />
@@ -742,6 +759,16 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
     <button type="button" className="button-primary wide" onClick={() => void save()} disabled={busy}>
       {busy ? "Saving…" : email.trim() ? "Save and email my link" : "Save calculation"}
     </button>
+    <button type="button" className="button-secondary wide" style={{ marginTop: 8 }} onClick={() => void save({ inquire: true })} disabled={busy}>
+      {busy ? "Preparing…" : "Save and request a quotation"}
+    </button>
+    {savedId && email.trim() && (
+      <p className="result-share-note" style={{ marginTop: 10 }}>
+        <a href={accountResumeHref(savedId, email)}>Open this project in My Projects</a>
+        {" · "}
+        <a href={accountResumeHref(savedId, email, true)}>Request a quotation</a>
+      </p>
+    )}
     {message && <p className="result-share-note" aria-live="polite">{message}</p>}
   </section>;
 }

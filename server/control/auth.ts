@@ -89,7 +89,11 @@ export function limit(
     store.db.prepare("DELETE FROM limits WHERE reset<?").run(now);
   });
 }
-export type LoginStatus = { available: boolean; message: string };
+export type LoginStatus = {
+  available: boolean;
+  message: string;
+  googleOAuth?: boolean;
+};
 export function emailLoginStatus(): LoginStatus {
   const available = Boolean(
     process.env.CONTROL_AUTH_KEY &&
@@ -97,11 +101,20 @@ export function emailLoginStatus(): LoginStatus {
       process.env.RESEND_API_KEY?.trim() &&
       process.env.LOGIN_EMAIL_FROM?.trim()
   );
+  const googleOAuth = Boolean(
+    process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() &&
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() &&
+      (process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
+        process.env.PUBLIC_BASE_URL?.trim())
+  );
   return {
     available,
+    googleOAuth,
     message: available
       ? ""
-      : "Email sign-in is not configured yet. Please contact the site administrator to enable it.",
+      : googleOAuth
+        ? "Email codes are unavailable; you can still continue with Google."
+        : "Email sign-in is not configured yet. Please contact the site administrator to enable it.",
   };
 }
 

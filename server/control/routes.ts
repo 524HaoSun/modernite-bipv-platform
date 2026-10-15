@@ -32,6 +32,11 @@ import {
   type PreviewAccount,
 } from "./preview";
 import {
+  beginGoogleOAuth,
+  finishGoogleOAuth,
+  googleOAuthConfigured,
+} from "./google-oauth";
+import {
   domains,
   roles,
   parseDomain,
@@ -129,7 +134,42 @@ export function registerControlRoutes(
       res.status(201).json({ ok: true });
     }, false)
   );
-  router.get("/login/status", (_req, res) => res.json(loginStatus()));
+  router.get("/login/status", (_req, res) => {
+    const status = loginStatus();
+    res.json({
+      ...status,
+      googleOAuth: status.googleOAuth ?? googleOAuthConfigured(),
+    });
+  });
+  router.get("/oauth/google/start", (req, res, next) => {
+    try {
+      const url = beginGoogleOAuth(res, {
+        returnTo:
+          typeof req.query.returnTo === "string" ? req.query.returnTo : "/account",
+        emailHint: typeof req.query.email === "string" ? req.query.email : undefined,
+        projectId:
+          typeof req.query.project === "string" ? req.query.project : undefined,
+        inquire: req.query.inquire === "1",
+      });
+      res.redirect(url);
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get("/oauth/google/callback", async (req, res, next) => {
+    try {
+      const dest = await finishGoogleOAuth(getStore(), req, res);
+      res.redirect(dest);
+    } catch (error) {
+      if (error instanceof ControlError) {
+        res.redirect(
+          `/account?oauth_error=${encodeURIComponent(error.message)}`
+        );
+        return;
+      }
+      next(error);
+    }
+  });
   if (isControlPreview()) {
     router.post(
       "/preview/login",
