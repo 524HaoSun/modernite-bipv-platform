@@ -72,12 +72,24 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.control button.control-primary {
+.control button.control-primary,
+.control a.control-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--green);
+  border-radius: 7px;
   background: var(--green);
   color: white;
-  border-color: var(--green);
+  padding: 9px 13px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
 }
-.control button.control-primary:hover {
+.control button.control-primary:hover,
+.control a.control-primary:hover {
   background: #174b37;
 }
 .control :focus-visible {

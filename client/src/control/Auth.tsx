@@ -154,11 +154,7 @@ export function Auth({
           <>
             {availability?.googleOAuth && (
               <div style={{ marginTop: 20 }}>
-                <a
-                  className="control-primary"
-                  href={googleStartHref(email)}
-                  style={{ display: "inline-flex", textDecoration: "none" }}
-                >
+                <a className="control-primary" href={googleStartHref(email)}>
                   Continue with Google
                   <ArrowRight size={17} />
                 </a>
