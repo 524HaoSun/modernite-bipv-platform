@@ -285,6 +285,8 @@ export function sessionUser(
     .prepare("SELECT user_id FROM sessions WHERE hash=? AND expires>?")
     .get(hash(token), Date.now());
   const user = row ? store.user(String(row.user_id)) : null;
+  if (process.env.CONTROL_PREVIEW === "1" && user?.email === "admin@example.test")
+    return null;
   return user?.active ? user : null;
 }
 export function logout(store: ControlStore, req: Request, res: Response) {

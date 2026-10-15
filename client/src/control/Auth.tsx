@@ -58,18 +58,6 @@ export function Auth({
       setBusy(false);
     }
   }
-  async function openPreview(account: "admin" | "reviewer") {
-    setBusy(true);
-    setError("");
-    try {
-      const result = await api("/preview/login", { account });
-      onLogin(result.user);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
   async function verify() {
     setBusy(true);
     setError("");
@@ -126,34 +114,7 @@ export function Auth({
             {availability.message}
           </div>
         )}
-        {availability?.preview && !passwordMode && (
-          <div style={{ marginTop: 20 }}>
-            {error && (
-              <div role="alert" className="control-error">
-                {error}
-              </div>
-            )}
-            <div className="control-row">
-              <button
-                className="control-primary"
-                disabled={busy}
-                onClick={() => openPreview("admin")}
-              >
-                {busy ? "Opening demo…" : "Open as editor"}
-                <ArrowRight size={17} />
-              </button>
-              {staff && (
-                <button disabled={busy} onClick={() => openPreview("reviewer")}>
-                  Open as reviewer
-                </button>
-              )}
-            </div>
-            <button type="button" disabled={busy} onClick={() => setPasswordMode(true)}>
-              Sign in with staff password
-            </button>
-          </div>
-        )}
-        {passwordMode && (
+        {(passwordMode || availability?.preview) && (
           <form
             onSubmit={e => {
               e.preventDefault();
@@ -187,9 +148,11 @@ export function Auth({
               {busy ? "Signing in…" : "Sign in"}
               <ArrowRight size={17} />
             </button>
-            <button type="button" disabled={busy} onClick={() => setPasswordMode(false)}>
-              Use email sign-in
-            </button>
+            {!availability?.preview && (
+              <button type="button" disabled={busy} onClick={() => setPasswordMode(false)}>
+                Use email sign-in
+              </button>
+            )}
           </form>
         )}
         {!availability?.preview && !passwordMode && (
@@ -286,9 +249,14 @@ export function Auth({
             )}
           </form>
         )}
+        {!availability?.preview && !passwordMode && (
+          <button type="button" onClick={() => setPasswordMode(true)}>
+            Sign in with staff password
+          </button>
+        )}
         <small>
           {availability?.preview
-            ? "Changes here affect sample data only. No real emails are sent."
+            ? "Use the assigned staff username and password. No direct preview access is available."
             : "We use your email for account access and project services. Signing in does not subscribe you to marketing."}
         </small>
       </div>
