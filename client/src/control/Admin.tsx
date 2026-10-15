@@ -199,6 +199,29 @@ function Field({
     </label>
   );
 }
+
+function AdvisorTranscript({ message }: { message: string }) {
+  let messages: { role?: string; content?: string }[] = [];
+  try {
+    const parsed = JSON.parse(message) as { messages?: unknown };
+    if (Array.isArray(parsed.messages)) messages = parsed.messages;
+  } catch {
+    // A malformed historic record should not make the inquiries page unusable.
+  }
+
+  if (!messages.length) return <p>Conversation record is unavailable.</p>;
+  return (
+    <div className="control-chat-transcript">
+      {messages.map((message, index) => (
+        <p key={index}>
+          <strong>{message.role === "user" ? "Visitor" : "Modernité Advisor"}:</strong>{" "}
+          {message.content || "—"}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [user, setUser] = useState<ControlUser | null | undefined>(),
     [tab, setTab] = useState("catalogue"),
@@ -1022,17 +1045,27 @@ export default function Admin() {
                 .map(r => (
                   <article key={r.id} className="control-inquiry">
                     <div className="control-row">
-                      <h3>{r.contact?.name || "Unassigned inquiry"}</h3>
+                      <h3>
+                        {r.source === "advisor"
+                          ? "AI advisor conversation"
+                          : r.contact?.name || "Unassigned inquiry"}
+                      </h3>
                       <span className="control-status">{r.status}</span>
                     </div>
                     {r.assignee ? (
                       <>
-                        <p>
-                          {r.contact.email} ·{" "}
-                          {r.contact.phone || "No phone supplied"} ·{" "}
-                          {r.contact.company}
-                        </p>
-                        <p>{r.message}</p>
+                        {r.source === "advisor" ? (
+                          <AdvisorTranscript message={r.message} />
+                        ) : (
+                          <>
+                            <p>
+                              {r.contact.email} ·{" "}
+                              {r.contact.phone || "No phone supplied"} ·{" "}
+                              {r.contact.company}
+                            </p>
+                            <p>{r.message}</p>
+                          </>
+                        )}
                         <small>
                           Project {r.project_id} · revision {r.revision} ·
                           preferred contact: {r.contact.preferredContact}

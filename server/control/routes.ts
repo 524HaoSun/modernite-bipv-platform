@@ -544,7 +544,7 @@ export function registerControlRoutes(
       store.transaction(() => {
         store.db
           .prepare(
-            "INSERT INTO inquiries(id,owner,project_id,revision,contact,message,created_at) VALUES(?,?,?,?,?,?,?)"
+            "INSERT INTO inquiries(id,owner,project_id,revision,contact,message,created_at,source) VALUES(?,?,?,?,?,?,?,?)"
           )
           .run(
             inquiryId,
@@ -559,7 +559,8 @@ export function registerControlRoutes(
               preferredContact: input.preferredContact,
             }),
             input.message,
-            new Date().toISOString()
+            new Date().toISOString(),
+            "quote"
           );
         store.audit(user!.id, "inquiry.created", inquiryId);
       });
@@ -581,7 +582,7 @@ export function registerControlRoutes(
   router.get(
     "/admin/inquiries",
     endpoint((_req, res, store, user) => {
-      requireRole(user!, "sales");
+      requireRole(user!, "sales", "super");
       res.json(
         store.db
           .prepare(
@@ -604,6 +605,7 @@ export function registerControlRoutes(
                   status: r.status,
                   created_at: r.created_at,
                   assignee: null,
+                  source: r.source,
                 }
           )
       );
@@ -612,7 +614,7 @@ export function registerControlRoutes(
   router.post(
     "/admin/inquiries/:id",
     endpoint((req, res, store, user) => {
-      requireRole(user!, "sales");
+      requireRole(user!, "sales", "super");
       const input = z
         .object({
           claim: z.boolean().optional(),

@@ -5228,12 +5228,7 @@ export default function App() {
           )}
         </main>
       )}
-      <ModerniteAdvisor
-        language={studioLanguage}
-        route={route}
-        getContext={getAdvisorContext}
-        caseId={advisorCaseId}
-      />
+      <ModerniteAdvisor language={studioLanguage} route={route} getContext={getAdvisorContext} caseId={advisorCaseId} />
       {studioMounted && (
         <StudioPage
           active={route === "studio"}

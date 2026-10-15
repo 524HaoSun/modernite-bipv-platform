@@ -617,6 +617,22 @@
   padding: 24px 0;
   border-bottom: 1px solid var(--line);
 }
+
+.control-chat-transcript {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--control-line, #dbe7de);
+  border-radius: 10px;
+  background: #f8fbf8;
+}
+
+.control-chat-transcript p {
+  margin: 0;
+  white-space: pre-wrap;
+}
 .control-inquiry:first-child {
   padding-top: 0;
 }
