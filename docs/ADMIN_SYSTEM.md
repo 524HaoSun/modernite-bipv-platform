@@ -6,13 +6,31 @@ The application now serves `/admin` and `/account` alongside the existing Solar 
 
 Use Node 24 (minimum 22.13, which supports `node:sqlite`) and the repository's declared pnpm version. Install with `pnpm install --frozen-lockfile`, then run `pnpm dev`. Open `/admin` for administration and `/account` for private projects. Public trials continue without login.
 
-Local demo (no email): run `pnpm control:preview`, then open `http://127.0.0.1:3018/admin` (or the port printed in the terminal). The sign-in page offers **Open as editor** / **Open as reviewer** against a temporary SQLite file at `.data/control-preview.sqlite`. Demo login is only enabled when `CONTROL_PREVIEW=1`, and the server then binds to loopback unless `HOST` is set.
+Local demo (no email): run `pnpm control:preview`, then open `http://127.0.0.1:3018/admin` (or the port printed in the terminal). Preview mode expects staff username/password accounts (seed via `CONTROL_STAFF_SEED` or `scripts/provision-staff-password.ts`) against `.data/control-preview.sqlite`. Demo mode is only enabled when `CONTROL_PREVIEW=1`, and the server then binds to loopback unless `HOST` is set.
 
 The demo site `https://modernite.wenda.global` runs with `CONTROL_PREVIEW=1`, `CONTROL_AUTH_KEY` and `CONTROL_DB_PATH=/opt/modernite/data/control-demo.sqlite` in `/opt/modernite/.env`, so anyone can open `/admin` against sample data (Caddy proxies to the loopback port). Remove `CONTROL_PREVIEW` and point `CONTROL_DB_PATH` at a fresh database before using a deployment for real accounts.
 
 The normal sign-in screen checks `/api/control/login/status` before accepting an email. If delivery is unconfigured, the form is disabled and explains that setup is required. The server also rejects requests in that state, without generating a code or returning a delivery-success message. Provider authorization failures surface as configuration problems without logging recipients, codes or keys.
 
 Optional Google sign-in for `/account` is env-gated. When `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and either `PUBLIC_BASE_URL` or `GOOGLE_OAUTH_REDIRECT_URI` are set, `/api/control/login/status` reports `googleOAuth: true` and the Auth screen shows **Continue with Google**. Routes: `/api/control/oauth/google/start` and `/api/control/oauth/google/callback`. Default redirect URI is `${PUBLIC_BASE_URL}/api/control/oauth/google/callback`. Register that URI in the Google Cloud OAuth client. Failures redirect to `/account?oauth_error=…`. Staff still require TOTP when using email codes; Google OAuth creates or resumes a customer session only.
+
+## Staff password roles (super / editor / approval)
+
+Administration can also use username + password accounts stored in `staff_credentials`:
+
+- **super**: create and manage staff accounts; full release authority.
+- **editor**: edit catalogue / technical / pricing drafts and submit them.
+- **approval**: approve submitted releases so they become the live site catalogue. Editors cannot self-approve.
+
+Sign in at `/admin` with **Sign in with staff password** (or the password form in `CONTROL_PREVIEW`). Super administrators create further editor/approval/super accounts in the Users tab (`POST /api/control/admin/staff-accounts`). Do **not** commit real passwords into git. Bootstrap the first accounts with either:
+
+```sh
+pnpm exec tsx scripts/provision-staff-password.ts superadmin super 'your-password-here'
+pnpm exec tsx scripts/provision-staff-password.ts editor editor 'your-password-here'
+pnpm exec tsx scripts/provision-staff-password.ts approval approval 'your-password-here'
+```
+
+or set `CONTROL_STAFF_SEED` in the server environment (`username|role|password` entries separated by `;`). Existing usernames are never overwritten on restart.
 
 Set these server environment variables before account login can work:
 

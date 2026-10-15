@@ -246,15 +246,21 @@ export default function Admin() {
     [projectDetail, setProjectDetail] = useState<any>(null),
     [catalogueType, setCatalogueType] = useState("roof_tiles");
   const [analytics, setAnalytics] = useState<any>(null);
+  const [staffDraft, setStaffDraft] = useState({
+    username: "",
+    name: "",
+    password: "",
+    role: "editor",
+  });
   const has = (...roles: string[]) => user?.roles.some(r => roles.includes(r));
   const menus = [
-    ...(has("product", "super") ? ["catalogue"] : []),
-    ...(has("product", "technical", "super") ? ["technical"] : []),
-    ...(has("pricing", "super") ? ["pricing"] : []),
-    ...(has("product", "technical", "pricing", "super") ? ["releases"] : []),
-    ...(has("sales", "super") ? ["inquiries", "projects", "analytics"] : []),
+    ...(has("product", "editor", "approval", "super") ? ["catalogue"] : []),
+    ...(has("product", "technical", "editor", "approval", "super") ? ["technical"] : []),
+    ...(has("pricing", "editor", "approval", "super") ? ["pricing"] : []),
+    ...(has("product", "technical", "pricing", "editor", "approval", "super") ? ["releases"] : []),
+    ...(has("sales", "editor", "approval", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
-    ...(has("product", "technical", "pricing", "sales", "super")
+    ...(has("product", "technical", "pricing", "editor", "approval", "sales", "super")
       ? ["audit"]
       : []),
   ];
@@ -272,7 +278,7 @@ export default function Admin() {
   async function reload() {
     setLoading(true);
     try {
-      if (has("product", "technical", "pricing", "super")) {
+      if (has("product", "technical", "pricing", "editor", "approval", "super")) {
         const [c, r] = await Promise.all([
           api("/admin/current"),
           api("/admin/releases"),
@@ -302,6 +308,24 @@ export default function Admin() {
       await fn();
       setNotice(success);
       await reload();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function completeLogin(nextUser: ControlUser) {
+    setError("");
+    setNotice("");
+    setUser(nextUser);
+  }
+  async function signOut() {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await api("/logout", {});
+      window.location.assign("/admin");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -342,7 +366,7 @@ export default function Admin() {
   if (!user)
     return (
       <div className="control">
-        <Auth staff onLogin={setUser} />
+        <Auth staff onLogin={completeLogin} />
       </div>
     );
   if (!menus.length)
@@ -353,12 +377,7 @@ export default function Admin() {
           <p>Your account does not have an administration role.</p>
           <a href="/account">Open my projects</a>
           <button
-            onClick={() =>
-              action(async () => {
-                await api("/logout", {});
-                setUser(null);
-              }, "Signed out")
-            }
+            onClick={() => void signOut()}
           >
             Sign out
           </button>
@@ -392,6 +411,17 @@ export default function Admin() {
     );
   const canReview = (domain: Domain) =>
     has(
+      "super",
+      "approval",
+      domain === "catalogue"
+        ? "product"
+        : domain === "technical"
+          ? "technical"
+          : "pricing"
+    );
+  const canEditDomain = (domain: Domain) =>
+    has(
+      "editor",
       "super",
       domain === "catalogue"
         ? "product"
@@ -431,14 +461,9 @@ export default function Admin() {
           <strong>{user.name || user.email}</strong>
           <small>{user.roles.join(" · ")}</small>
           <button
-            onClick={() =>
-              action(async () => {
-                await api("/logout", {});
-                setUser(null);
-              }, "Signed out")
-            }
+            onClick={() => void signOut()}
           >
-            <LogOut size={15} /> Sign out
+            <LogOut size={15} /> Sign out {user.name || user.email}
           </button>
         </div>
       </aside>
@@ -585,7 +610,7 @@ export default function Admin() {
                               Ready to submit
                             </span>
                           </div>
-                          <div className="control-fields">
+                          <fieldset className="control-fields" disabled={!canEditDomain(tab as Domain)}>
                             <label>
                               Product type
                               <input
@@ -765,8 +790,9 @@ export default function Admin() {
                                 />
                               </>
                             )}
-                          </div>
+                          </fieldset>
                           {tab === "technical" && (
+                            <fieldset disabled={!canEditDomain(tab as Domain)}>
                             <details className="control-model">
                               <summary>
                                 Calculation model · applies to the complete
@@ -799,8 +825,9 @@ export default function Admin() {
                                 ))}
                               </div>
                             </details>
+                            </fieldset>
                           )}
-                          <div className="control-change">
+                          <fieldset className="control-change" disabled={!canEditDomain(tab as Domain)}>
                             <h3>Give this change context</h3>
                             <label>
                               Reason for change
@@ -866,7 +893,7 @@ export default function Admin() {
                               reviewer. It does not change live values until
                               approval.
                             </small>
-                          </div>
+                          </fieldset>
                           {impact && (
                             <div className="control-impact">
                               <h3>Sample impact · 10 m², 25°C ambient</h3>
@@ -1158,6 +1185,64 @@ export default function Admin() {
           )}
           {tab === "users" && (
             <section className="control-card">
+              <h2>Create staff account</h2>
+              <form
+                className="control-staff-form"
+                onSubmit={event => {
+                  event.preventDefault();
+                  void action(async () => {
+                    await api("/admin/staff-accounts", staffDraft);
+                    setStaffDraft({ username: "", name: "", password: "", role: "editor" });
+                  }, "Staff account created");
+                }}
+              >
+                <label>
+                  Username
+                  <input
+                    required
+                    pattern="[A-Za-z][A-Za-z0-9_-]{2,31}"
+                    placeholder="e.g. editor-jane"
+                    value={staffDraft.username}
+                    onChange={event => setStaffDraft(current => ({ ...current, username: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Display name
+                  <input
+                    required
+                    minLength={2}
+                    placeholder="e.g. Jane Smith"
+                    value={staffDraft.name}
+                    onChange={event => setStaffDraft(current => ({ ...current, name: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  Account type
+                  <select
+                    value={staffDraft.role}
+                    onChange={event => setStaffDraft(current => ({ ...current, role: event.target.value }))}
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="approval">Approval</option>
+                    <option value="super">Super administrator</option>
+                  </select>
+                </label>
+                <label>
+                  Password
+                  <input
+                    required
+                    type="password"
+                    minLength={12}
+                    autoComplete="new-password"
+                    placeholder="At least 12 characters"
+                    value={staffDraft.password}
+                    onChange={event => setStaffDraft(current => ({ ...current, password: event.target.value }))}
+                  />
+                </label>
+                <button className="control-primary" disabled={busy}>
+                  Create account
+                </button>
+              </form>
               <div className="control-search">
                 <Search size={16} />
                 <input
@@ -1179,15 +1264,38 @@ export default function Admin() {
                 <tbody>
                   {rows
                     .filter(r =>
-                      r.email.toLowerCase().includes(search.toLowerCase())
+                      `${r.username || ""} ${r.name} ${r.email}`
+                        .toLowerCase()
+                        .includes(search.toLowerCase())
                     )
                     .map(r => (
                       <tr key={r.id}>
                         <td>
-                          {r.email}
-                          <small>{r.name}</small>
+                          <strong>{r.username || r.email}</strong>
+                          <small>{r.name}{r.username ? ` · ${r.email}` : ""}</small>
                         </td>
-                        <td>{r.roles.join(", ")}</td>
+                        <td>
+                          {r.username ? (
+                            <select
+                              value={r.roles[0] || "customer"}
+                              disabled={busy || r.id === user.id}
+                              onChange={event =>
+                                void action(
+                                  () => api(`/admin/users/${r.id}`, {
+                                    roles: [event.target.value],
+                                    active: r.active,
+                                    reason: "Staff account type updated",
+                                  }),
+                                  "Account type updated"
+                                )
+                              }
+                            >
+                              <option value="editor">Editor</option>
+                              <option value="approval">Approval</option>
+                              <option value="super">Super administrator</option>
+                            </select>
+                          ) : r.roles.join(", ")}
+                        </td>
                         <td>{r.active ? "Active" : "Suspended"}</td>
                         <td>
                           <div className="control-table-actions">
@@ -1211,44 +1319,34 @@ export default function Admin() {
                             >
                               {r.active ? "Suspend" : "Reactivate"}
                             </button>
-                            <button
-                              disabled={busy || r.id === user.id}
-                              onClick={() => {
-                                const roles = window.prompt(
-                                  "Roles separated by commas: customer, dealer, sales, product, technical, pricing, super",
-                                  r.roles.join(",")
-                                );
-                                if (!roles) return;
-                                const why = window.prompt(
-                                  "Reason for changing roles"
-                                );
-                                if (why)
+                            {r.id !== user.id && (
+                              <button
+                                disabled={busy}
+                                onClick={() =>
                                   void action(
-                                    () =>
-                                      api(`/admin/users/${r.id}`, {
-                                        roles: roles
-                                          .split(",")
-                                          .map(s => s.trim()),
-                                        active: r.active,
-                                        reason: why,
-                                      }),
-                                    "Roles updated and sessions revoked"
+                                    () => api(`/admin/users/${r.id}/revoke`, {}),
+                                    "All sessions revoked"
+                                  )
+                                }
+                              >
+                                Revoke sessions
+                              </button>
+                            )}
+                            {r.username && (
+                              <button
+                                disabled={busy}
+                                onClick={() => {
+                                  const password = window.prompt("New password (at least 12 characters)");
+                                  if (!password) return;
+                                  void action(
+                                    () => api(`/admin/staff-accounts/${r.id}/password`, { password }),
+                                    "Password reset and existing sessions revoked"
                                   );
-                              }}
-                            >
-                              Edit roles
-                            </button>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                action(
-                                  () => api(`/admin/users/${r.id}/revoke`, {}),
-                                  "All sessions revoked"
-                                )
-                              }
-                            >
-                              Revoke sessions
-                            </button>
+                                }}
+                              >
+                                Reset password
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1256,8 +1354,7 @@ export default function Admin() {
                 </tbody>
               </table>
               <p className="control-help">
-                Staff must be provisioned with an authenticator before a staff
-                role can be assigned.
+                Usernames appear immediately after creation. Passwords are stored securely and are never shown again.
               </p>
             </section>
           )}

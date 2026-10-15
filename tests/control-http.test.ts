@@ -365,4 +365,70 @@ describe("control HTTP boundaries", () => {
     expect(analytics.daily).toHaveLength(1);
     expect(analytics.daily[0]).toMatchObject({ visits: 1, visitors: 1 });
   });
+  it("creates password-based Editor and Approval accounts with separate access", async () => {
+    const superUser = await login("super@example.test", ["super"]);
+    const created = await req(
+      "/admin/staff-accounts",
+      {
+        username: "editor",
+        name: "Product editor",
+        password: "Editor-password-2026",
+        role: "editor",
+      },
+      superUser.cookie
+    );
+    expect(created.status).toBe(201);
+    expect(
+      (await (await req("/admin/users", undefined, superUser.cookie)).json()).some(
+        (account: { username?: string }) => account.username === "editor"
+      )
+    ).toBe(true);
+    await req(
+      "/admin/staff-accounts",
+      {
+        username: "approval",
+        name: "Release approver",
+        password: "Approval-password-2026",
+        role: "approval",
+      },
+      superUser.cookie
+    );
+    const editorLogin = await req("/login/password", {
+      username: "editor",
+      password: "Editor-password-2026",
+    });
+    expect(editorLogin.status).toBe(200);
+    const editorCookie = editorLogin.headers.get("set-cookie") || "";
+    expect((await req("/admin/users", undefined, editorCookie)).status).toBe(403);
+    expect((await req("/admin/inquiries", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, editorCookie)).status).toBe(200);
+    const approvalLogin = await req("/login/password", {
+      username: "approval",
+      password: "Approval-password-2026",
+    });
+    expect(approvalLogin.status).toBe(200);
+    const approvalCookie = approvalLogin.headers.get("set-cookie") || "";
+    expect((await req("/admin/releases", undefined, approvalCookie)).status).toBe(200);
+    const current = await (await req("/admin/current", undefined, approvalCookie)).json();
+    expect((await req("/admin/inquiries", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, approvalCookie)).status).toBe(200);
+    const submission = {
+      domain: "catalogue",
+      data: current.catalogue.data,
+      baseId: current.catalogue.id,
+      reason: "Confirm catalogue values for release",
+      source: "Internal product confirmation",
+    };
+    expect((await req("/admin/submissions", submission, approvalCookie)).status).toBe(403);
+    const submitted = await (
+      await req("/admin/submissions", submission, editorCookie)
+    ).json();
+    expect(
+      (
+        await req(`/admin/releases/${submitted.id}/approve`, {}, approvalCookie)
+      ).status
+    ).toBe(200);
+  });
 });

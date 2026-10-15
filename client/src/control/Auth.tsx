@@ -34,7 +34,10 @@ export function Auth({
     [sent, setSent] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(oauthError),
-    [notice, setNotice] = useState("");
+    [notice, setNotice] = useState(""),
+    [passwordMode, setPasswordMode] = useState(false),
+    [username, setUsername] = useState(""),
+    [password, setPassword] = useState("");
   const [availability, setAvailability] = useState<{
     available: boolean;
     message: string;
@@ -73,18 +76,6 @@ export function Auth({
       setBusy(false);
     }
   }
-  async function openPreview(account: "admin" | "reviewer") {
-    setBusy(true);
-    setError("");
-    try {
-      const result = await api("/preview/login", { account });
-      onLogin(result.user);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
   async function verify() {
     setBusy(true);
     setError("");
@@ -97,6 +88,19 @@ export function Auth({
       setBusy(false);
     }
   }
+  async function signInWithPassword() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api("/login/password", { username, password });
+      onLogin(result.user);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const showPasswordForm = passwordMode || Boolean(availability?.preview);
   return (
     <div className="control-auth">
       <a className="control-brand" href="/">
@@ -126,31 +130,56 @@ export function Auth({
             {availability.message}
           </div>
         )}
-        {availability?.preview && (
-          <div style={{ marginTop: 20 }}>
+        {showPasswordForm && (
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              void signInWithPassword();
+            }}
+          >
+            <label>
+              Staff username
+              <input
+                autoComplete="username"
+                required
+                value={username}
+                disabled={busy}
+                onChange={e => setUsername(e.target.value)}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                minLength={12}
+                value={password}
+                disabled={busy}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </label>
             {error && (
               <div role="alert" className="control-error">
                 {error}
               </div>
             )}
-            <div className="control-row">
+            <button className="control-primary" disabled={busy}>
+              {busy ? "Signing in…" : "Sign in"}
+              <ArrowRight size={17} />
+            </button>
+            {!availability?.preview && (
               <button
-                className="control-primary"
+                type="button"
                 disabled={busy}
-                onClick={() => openPreview("admin")}
+                onClick={() => setPasswordMode(false)}
               >
-                {busy ? "Opening demo…" : "Open as editor"}
-                <ArrowRight size={17} />
+                Use email sign-in
               </button>
-              {staff && (
-                <button disabled={busy} onClick={() => openPreview("reviewer")}>
-                  Open as reviewer
-                </button>
-              )}
-            </div>
-          </div>
+            )}
+          </form>
         )}
-        {!availability?.preview && (
+        {!availability?.preview && !passwordMode && (
           <>
             {availability?.googleOAuth && (
               <div style={{ marginTop: 20 }}>
@@ -258,8 +287,16 @@ export function Auth({
                 </div>
               )}
             </form>
+            <button type="button" onClick={() => setPasswordMode(true)}>
+              Sign in with staff password
+            </button>
           </>
         )}
+        <small>
+          {availability?.preview
+            ? "Use the assigned staff username and password. No direct preview access is available."
+            : "We use your email for account access and project services. Signing in does not subscribe you to marketing."}
+        </small>
         <a className="control-back" href="/">
           ← Return to Solar Studio
         </a>

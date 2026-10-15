@@ -3,6 +3,7 @@ import {
   createHmac,
   randomBytes,
   randomInt,
+  scryptSync,
   timingSafeEqual,
   createCipheriv,
   createDecipheriv,
@@ -10,7 +11,7 @@ import {
 import { parse } from "cookie";
 import type { Request, Response } from "express";
 import { ControlError, ControlStore, fail } from "./store";
-import type { ControlUser } from "../../shared/control";
+import type { ControlUser, Role } from "../../shared/control";
 export const SESSION_COOKIE = "modernite_session";
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
@@ -61,6 +62,28 @@ export function totp(secret: string, step = Math.floor(Date.now() / 30000)) {
 }
 const equal = (a: string, b: string) =>
   a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+function passwordHash(password: string) {
+  const salt = randomBytes(16).toString("base64url");
+  const digest = scryptSync(password, salt, 64).toString("base64url");
+  return `scrypt$${salt}$${digest}`;
+}
+function passwordMatches(password: string, saved: string) {
+  const [algorithm, salt, digest] = saved.split("$");
+  if (algorithm !== "scrypt" || !salt || !digest) return false;
+  const actual = scryptSync(password, salt, 64).toString("base64url");
+  return equal(actual, digest);
+}
+function createSession(store: ControlStore, user: ControlUser) {
+  const token = randomBytes(32).toString("base64url");
+  const expires =
+    Date.now() + (user.roles.some(r => r !== "customer") ? 4 : 24) * 3600000;
+  store.db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
+  store.db
+    .prepare("INSERT INTO sessions VALUES(?,?,?)")
+    .run(hash(token), user.id, expires);
+  store.audit(user.id, "session.created", user.id);
+  return { user, token, expires };
+}
 function codeHash(email: string, code: string) {
   return createHmac("sha256", key()).update(`${email}:${code}`).digest("hex");
 }
@@ -188,16 +211,7 @@ export function verifyCode(
     }
     user ??= store.createUser(email);
     store.db.prepare("DELETE FROM codes WHERE email=?").run(email);
-    const token = randomBytes(32).toString("base64url"),
-      expires =
-        Date.now() +
-        (user.roles.some(r => r !== "customer") ? 4 : 24) * 3600000;
-    store.db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
-    store.db
-      .prepare("INSERT INTO sessions VALUES(?,?,?)")
-      .run(hash(token), user.id, expires);
-    store.audit(user.id, "session.created", user.id);
-    return { user, token, expires };
+    return createSession(store, user);
   });
   return (
     result ??
@@ -206,6 +220,112 @@ export function verifyCode(
       "The code is invalid or expired. Staff must also enter a valid authenticator code."
     )
   );
+}
+
+export function createStaffAccount(
+  store: ControlStore,
+  actor: ControlUser | null,
+  input: { username: string; name: string; password: string; role: Extract<Role, "editor" | "approval" | "super"> }
+) {
+  const username = input.username.trim().toLowerCase();
+  if (store.db.prepare("SELECT username FROM staff_credentials WHERE username=?").get(username))
+    fail(409, "That staff username is already in use");
+  const email = `${username}@staff.modernite.invalid`;
+  if (store.byEmail(email)) fail(409, "That staff username is already in use");
+  const password = passwordHash(input.password);
+  return store.transaction(() => {
+    const user = store.createUser(email, input.name, [input.role]);
+    const now = new Date().toISOString();
+    store.db
+      .prepare("INSERT INTO staff_credentials(username,user_id,password_hash,created_at,updated_at) VALUES(?,?,?,?,?)")
+      .run(username, user.id, password, now, now);
+    store.audit(actor?.id || "bootstrap", "staff.account_created", user.id, null, {
+      username,
+      role: input.role,
+    });
+    return { user, username };
+  });
+}
+
+/**
+ * Optional bootstrap from CONTROL_STAFF_SEED.
+ * Entries: `username|role|password` separated by newlines or `;`.
+ * Existing usernames are left unchanged (passwords are never overwritten on restart).
+ * Do not commit real passwords; set this only in the deployment environment.
+ */
+export function seedStaffFromEnv(store: ControlStore) {
+  const raw = process.env.CONTROL_STAFF_SEED?.trim();
+  if (!raw) return [] as { username: string; role: string; created: boolean }[];
+  const rolesAllowed = new Set(["editor", "approval", "super"]);
+  const results: { username: string; role: string; created: boolean }[] = [];
+  for (const chunk of raw.split(/[\n;]+/)) {
+    const line = chunk.trim();
+    if (!line || line.startsWith("#")) continue;
+    const [username, role, ...passwordParts] = line.split("|");
+    const password = passwordParts.join("|");
+    if (!username || !role || !password || !rolesAllowed.has(role)) {
+      console.warn("[control] Skipping invalid CONTROL_STAFF_SEED entry");
+      continue;
+    }
+    const exists = store.db
+      .prepare("SELECT username FROM staff_credentials WHERE username=?")
+      .get(username.trim().toLowerCase());
+    if (exists) {
+      results.push({ username: username.trim().toLowerCase(), role, created: false });
+      continue;
+    }
+    try {
+      createStaffAccount(store, null, {
+        username,
+        name: username,
+        password,
+        role: role as "editor" | "approval" | "super",
+      });
+      results.push({ username: username.trim().toLowerCase(), role, created: true });
+    } catch (error) {
+      console.warn(
+        "[control] Could not seed staff account",
+        error instanceof Error ? error.message : "unknown error"
+      );
+    }
+  }
+  return results;
+}
+
+export function passwordLogin(store: ControlStore, username: string, password: string) {
+  const normalized = username.trim().toLowerCase();
+  limit(store, `password:${hash(normalized)}`, 10, 3600000);
+  const row = store.db
+    .prepare(
+      "SELECT c.password_hash,c.user_id FROM staff_credentials c WHERE c.username=?"
+    )
+    .get(normalized) as { password_hash: string; user_id: string } | undefined;
+  const user = row ? store.user(row.user_id) : null;
+  if (!row || !user || !user.active || !passwordMatches(password, row.password_hash))
+    fail(401, "The username or password is incorrect");
+  return store.transaction(() => createSession(store, user));
+}
+
+export function resetStaffPassword(
+  store: ControlStore,
+  actor: ControlUser,
+  userId: string,
+  password: string
+) {
+  const credential = store.db
+    .prepare("SELECT username FROM staff_credentials WHERE user_id=?")
+    .get(userId) as { username: string } | undefined;
+  if (!credential) fail(404, "This account does not use a staff password");
+  const nextHash = passwordHash(password);
+  store.transaction(() => {
+    store.db
+      .prepare("UPDATE staff_credentials SET password_hash=?,updated_at=? WHERE user_id=?")
+      .run(nextHash, new Date().toISOString(), userId);
+    store.db.prepare("DELETE FROM sessions WHERE user_id=?").run(userId);
+    store.audit(actor.id, "staff.password_reset", userId, null, {
+      username: credential.username,
+    });
+  });
 }
 export function sessionUser(
   store: ControlStore,
@@ -217,6 +337,8 @@ export function sessionUser(
     .prepare("SELECT user_id FROM sessions WHERE hash=? AND expires>?")
     .get(hash(token), Date.now());
   const user = row ? store.user(String(row.user_id)) : null;
+  if (process.env.CONTROL_PREVIEW === "1" && user?.email === "admin@example.test")
+    return null;
   return user?.active ? user : null;
 }
 export function logout(store: ControlStore, req: Request, res: Response) {
