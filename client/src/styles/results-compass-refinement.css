@@ -2771,7 +2771,7 @@
 .gateway-shell--results .results-hero-stage .generation-hero-card .range-track strong {
   width: 18px !important;
   height: 18px !important;
-  margin-top: -4.5px !important;
+  margin-top: 0 !important;
   border: 3px solid rgba(255,255,255,.82) !important;
   background: #d3a127 !important;
   box-shadow:
@@ -2782,7 +2782,7 @@
 .gateway-shell--results .results-hero-stage .generation-hero-card .range-track em {
   width: 13px !important;
   height: 13px !important;
-  margin-top: -2px !important;
+  margin-top: 0 !important;
   border: 3px solid rgba(236, 249, 241, .88) !important;
   box-shadow: 0 0 0 7px rgba(8, 114, 87, .11) !important;
 }

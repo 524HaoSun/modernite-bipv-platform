@@ -356,8 +356,8 @@ function ExecutiveOutcomePanel({ study, scenario, f }: { study: ProjectCalculati
       <article><span>{t.scenario}</span><strong>{t.scenarioTitles[scenario.id]}</strong><small>{scenario.breakEvenYear ? t.breakEvenYear(scenario.breakEvenYear) : t.planningComparison}</small></article>
     </div>
     <div className="executive-flow-strip" aria-label={t.flowTitle}>
-      <span style={{ ["--w" as string]: `${Math.max(8, kpis.pvSelfConsumptionPercent)}%` }}><b>{t.solarOnSite}</b><i>{f.n(selfUse)} kWh</i></span>
-      <span style={{ ["--w" as string]: `${Math.max(8, kpis.exportRatePercent)}%` }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
+      <span style={{ ["--w" as string]: Math.max(8, kpis.pvSelfConsumptionPercent) }}><b>{t.solarOnSite}</b><i>{f.n(selfUse)} kWh</i></span>
+      <span style={{ ["--w" as string]: Math.max(8, kpis.exportRatePercent) }}><b>{t.exported}</b><i>{f.n(exportKwh)} kWh</i></span>
     </div>
   </section>;
 }

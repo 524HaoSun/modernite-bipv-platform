@@ -5833,9 +5833,10 @@ html:lang(ja) .eyebrow {
   border: 1px solid rgba(235, 250, 235, .15);
   border-radius: 14px;
   background: rgba(4, 35, 30, .32);
+  overflow: hidden;
 }
 .executive-flow-strip span {
-  flex: var(--w) 0 0;
+  flex: var(--w) 1 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5844,6 +5845,7 @@ html:lang(ja) .eyebrow {
   border-radius: 10px;
   color: #073a31;
   background: linear-gradient(135deg, #eff9ec, #b7dcae);
+  overflow: hidden;
 }
 .executive-flow-strip span + span {
   color: #173d34;
