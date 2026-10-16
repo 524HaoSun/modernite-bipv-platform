@@ -79,7 +79,8 @@ export function registerControlRoutes(
   loginStatus = previewLoginStatus
 ) {
   try {
-    seedStaffFromEnv(getStore());
+    const store = getStore();
+    if (store) seedStaffFromEnv(store);
   } catch (error) {
     console.warn(
       "[control] Staff seed skipped",
