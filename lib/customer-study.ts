@@ -154,9 +154,12 @@ export type CustomerStudyInput = {
 
 const DEFAULT_BUILDING = { width: 8, depth: 8, floors: 2, storeyHeight: 2.95 };
 
-function surfacesFromSnapshot(snapshot: StudioCalculationSnapshot): core.Surface[] {
+function surfacesFromSnapshot(
+  snapshot: StudioCalculationSnapshot,
+  profiles: Readonly<Record<string, core.Profile>> = core.PROFILES,
+): core.Surface[] {
   return snapshot.surfaces
-    .filter((surface) => surface.enabled !== false && surface.area > 0 && core.PROFILES[surface.profile])
+    .filter((surface) => surface.enabled !== false && surface.area > 0 && profiles[surface.profile])
     .map((surface) => {
       const role = surface.role ?? "none";
       return {
@@ -275,7 +278,8 @@ function summarizeTariffDispatch(result: ReturnType<typeof core.dispatchWithGrid
 
 export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const region = regionForMarket(input.market);
-  const surfaces = surfacesFromSnapshot(input.snapshot);
+  const profiles = input.productRuntime?.profiles ?? core.PROFILES;
+  const surfaces = surfacesFromSnapshot(input.snapshot, profiles);
   if (!surfaces.length) throw new Error("Add at least one supported solar product in Solar Studio before running the project calculation.");
   const building = buildingFromSnapshot(input.snapshot);
   const north = Number.isFinite(input.buildingNorthDeg) ? (input.buildingNorthDeg as number) : 180;
@@ -283,7 +287,6 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const settings = input.energySettings;
   const p = parametersFor(building, settings, north);
   p.productRuntime = input.productRuntime;
-  const profiles = input.productRuntime?.profiles ?? core.PROFILES;
   const bill = settings?.demandMode === "bill" && settings.annualDemandKwh && settings.annualDemandKwh > 0 ? settings.annualDemandKwh : null;
   const household = bill === null && settings ? estimateAnnualDemandKwh(settings) : null;
   const guidedDemand = bill === null && input.economicPlan?.annualDemandKwh && input.economicPlan.annualDemandKwh > 0 ? input.economicPlan.annualDemandKwh : null;

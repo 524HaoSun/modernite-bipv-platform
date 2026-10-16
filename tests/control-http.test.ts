@@ -115,6 +115,30 @@ describe("control HTTP boundaries", () => {
     );
   });
 
+  it("exposes the public catalogue without internal pricing fields", async () => {
+    const response = await req("/catalogue");
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.products?.length).toBeGreaterThan(0);
+    expect(body.products[0]).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        name: expect.any(String),
+        wp: expect.any(Number),
+      })
+    );
+    expect(JSON.stringify(body)).not.toContain('"cost"');
+    expect(JSON.stringify(body)).not.toContain('"markup"');
+  });
+
+  it("keeps Google OAuth start disabled until credentials are configured", async () => {
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    const response = await req("/oauth/google/start?returnTo=/account");
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toMatch(/not configured/i);
+  });
+
   it("sets secure session semantics and never returns the verification code", async () => {
     const sent = await req("/login/request", { email: "login@example.test" });
     expect(sent.status).toBe(200);
@@ -315,5 +339,96 @@ describe("control HTTP boundaries", () => {
     expect(
       store.db.prepare("SELECT revision FROM reports").get()?.revision
     ).toBe(1);
+  });
+  it("records anonymous website visits and exposes aggregate analytics to sales", async () => {
+    const visitor = "6d7a2c1e-837e-4f14-b3d3-52aebcbb8567";
+    expect(
+      (
+        await req("/analytics/visit", { visitor, path: "/" })
+      ).status
+    ).toBe(201);
+    expect(
+      (
+        await req("/analytics/visit", { visitor, path: "/" })
+      ).status
+    ).toBe(201);
+    const sales = await login("analytics-sales@example.test", ["sales"]);
+    const analytics = await (
+      await req("/admin/analytics", undefined, sales.cookie)
+    ).json();
+    expect(analytics.totals).toMatchObject({
+      visits: 1,
+      uniqueVisitors: 1,
+      generatedReports: 0,
+      savedCalculations: 0,
+    });
+    expect(analytics.daily).toHaveLength(1);
+    expect(analytics.daily[0]).toMatchObject({ visits: 1, visitors: 1 });
+  });
+  it("creates password-based Editor and Approval accounts with separate access", async () => {
+    const superUser = await login("super@example.test", ["super"]);
+    const created = await req(
+      "/admin/staff-accounts",
+      {
+        username: "editor",
+        name: "Product editor",
+        password: "Editor-password-2026",
+        role: "editor",
+      },
+      superUser.cookie
+    );
+    expect(created.status).toBe(201);
+    expect(
+      (await (await req("/admin/users", undefined, superUser.cookie)).json()).some(
+        (account: { username?: string }) => account.username === "editor"
+      )
+    ).toBe(true);
+    await req(
+      "/admin/staff-accounts",
+      {
+        username: "approval",
+        name: "Release approver",
+        password: "Approval-password-2026",
+        role: "approval",
+      },
+      superUser.cookie
+    );
+    const editorLogin = await req("/login/password", {
+      username: "editor",
+      password: "Editor-password-2026",
+    });
+    expect(editorLogin.status).toBe(200);
+    const editorCookie = editorLogin.headers.get("set-cookie") || "";
+    expect((await req("/admin/users", undefined, editorCookie)).status).toBe(403);
+    expect((await req("/admin/inquiries", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, editorCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, editorCookie)).status).toBe(200);
+    const approvalLogin = await req("/login/password", {
+      username: "approval",
+      password: "Approval-password-2026",
+    });
+    expect(approvalLogin.status).toBe(200);
+    const approvalCookie = approvalLogin.headers.get("set-cookie") || "";
+    expect((await req("/admin/releases", undefined, approvalCookie)).status).toBe(200);
+    const current = await (await req("/admin/current", undefined, approvalCookie)).json();
+    expect((await req("/admin/inquiries", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/projects", undefined, approvalCookie)).status).toBe(200);
+    expect((await req("/admin/analytics", undefined, approvalCookie)).status).toBe(200);
+    const submission = {
+      domain: "catalogue",
+      data: current.catalogue.data,
+      baseId: current.catalogue.id,
+      reason: "Confirm catalogue values for release",
+      source: "Internal product confirmation",
+    };
+    expect((await req("/admin/submissions", submission, approvalCookie)).status).toBe(403);
+    const submitted = await (
+      await req("/admin/submissions", submission, editorCookie)
+    ).json();
+    expect(
+      (
+        await req(`/admin/releases/${submitted.id}/approve`, {}, approvalCookie)
+      ).status
+    ).toBe(200);
   });
 });

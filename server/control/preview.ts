@@ -32,7 +32,9 @@ export function isControlPreview() {
 
 export function previewLoginStatus(): PreviewLoginStatus {
   if (!isControlPreview()) return emailLoginStatus();
+  const base = emailLoginStatus();
   return {
+    ...base,
     available: false,
     preview: true,
     message:

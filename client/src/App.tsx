@@ -63,6 +63,7 @@ const ResultsPage = lazy(() => import("@/components/ResultsReport").then((module
 const PrintReport = lazy(() => import("@/components/PrintReport").then((module) => ({ default: module.PrintReport })));
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
+import { applyCatalogueToStudio, fetchPublicCatalogue } from "@/lib/control-catalogue";
 import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
@@ -100,6 +101,19 @@ const PROJECT_CONTEXT_STORAGE_KEY = "modernite-project-context-v1";
 const STUDIO_LANGUAGE_STORAGE_KEY = "modernite-studio-language";
 const SAVED_STUDY_STORAGE_KEY = "modernite-saved-study-v2";
 const SAVED_STUDY_CONTEXT_SIGNATURE_KEY = "modernite-saved-study-context-signature-v1";
+const ANALYTICS_VISITOR_STORAGE_KEY = "modernite-analytics-visitor-v1";
+
+function analyticsVisitorId() {
+  try {
+    const existing = window.localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY);
+    if (existing) return existing;
+    const visitor = crypto.randomUUID();
+    window.localStorage.setItem(ANALYTICS_VISITOR_STORAGE_KEY, visitor);
+    return visitor;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 type GatewayRoute = "entry" | "market" | "location" | "studio" | "energy" | "calculation" | "results";
 type StudioLanguage = "en" | "zh" | "zh-Hant" | "fr" | "ja" | "es" | "it";
@@ -137,6 +151,9 @@ type StudioWindow = Window & {
     acceptWeather?: (weather: Weather) => void;
     getOrientation?: () => number;
     setOrientation?: (azimuth: number) => void;
+  };
+  ModerniteEnergyCore?: {
+    PROFILES: Record<string, [string, number, number, number]>;
   };
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
@@ -1874,6 +1891,22 @@ function StudioPage({
     if (!studioDocument || !studioWindow) return;
 
     const root = studioDocument.documentElement;
+    if (root.dataset.hostCatalogue !== "pending" && root.dataset.hostCatalogue !== "applied") {
+      root.dataset.hostCatalogue = "pending";
+      void fetchPublicCatalogue().then((catalogue) => {
+        if (!catalogue || !frameRef.current?.contentWindow) {
+          root.dataset.hostCatalogue = "";
+          return;
+        }
+        const live = frameRef.current.contentWindow as StudioWindow;
+        const result = applyCatalogueToStudio(live.ModerniteEnergyCore, catalogue);
+        root.dataset.hostCatalogue = "applied";
+        root.dataset.hostCatalogueVersion = catalogue.catalogueVersion;
+        if (result.updated > 0) {
+          live.dispatchEvent(new Event("modernite-model-change"));
+        }
+      });
+    }
     const lastMarket = root.dataset.hostMarket;
     if (lastMarket !== studioRegion) {
       const regionControl = studioDocument.querySelector<HTMLButtonElement>(`[data-region="${studioRegion}"]`);
@@ -2531,6 +2564,17 @@ export default function App() {
   const [latestStudioSignature, setLatestStudioSignature] = useState<string | null>(null);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const runCalculation = trpc.projectStudy.run.useMutation();
+  useEffect(() => {
+    void fetch(publicPath("api/control/analytics/visit"), {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitor: analyticsVisitorId(),
+        path: window.location.pathname,
+      }),
+    }).catch(() => undefined);
+  }, []);
   useEffect(() => {
     const capture = () => {
       if (!context.location) return;

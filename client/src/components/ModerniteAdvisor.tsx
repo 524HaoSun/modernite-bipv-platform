@@ -15,6 +15,19 @@ export const ADVISOR_ASK_EVENT = "modernite:advisor-ask";
 const ADVISOR_TOGGLE_EVENT = "modernite:advisor-toggle";
 const ADVISOR_STATE_EVENT = "modernite:advisor-state";
 let advisorOpen = false;
+const ADVISOR_CONVERSATION_KEY = "modernite-advisor-conversation";
+
+function conversationId() {
+  try {
+    const existing = sessionStorage.getItem(ADVISOR_CONVERSATION_KEY);
+    if (existing) return existing;
+    const created = crypto.randomUUID();
+    sessionStorage.setItem(ADVISOR_CONVERSATION_KEY, created);
+    return created;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 /** The advisor's fixed home in every page header; the panel itself is mounted once by ModerniteAdvisor. */
 export function AdvisorHeaderButton({ language }: { language: WorkflowLanguage }) {
@@ -106,6 +119,7 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef(messages);
+  const conversationRef = useRef(conversationId());
   messagesRef.current = messages;
 
   const push = useCallback((role: Message["role"], text: string, source: Message["source"]) => {
@@ -147,7 +161,7 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
       const response = await fetch(ADVISOR_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, language, history, context: getContext().slice(0, 19_000), ...(caseId ? { caseId } : {}) }),
+        body: JSON.stringify({ message: text, language, history, context: getContext().slice(0, 19_000), conversationId: conversationRef.current, ...(caseId ? { caseId } : {}) }),
         signal: controller.signal,
       });
       const body = (await response.json().catch(() => ({}))) as { answer?: string };
@@ -174,6 +188,10 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
     abortRef.current = null;
     setPending(false);
     setMessages([]);
+    conversationRef.current = crypto.randomUUID();
+    try {
+      sessionStorage.setItem(ADVISOR_CONVERSATION_KEY, conversationRef.current);
+    } catch {}
   };
 
   const close = useCallback(() => {

@@ -18,7 +18,18 @@ export default function Account() {
     [inquiries, setInquiries] = useState<any[]>([]),
     [showInquiry, setShowInquiry] = useState(false),
     [useLatest, setUseLatest] = useState(false);
+  const resumeParams = new URLSearchParams(window.location.search);
+  const resumeProject = resumeParams.get("project");
+  const resumeEmail = resumeParams.get("email") || "";
+  const resumeInquire = resumeParams.get("inquire") === "1";
+  const oauthError = resumeParams.get("oauth_error") || "";
   useEffect(() => {
+    if (oauthError) {
+      setError(oauthError);
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("oauth_error");
+      window.history.replaceState({}, "", clean.pathname + clean.search);
+    }
     api("/session")
       .then(r => setUser(r.user))
       .catch(e => setError(e.message));
@@ -37,6 +48,14 @@ export default function Account() {
   useEffect(() => {
     if (user) void reload().catch(e => setError(e.message));
   }, [user]);
+  useEffect(() => {
+    if (!user || !resumeProject) return;
+    void open(resumeProject)
+      .then(() => {
+        if (resumeInquire) setShowInquiry(true);
+      })
+      .catch(e => setError(e.message));
+  }, [user, resumeProject, resumeInquire]);
   async function action(fn: () => Promise<any>, message: string) {
     setBusy(true);
     setError("");
@@ -72,7 +91,7 @@ export default function Account() {
   if (!user)
     return (
       <div className="control">
-        <Auth onLogin={setUser} />
+        <Auth onLogin={setUser} initialEmail={resumeEmail} />
       </div>
     );
   return (

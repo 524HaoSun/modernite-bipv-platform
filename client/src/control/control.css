@@ -72,12 +72,24 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.control button.control-primary {
+.control button.control-primary,
+.control a.control-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--green);
+  border-radius: 7px;
   background: var(--green);
   color: white;
-  border-color: var(--green);
+  padding: 9px 13px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
 }
-.control button.control-primary:hover {
+.control button.control-primary:hover,
+.control a.control-primary:hover {
   background: #174b37;
 }
 .control :focus-visible {
@@ -121,16 +133,18 @@
 .control-brand {
   display: flex;
   align-items: center;
+  width: min(100%, 260px);
 }
 .control-brand-logo {
   display: block;
   height: 44px;
   width: auto;
+  max-width: 100%;
 }
-.control-brand small {
-  font-size: 8px;
-  letter-spacing: 2.1px;
-  margin-top: 3px;
+.control-brand img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .control-kicker {
   display: flex;
@@ -187,7 +201,12 @@
   padding: 30px 20px;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
   z-index: 20;
+}
+.control-sidebar .control-brand {
+  width: 100%;
 }
 .control-sidebar .control-brand-logo {
   height: 38px;
@@ -202,6 +221,9 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .control-sidebar nav button {
   justify-content: flex-start;
@@ -223,9 +245,10 @@
   margin-left: auto;
 }
 .control-sidebar-bottom {
-  margin-top: auto;
-  padding: 28px 10px 0;
+  flex-shrink: 0;
+  padding: 16px 10px 0;
   overflow-wrap: anywhere;
+  background: #fcfdf9;
 }
 .control-sidebar-bottom > a {
   display: flex;
@@ -520,6 +543,20 @@
   border-radius: 10px;
   overflow: auto;
 }
+.control-staff-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  margin: 18px 0 26px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafcf7;
+}
+.control-staff-form button {
+  min-height: 40px;
+}
 .control table {
   border-collapse: collapse;
   width: 100%;
@@ -621,6 +658,22 @@
   padding: 24px 0;
   border-bottom: 1px solid var(--line);
 }
+
+.control-chat-transcript {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--control-line, #dbe7de);
+  border-radius: 10px;
+  background: #f8fbf8;
+}
+
+.control-chat-transcript p {
+  margin: 0;
+  white-space: pre-wrap;
+}
 .control-inquiry:first-child {
   padding-top: 0;
 }
@@ -718,8 +771,7 @@
     padding: 24px 14px;
   }
   .control-sidebar .control-brand {
-    font-size: 14px;
-    letter-spacing: 2px;
+    width: 100%;
   }
   .control-main {
     margin-left: 210px;
@@ -838,6 +890,10 @@
   }
   .control-card {
     padding: 16px;
+  }
+  .control-staff-form {
+    grid-template-columns: 1fr;
+    padding: 14px;
   }
   .control-diff {
     grid-template-columns: 1fr;

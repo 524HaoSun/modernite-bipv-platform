@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { studyFactsFor } from "./estimate-service";
+import { controlStore } from "./control/store";
+import { randomUUID } from "node:crypto";
 
 /**
  * The platform-wide Modernite AI advisor (also the online mode of the customer Studio's advisor).
@@ -25,6 +27,7 @@ export const studioAdvisorInputSchema = z.object({
   history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(16_000) })).max(8).optional(),
   context: z.string().max(20_000).optional(),
   caseId: z.string().regex(/^MOD-[A-Z0-9-]{4,24}$/).optional(),
+  conversationId: z.string().uuid().optional(),
 });
 export type StudioAdvisorInput = z.infer<typeof studioAdvisorInputSchema>;
 
@@ -81,6 +84,62 @@ export async function askStudioAdvisor(input: StudioAdvisorInput) {
   return answer.slice(0, 15_000);
 }
 
+function saveAdvisorConversation(input: StudioAdvisorInput, answer: string) {
+  const conversationId = input.conversationId;
+  if (!conversationId) return;
+  try {
+    const store = controlStore();
+    const email = `advisor-${conversationId}@anonymous.invalid`;
+    const owner = store.byEmail(email) ?? store.createUser(email, "Website visitor");
+    const existing = store.db
+      .prepare("SELECT message FROM inquiries WHERE id=?")
+      .get(conversationId) as { message?: string } | undefined;
+    const old = existing
+      ? (JSON.parse(existing.message || "{}").messages as unknown[] | undefined) ?? []
+      : [];
+    const messages = [
+      ...old,
+      { role: "user", content: input.message, at: new Date().toISOString() },
+      { role: "assistant", content: answer, at: new Date().toISOString() },
+    ].slice(-40);
+    const now = new Date().toISOString();
+    store.transaction(() => {
+      if (existing)
+        store.db
+          .prepare("UPDATE inquiries SET message=?,created_at=? WHERE id=?")
+          .run(JSON.stringify({ messages }), now, conversationId);
+      else
+        store.db
+          .prepare(
+            "INSERT INTO inquiries(id,owner,project_id,revision,contact,message,status,created_at,source) VALUES(?,?,?,?,?,?,?,?,?)"
+          )
+          .run(
+            conversationId,
+            owner.id,
+            `advisor-${randomUUID()}`,
+            1,
+            JSON.stringify({
+              name: "Website visitor",
+              email: "",
+              preferredContact: "email",
+              type: "advisor_chat",
+              caseId: input.caseId ?? null,
+            }),
+            JSON.stringify({ messages }),
+            "new",
+            now,
+            "advisor"
+          );
+      store.audit(owner.id, "advisor.conversation_saved", conversationId);
+    });
+  } catch (error) {
+    console.warn(
+      "[studio-advisor] Conversation could not be saved",
+      error instanceof Error ? error.message : error
+    );
+  }
+}
+
 export function registerStudioAdvisorRoute(app: Express) {
   app.post(STUDIO_ADVISOR_PATH, async (req: Request, res: Response) => {
     const client = String(req.headers["x-forwarded-for"] ?? req.ip ?? "unknown").split(",")[0].trim();
@@ -94,7 +153,9 @@ export function registerStudioAdvisorRoute(app: Express) {
       return;
     }
     try {
-      res.json({ answer: await askStudioAdvisor(parsed.data) });
+      const answer = await askStudioAdvisor(parsed.data);
+      saveAdvisorConversation(parsed.data, answer);
+      res.json({ answer });
     } catch (error) {
       console.warn("[studio-advisor]", error instanceof Error ? error.message : error);
       res.status(502).json({ error: "Advisor unavailable" });

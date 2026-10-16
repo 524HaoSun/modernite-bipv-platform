@@ -7,6 +7,8 @@ export const roles = [
   "product",
   "technical",
   "pricing",
+  "editor",
+  "approval",
   "super",
 ] as const;
 export type Role = (typeof roles)[number];
