@@ -119,7 +119,7 @@
 /* Server render (/p/:id?print=1): the report is the whole page. */
 html.is-print-render, html.is-print-render body { background: #fff !important; }
 html.is-print-render body { margin: 0; }
-html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite-advisor-panel { display: none !important; }
+html.is-print-render .modernite-advisor-trigger, html.is-print-render .modernite-advisor-buoy, html.is-print-render .modernite-advisor-panel { display: none !important; }
 
 /* In-app results page: the report is portalled next to #root and only shown when printing. */
 .print-report-portal { display: none; }

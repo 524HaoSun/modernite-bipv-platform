@@ -29,25 +29,57 @@ function conversationId() {
   }
 }
 
-/** The advisor's fixed home in every page header; the panel itself is mounted once by ModerniteAdvisor. */
-export function AdvisorHeaderButton({ language }: { language: WorkflowLanguage }) {
-  const copy = ADVISOR_COPY[language] ?? ADVISOR_COPY.en;
+function useAdvisorOpenState() {
   const [open, setOpen] = useState(advisorOpen);
   useEffect(() => {
     const sync = (event: Event) => setOpen((event as CustomEvent<boolean>).detail);
     window.addEventListener(ADVISOR_STATE_EVENT, sync);
     return () => window.removeEventListener(ADVISOR_STATE_EVENT, sync);
   }, []);
+  return open;
+}
+
+function toggleAdvisor() {
+  window.dispatchEvent(new Event(ADVISOR_TOGGLE_EVENT));
+}
+
+/** Compact header launcher; the always-on floating buoy is rendered by ModerniteAdvisor. */
+export function AdvisorHeaderButton({ language }: { language: WorkflowLanguage }) {
+  const copy = ADVISOR_COPY[language] ?? ADVISOR_COPY.en;
+  const open = useAdvisorOpenState();
   return (
     <button
       type="button"
       className={`modernite-advisor-trigger ${open ? "is-open" : ""}`}
       aria-expanded={open}
       aria-controls="modernite-advisor-panel"
-      onClick={() => window.dispatchEvent(new Event(ADVISOR_TOGGLE_EVENT))}
+      onClick={toggleAdvisor}
     >
       <Sparkles size={14} />
       <span>{copy.launcher}</span>
+    </button>
+  );
+}
+
+/** Fixed floating buoy — visible on every customer journey screen so help is always one tap away. */
+function AdvisorFloatingBuoy({ language }: { language: WorkflowLanguage }) {
+  const copy = ADVISOR_COPY[language] ?? ADVISOR_COPY.en;
+  const open = useAdvisorOpenState();
+  return (
+    <button
+      type="button"
+      className={`modernite-advisor-buoy ${open ? "is-open" : ""}`}
+      aria-expanded={open}
+      aria-controls="modernite-advisor-panel"
+      aria-label={open ? copy.close : copy.launcher}
+      title={open ? copy.close : copy.launcher}
+      onClick={toggleAdvisor}
+    >
+      <span className="modernite-advisor-buoy__pulse" aria-hidden="true" />
+      <span className="modernite-advisor-buoy__icon" aria-hidden="true">
+        {open ? <X size={22} /> : <Sparkles size={22} />}
+      </span>
+      <span className="modernite-advisor-buoy__label">{open ? copy.close : copy.launcher}</span>
     </button>
   );
 }
@@ -196,7 +228,8 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
 
   const close = useCallback(() => {
     setOpen(false);
-    document.querySelector<HTMLButtonElement>(".modernite-advisor-trigger")?.focus({ preventScroll: true });
+    const buoy = document.querySelector<HTMLButtonElement>(".modernite-advisor-buoy");
+    (buoy ?? document.querySelector<HTMLButtonElement>(".modernite-advisor-trigger"))?.focus({ preventScroll: true });
   }, []);
 
   useEffect(() => {
@@ -224,6 +257,7 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
 
   return (
     <>
+      <AdvisorFloatingBuoy language={language} />
       <section
         id="modernite-advisor-panel"
         className="modernite-advisor-panel"
