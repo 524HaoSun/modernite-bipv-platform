@@ -62,13 +62,14 @@ export function AdvisorHeaderButton({ language }: { language: WorkflowLanguage }
 }
 
 /** Fixed floating buoy — visible on every customer journey screen so help is always one tap away. */
-function AdvisorFloatingBuoy({ language }: { language: WorkflowLanguage }) {
+function AdvisorFloatingBuoy({ language, route }: { language: WorkflowLanguage; route: Route }) {
   const copy = ADVISOR_COPY[language] ?? ADVISOR_COPY.en;
   const open = useAdvisorOpenState();
+  const studioDock = route === "studio";
   return (
     <button
       type="button"
-      className={`modernite-advisor-buoy ${open ? "is-open" : ""}`}
+      className={`modernite-advisor-buoy ${open ? "is-open" : ""} ${studioDock ? "is-studio" : ""}`}
       aria-expanded={open}
       aria-controls="modernite-advisor-panel"
       aria-label={open ? copy.close : copy.launcher}
@@ -257,10 +258,10 @@ export function ModerniteAdvisor({ language, route, getContext, caseId }: {
 
   return (
     <>
-      <AdvisorFloatingBuoy language={language} />
+      <AdvisorFloatingBuoy language={language} route={route} />
       <section
         id="modernite-advisor-panel"
-        className="modernite-advisor-panel"
+        className={`modernite-advisor-panel ${route === "studio" ? "is-studio" : ""}`}
         role="dialog"
         aria-modal="false"
         aria-label={copy.title}
