@@ -15,6 +15,7 @@ import { requestCode, verifyCode, seal, totp } from "../server/control/auth";
 import type { Role } from "../shared/control";
 let store: ControlStore, server: Server, origin: string, lastCode: string;
 let deliveryAvailable = true;
+let googleOAuthAvailable = false;
 const configuration = {
   market: "GB",
   address: "Private customer address",
@@ -47,7 +48,12 @@ beforeAll(async () => {
     },
     () => ({
       available: deliveryAvailable,
-      message: deliveryAvailable ? "" : "Email sign-in is not configured yet.",
+      googleOAuth: googleOAuthAvailable,
+      message: deliveryAvailable
+        ? ""
+        : googleOAuthAvailable
+          ? "Email codes are unavailable; you can still continue with Google."
+          : "Email sign-in is not configured yet.",
     })
   );
   server = createServer(app);
@@ -61,6 +67,7 @@ afterAll(async () => {
 beforeEach(() => {
   store = new ControlStore(":memory:");
   deliveryAvailable = true;
+  googleOAuthAvailable = false;
   lastCode = "";
 });
 afterEach(() => store.close());
@@ -365,6 +372,26 @@ describe("control HTTP boundaries", () => {
     expect(analytics.daily).toHaveLength(1);
     expect(analytics.daily[0]).toMatchObject({ visits: 1, visitors: 1 });
   });
+  it("saves a captured project with email even when resume email delivery is down", async () => {
+    deliveryAvailable = false;
+    googleOAuthAvailable = true;
+    const response = await req("/projects/capture", {
+      email: "resume@example.test",
+      name: "Saved study",
+      configuration,
+    });
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body).toMatchObject({
+      emailSent: false,
+      emailDeliveryAvailable: false,
+      googleOAuth: true,
+    });
+    expect(body.id).toBeTruthy();
+    expect(body.message).toMatch(/Google/i);
+    expect(store.byEmail("resume@example.test")?.email).toBe("resume@example.test");
+  });
+
   it("creates password-based Editor and Approval accounts with separate access", async () => {
     const superUser = await login("super@example.test", ["super"]);
     const created = await req(

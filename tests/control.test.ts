@@ -10,6 +10,9 @@ import {
   totp,
   emailLoginStatus,
   sendLoginEmail,
+  seedStaffFromEnv,
+  passwordLogin,
+  createStaffAccount,
 } from "../server/control/auth";
 import {
   isControlPreview,
@@ -435,6 +438,51 @@ describe("email verification and stronger staff authentication", () => {
     await expect(
       requestCode(store, "new@example.test", async () => {})
     ).rejects.toThrow("not configured");
+  });
+});
+
+describe("staff password seed", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+  it("creates missing accounts and leaves existing passwords alone by default", () => {
+    vi.stubEnv(
+      "CONTROL_STAFF_SEED",
+      "seededitor|editor|Initial!Password12;seededitor|editor|Changed!Password99"
+    );
+    const first = seedStaffFromEnv(store);
+    expect(first).toEqual([
+      { username: "seededitor", role: "editor", created: true, updated: false },
+      { username: "seededitor", role: "editor", created: false, updated: false },
+    ]);
+    expect(passwordLogin(store, "seededitor", "Initial!Password12").user.roles).toContain(
+      "editor"
+    );
+    expect(() => passwordLogin(store, "seededitor", "Changed!Password99")).toThrow(
+      /incorrect/
+    );
+  });
+  it("resets passwords and roles when CONTROL_STAFF_SEED_UPDATE=1", () => {
+    createStaffAccount(store, null, {
+      username: "seedsuper",
+      name: "seedsuper",
+      password: "Old!Password1234",
+      role: "editor",
+    });
+    vi.stubEnv(
+      "CONTROL_STAFF_SEED",
+      "seedsuper|super|New!Password5678"
+    );
+    vi.stubEnv("CONTROL_STAFF_SEED_UPDATE", "1");
+    const results = seedStaffFromEnv(store);
+    expect(results).toEqual([
+      { username: "seedsuper", role: "super", created: false, updated: true },
+    ]);
+    const session = passwordLogin(store, "seedsuper", "New!Password5678");
+    expect(session.user.roles).toEqual(["super"]);
+    expect(() => passwordLogin(store, "seedsuper", "Old!Password1234")).toThrow(
+      /incorrect/
+    );
   });
 });
 

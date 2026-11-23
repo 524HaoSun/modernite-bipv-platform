@@ -247,31 +247,78 @@ export function createStaffAccount(
   });
 }
 
+function envFlagEnabled(name: string) {
+  const value = process.env[name]?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+export type StaffSeedResult = {
+  username: string;
+  role: string;
+  created: boolean;
+  updated: boolean;
+};
+
 /**
  * Optional bootstrap from CONTROL_STAFF_SEED.
  * Entries: `username|role|password` separated by newlines or `;`.
- * Existing usernames are left unchanged (passwords are never overwritten on restart).
+ * By default existing usernames are left unchanged (passwords are not overwritten on restart).
+ * Set CONTROL_STAFF_SEED_UPDATE=1 to reset passwords (and roles) for matching usernames,
+ * revoke their sessions, then remove the flag after a successful restart.
  * Do not commit real passwords; set this only in the deployment environment.
  */
 export function seedStaffFromEnv(store: ControlStore) {
   const raw = process.env.CONTROL_STAFF_SEED?.trim();
-  if (!raw) return [] as { username: string; role: string; created: boolean }[];
+  if (!raw) return [] as StaffSeedResult[];
+  const allowUpdate = envFlagEnabled("CONTROL_STAFF_SEED_UPDATE");
   const rolesAllowed = new Set(["editor", "approval", "super"]);
-  const results: { username: string; role: string; created: boolean }[] = [];
+  const results: StaffSeedResult[] = [];
   for (const chunk of raw.split(/[\n;]+/)) {
     const line = chunk.trim();
     if (!line || line.startsWith("#")) continue;
-    const [username, role, ...passwordParts] = line.split("|");
+    const [usernameRaw, role, ...passwordParts] = line.split("|");
     const password = passwordParts.join("|");
-    if (!username || !role || !password || !rolesAllowed.has(role)) {
+    if (!usernameRaw || !role || !password || !rolesAllowed.has(role)) {
       console.warn("[control] Skipping invalid CONTROL_STAFF_SEED entry");
       continue;
     }
-    const exists = store.db
-      .prepare("SELECT username FROM staff_credentials WHERE username=?")
-      .get(username.trim().toLowerCase());
-    if (exists) {
-      results.push({ username: username.trim().toLowerCase(), role, created: false });
+    const username = usernameRaw.trim().toLowerCase();
+    const existing = store.db
+      .prepare(
+        "SELECT username,user_id FROM staff_credentials WHERE username=?"
+      )
+      .get(username) as { username: string; user_id: string } | undefined;
+    if (existing) {
+      if (!allowUpdate) {
+        results.push({ username, role, created: false, updated: false });
+        continue;
+      }
+      try {
+        const nextHash = passwordHash(password);
+        store.transaction(() => {
+          store.db
+            .prepare(
+              "UPDATE staff_credentials SET password_hash=?,updated_at=? WHERE username=?"
+            )
+            .run(nextHash, new Date().toISOString(), username);
+          store.db
+            .prepare("UPDATE users SET roles=?,name=? WHERE id=?")
+            .run(JSON.stringify([role]), username, existing.user_id);
+          store.db
+            .prepare("DELETE FROM sessions WHERE user_id=?")
+            .run(existing.user_id);
+          store.audit("bootstrap", "staff.password_seed_reset", existing.user_id, null, {
+            username,
+            role,
+          });
+        });
+        results.push({ username, role, created: false, updated: true });
+      } catch (error) {
+        console.warn(
+          "[control] Could not update seeded staff account",
+          error instanceof Error ? error.message : "unknown error"
+        );
+      }
       continue;
     }
     try {
@@ -281,7 +328,7 @@ export function seedStaffFromEnv(store: ControlStore) {
         password,
         role: role as "editor" | "approval" | "super",
       });
-      results.push({ username: username.trim().toLowerCase(), role, created: true });
+      results.push({ username, role, created: true, updated: false });
     } catch (error) {
       console.warn(
         "[control] Could not seed staff account",

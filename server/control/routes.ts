@@ -620,6 +620,7 @@ export function registerControlRoutes(
         calculated.revision
       );
       let emailSent = false;
+      const delivery = loginStatus();
       if (recipient) {
         try {
           await sendProjectResumeEmail(recipient, {
@@ -632,15 +633,20 @@ export function registerControlRoutes(
           console.warn("[projects] Saved project but could not send resume email");
         }
       }
+      const emailAttachedMessage = emailSent
+        ? "Your project is saved. Check your email for the secure return link."
+        : delivery.googleOAuth
+          ? "Your project is saved with this email, but the return email could not be sent. Reopen it from My Projects with Google using the same address."
+          : "Your project is saved with this email, but the return email could not be sent. Ask the site administrator to enable email delivery, or keep this browser session.";
       res.status(201).json({
         id: calculated.id,
         revision: calculated.revision,
         reportId: report.reportId,
         emailSent,
+        emailDeliveryAvailable: Boolean(delivery.available),
+        googleOAuth: Boolean(delivery.googleOAuth),
         message: recipient
-          ? emailSent
-            ? "Your project is saved. Check your email for the secure return link."
-            : "Your project is saved, but the return email could not be sent."
+          ? emailAttachedMessage
           : "Your calculation is saved privately. Add an email next time to return to it on another device.",
       });
     }, false)
