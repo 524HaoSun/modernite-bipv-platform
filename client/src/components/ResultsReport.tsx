@@ -703,17 +703,63 @@ function accountResumeHref(projectId: string, email: string, inquire = false) {
   return `/account?${params.toString()}`;
 }
 
+function isValidSaveEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) && value.trim().length <= 254;
+}
+
 function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"ok" | "warn" | "error">("ok");
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [loginStatus, setLoginStatus] = useState<{
+    available: boolean;
+    message: string;
+    googleOAuth?: boolean;
+  } | null>(null);
   const captured = useRef(false);
-  const save = async (opts?: { inquire?: boolean }) => {
+  const emailedSave = useRef<string | null>(null);
+  const debounceRef = useRef<number | null>(null);
+  const busyRef = useRef(false);
+  const emailRef = useRef(email);
+  emailRef.current = email;
+  busyRef.current = busy;
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/control/login/status", { credentials: "same-origin" })
+      .then(async response => {
+        if (!response.ok) throw new Error("status unavailable");
+        return response.json() as Promise<{
+          available: boolean;
+          message: string;
+          googleOAuth?: boolean;
+        }>;
+      })
+      .then(status => {
+        if (!cancelled) setLoginStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoginStatus({
+            available: false,
+            message: "Email delivery status could not be checked.",
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const save = async (opts?: { inquire?: boolean; emailOverride?: string }) => {
+    const recipient = (opts?.emailOverride ?? emailRef.current).trim();
     setBusy(true);
     setMessage("");
+    setMessageTone("ok");
     try {
-      if (opts?.inquire && !email.trim()) {
+      if (opts?.inquire && !recipient) {
         throw new Error("Add your email so we can reopen this project and take your quotation request.");
       }
       const raw = window.localStorage.getItem("modernite-private-project-input");
@@ -723,41 +769,99 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim(),
+          email: recipient,
           name: "My solar project",
           configuration: JSON.parse(raw),
         }),
       });
-      const body = await result.json() as { id?: string; error?: string; message?: string };
+      const body = await result.json() as {
+        id?: string;
+        error?: string;
+        message?: string;
+        emailSent?: boolean;
+        emailDeliveryAvailable?: boolean;
+        googleOAuth?: boolean;
+      };
       if (!result.ok) throw new Error(body.error || "Could not save your project");
       if (body.id) setSavedId(body.id);
+      if (recipient) emailedSave.current = recipient.toLowerCase();
+      const deliveryUnavailable = Boolean(recipient) && body.emailSent === false;
+      setMessageTone(deliveryUnavailable ? "warn" : "ok");
       setMessage(body.message || "Your calculation is saved.");
       if (opts?.inquire && body.id) {
-        window.location.assign(accountResumeHref(body.id, email, true));
+        window.location.assign(accountResumeHref(body.id, recipient, true));
         return;
       }
     } catch (error) {
+      setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Could not save your project");
     } finally {
       setBusy(false);
     }
   };
+
+  const saveWithEmailIfReady = (value: string) => {
+    const trimmed = value.trim().toLowerCase();
+    if (!isValidSaveEmail(trimmed)) return;
+    if (emailedSave.current === trimmed || busyRef.current) return;
+    void save({ emailOverride: trimmed });
+  };
+
+  const scheduleEmailSave = (value: string) => {
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      debounceRef.current = null;
+      saveWithEmailIfReady(value);
+    }, 700);
+  };
+
   useEffect(() => {
     if (!isDemo && !captured.current) {
       captured.current = true;
       void save();
     }
   }, [isDemo]);
+
+  useEffect(() => () => {
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+  }, []);
+
   if (isDemo) return null;
+  const emailDeliveryUnavailable = loginStatus != null && !loginStatus.available;
   return <section className="study-summary-card" style={{ marginTop: 14 }}>
     <p className="mini-label">SAVE THIS PROJECT</p>
-    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation and report are saved automatically. Add an email to reopen this study later, or continue to your account to request a quotation.</p>
+    <p style={{ fontSize: 13, lineHeight: 1.55 }}>Your calculation and report are saved automatically. Enter an email to attach it and reopen this study later — we save as soon as the address looks valid.</p>
+    {emailDeliveryUnavailable && (
+      <p role="status" className="result-share-note is-warn" style={{ marginTop: 10 }}>
+        {loginStatus?.googleOAuth
+          ? "Return emails cannot be sent right now. Your address will still be saved; reopen the project from My Projects with Google using the same email."
+          : "Return emails cannot be sent right now. Your address will still be saved with the project so you can continue from this browser or ask the administrator to enable email."}
+      </p>
+    )}
     <label style={{ display: "grid", gap: 6, fontSize: 13, margin: "12px 0" }}>
       Email address <small>(optional)</small>
-      <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" disabled={busy} />
+      <input
+        type="email"
+        value={email}
+        onChange={event => {
+          const next = event.target.value;
+          setEmail(next);
+          scheduleEmailSave(next);
+        }}
+        onBlur={event => {
+          if (debounceRef.current !== null) {
+            window.clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+          }
+          saveWithEmailIfReady(event.target.value);
+        }}
+        placeholder="you@example.com"
+        disabled={busy}
+        autoComplete="email"
+      />
     </label>
     <button type="button" className="button-primary wide" onClick={() => void save()} disabled={busy}>
-      {busy ? "Saving…" : email.trim() ? "Save and email my link" : "Save calculation"}
+      {busy ? "Saving…" : email.trim() ? (emailDeliveryUnavailable ? "Save with this email" : "Save and email my link") : "Save calculation"}
     </button>
     <button type="button" className="button-secondary wide" style={{ marginTop: 8 }} onClick={() => void save({ inquire: true })} disabled={busy}>
       {busy ? "Preparing…" : "Save and request a quotation"}
@@ -767,9 +871,22 @@ function SaveProjectActions({ isDemo }: { isDemo: boolean }) {
         <a href={accountResumeHref(savedId, email)}>Open this project in My Projects</a>
         {" · "}
         <a href={accountResumeHref(savedId, email, true)}>Request a quotation</a>
+        {loginStatus?.googleOAuth && emailDeliveryUnavailable && (
+          <>
+            {" · "}
+            <a href={`/account?project=${encodeURIComponent(savedId)}&email=${encodeURIComponent(email.trim().toLowerCase())}`}>Continue with Google</a>
+          </>
+        )}
       </p>
     )}
-    {message && <p className="result-share-note" aria-live="polite">{message}</p>}
+    {message && (
+      <p
+        className={`result-share-note${messageTone === "error" ? " is-error" : messageTone === "warn" ? " is-warn" : ""}`}
+        aria-live="polite"
+      >
+        {message}
+      </p>
+    )}
   </section>;
 }
 

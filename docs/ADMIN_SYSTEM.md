@@ -30,7 +30,9 @@ pnpm exec tsx scripts/provision-staff-password.ts editor editor 'your-password-h
 pnpm exec tsx scripts/provision-staff-password.ts approval approval 'your-password-here'
 ```
 
-or set `CONTROL_STAFF_SEED` in the server environment (`username|role|password` entries separated by `;`). Existing usernames are never overwritten on restart.
+or set `CONTROL_STAFF_SEED` in the server environment (`username|role|password` entries separated by `;`). Existing usernames are skipped on restart by default so passwords are not reset accidentally.
+
+To **reset** passwords for already-seeded usernames (for example after a forgotten handoff password), set `CONTROL_STAFF_SEED_UPDATE=1` together with an updated `CONTROL_STAFF_SEED`, restart the service once, confirm staff can sign in, then remove `CONTROL_STAFF_SEED_UPDATE` (and preferably clear `CONTROL_STAFF_SEED` from the running env once accounts exist). Updates also sync the seeded role and revoke open sessions for those usernames.
 
 Set these server environment variables before account login can work:
 
@@ -69,7 +71,7 @@ Tile dimension deductions are recorded with the model but intentionally read-onl
 
 Customers verify their email using a single-use 10-minute code; resend and failed-attempt limits persist in SQLite. Staff additionally use TOTP with replay prevention. Session cookies are HttpOnly, SameSite Strict, and Secure in production. Suspension and revocation are checked on every request.
 
-The Results page records a calculation when the visitor selects **Save calculation** (also auto-captured once for non-demo studies). Email is optional: a visitor who supplies it receives a secure return link and verifies the same address before reopening the saved project; a visitor who leaves it empty still gets an anonymous record with no email delivery. After save, Results links to `/account?project=…&email=…` and offers **Save and request a quotation**, which opens the account inquiry form (`inquire=1`). The account workspace maintains immutable revisions, runs calculations with pinned or latest published releases, downloads a PDF report or configuration JSON, and submits an inquiry tied to a specific revision. Changing the version deliberately creates a new result. Concurrent edits produce a conflict rather than overwriting a saved version; users can save their edits as a separate project.
+The Results page records a calculation when the visitor selects **Save calculation** (also auto-captured once for non-demo studies). Entering a valid email on Results auto-saves again (blur or short debounce) so the address is attached without requiring an extra click. Email delivery is optional for the save itself: when Resend is configured the visitor receives a secure return link; when delivery is unavailable the UI shows a clear banner, still associates the email with the saved project, and — if Google OAuth is configured — points them to reopen via **Continue with Google** using the same address. After save, Results links to `/account?project=…&email=…` and offers **Save and request a quotation**, which opens the account inquiry form (`inquire=1`). The account workspace maintains immutable revisions, runs calculations with pinned or latest published releases, downloads a PDF report or configuration JSON, and submits an inquiry tied to a specific revision. Changing the version deliberately creates a new result. Concurrent edits produce a conflict rather than overwriting a saved version; users can save their edits as a separate project.
 
 Sales and super administrators can review saved calculations in the Administration workspace. Each saved calculation includes its report record, project name, customer email where supplied, revision, timestamps, inputs, and calculated output.
 
