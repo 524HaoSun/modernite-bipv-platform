@@ -17,6 +17,7 @@ import {
   productForSnapshot,
   regionForMarket,
   type HomeEnergySettings,
+  type PlanningCostRateOverride,
   type StudioCalculationSnapshot,
 } from "./studio-calculation";
 
@@ -150,6 +151,9 @@ export type CustomerStudyInput = {
   economicPlan?: CustomerEconomicsPlan | null;
   weather: core.Weather;
   googleSolar?: GoogleSolarReference | null;
+  /** Published admin System domain; falls back to code defaults when omitted. */
+  systemAssumptions?: core.SystemAssumptions;
+  planningRateOverride?: PlanningCostRateOverride;
 };
 
 const DEFAULT_BUILDING = { width: 8, depth: 8, floors: 2, storeyHeight: 2.95 };
@@ -277,6 +281,11 @@ function summarizeTariffDispatch(result: ReturnType<typeof core.dispatchWithGrid
 }
 
 export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
+  if (input.systemAssumptions) {
+    return core.runWithSystemAssumptions(input.systemAssumptions, () =>
+      runCustomerStudy({ ...input, systemAssumptions: undefined })
+    );
+  }
   const region = regionForMarket(input.market);
   const profiles = input.productRuntime?.profiles ?? core.PROFILES;
   const surfaces = surfacesFromSnapshot(input.snapshot, profiles);
@@ -303,7 +312,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
   const t = sim.totals, sizing = sim.systemSizing!;
   const requestedBattery = settings?.batteryMode === "solar-battery" && settings.batteryCapacitySource === "user" ? settings.batteryCapacityKwh : 0;
   const batteryNominal = requestedBattery > 0 ? requestedBattery : Math.max(0, sizing.recommendedBatteryKWh);
-  const batteryPower = Math.min(sizing.inverterKW || batteryNominal * core.SYSTEM_ASSUMPTIONS.cRate, batteryNominal * core.SYSTEM_ASSUMPTIONS.cRate);
+  const batteryPower = Math.min(sizing.inverterKW || batteryNominal * core.getSystemAssumptions().cRate, batteryNominal * core.getSystemAssumptions().cRate);
   const effectiveEnergySettings = settings
     ? { ...settings, batteryCapacityKwh: settings.batteryMode === "solar-battery" ? batteryNominal : settings.batteryCapacityKwh, batteryCapacitySource: settings.batteryCapacitySource ?? "auto" }
     : undefined;
@@ -352,7 +361,12 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     solarBattery: scenarioKpis(annualGeneration, annualDemand, batterySums.self, batterySums.export, batterySums.grid),
   };
   const currency = REGION_CONFIG[region];
-  const prices = planningCosts(region, activeSolarAreaM2(input.snapshot), effectiveEnergySettings);
+  const prices = planningCosts(
+    region,
+    activeSolarAreaM2(input.snapshot),
+    effectiveEnergySettings,
+    input.planningRateOverride
+  );
   let priorSolarStorage = withBattery.storedSolar;
   let priorGridStorage = withBattery.storedGrid;
   const simulatedEnergyByYear = Array.from({ length: 25 }, (_, index) => {

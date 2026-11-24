@@ -377,6 +377,15 @@
   border-radius: 10px;
   overflow: hidden;
 }
+.control-system-editor {
+  grid-template-columns: 1fr;
+}
+.control-fields > h3.control-wide {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: #314336;
+}
 .control-product-list {
   border-right: 1px solid var(--line);
   background: #fcfdf9;
@@ -764,6 +773,9 @@
   .control-editor {
     grid-template-columns: 300px minmax(0, 1fr);
   }
+  .control-system-editor {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 1150px) {
   .control-sidebar {
@@ -785,6 +797,9 @@
   }
   .control-editor {
     grid-template-columns: 210px minmax(0, 1fr);
+  }
+  .control-system-editor {
+    grid-template-columns: 1fr;
   }
   .control-detail {
     padding: 22px;

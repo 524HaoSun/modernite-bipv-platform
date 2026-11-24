@@ -1,10 +1,20 @@
 import { ControlError, controlStore } from "./control/store";
 import { calculationRuntime } from "./control/runtime";
+import {
+  planningRateOverrideFromConfig,
+  publishedSystemConfig,
+  systemAssumptionsFromConfig,
+} from "./control/system-config";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { runCustomerStudy, syntheticWeatherFor, type CustomerEconomicsPlan, type CustomerStudy } from "../lib/customer-study";
 import { PROFILES, type Weather } from "../lib/customer-energy-core";
-import { normalizeHomeEnergySettings, type HomeEnergySettings, type StudioCalculationSnapshot } from "../lib/studio-calculation";
+import {
+  normalizeHomeEnergySettings,
+  regionForMarket,
+  type HomeEnergySettings,
+  type StudioCalculationSnapshot,
+} from "../lib/studio-calculation";
 import { invokeLLM } from "./_core/llm";
 import { getGoogleSolarReference } from "./google-solar-service";
 import { DEFAULT_WEATHER_SOURCE, WEATHER_SOURCES, getWeatherWithFallback, type WeatherSource } from "./weather-service";
@@ -74,6 +84,18 @@ export async function runProjectCalculation(input: ProjectCalculationInput, opti
   ]);
   if (weatherResult.error) console.warn(`[study] weather fallback (${weatherResult.weather.source}):`, weatherResult.error);
 
+  const store = options?.store ?? (() => {
+    try {
+      return controlStore();
+    } catch {
+      return null;
+    }
+  })();
+  const systemConfig = store ? publishedSystemConfig(store) : null;
+  const systemAssumptions = systemConfig ? systemAssumptionsFromConfig(systemConfig) : undefined;
+  const planningRateOverride = systemConfig
+    ? planningRateOverrideFromConfig(systemConfig, regionForMarket(input.market))
+    : undefined;
   const baseStudyInput = {
     market: input.market,
     address: input.address,
@@ -85,6 +107,8 @@ export async function runProjectCalculation(input: ProjectCalculationInput, opti
     energySettings,
     weather: weatherResult.weather,
     googleSolar,
+    systemAssumptions,
+    planningRateOverride,
   };
   const preliminaryStudy = runCustomerStudy(baseStudyInput);
   const economicPlan = await Promise.race([

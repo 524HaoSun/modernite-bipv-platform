@@ -1,5 +1,9 @@
 import { PROFILES } from "../../lib/customer-energy-core";
-import type { Catalogue, Technical, Pricing } from "../../shared/control";
+import type { Catalogue, Technical, Pricing, SystemConfig } from "../../shared/control";
+import {
+  CONVENTIONAL_ROOF_COST_RATES,
+  PLANNING_COST_RATES,
+} from "../../lib/studio-calculation";
 const websiteNames: Record<keyof typeof PROFILES, string> = {
   windsor_black: "Windsor Broad · All Black",
   windsor_colour: "Windsor Broad · Coloured",
@@ -78,3 +82,21 @@ export const pricing: Pricing = catalogue.map(p => ({
   bom: [],
   tiers: [],
 }));
+
+/** Baseline inverter/battery algorithm params and indicative regional planning rates. */
+export const system: SystemConfig = {
+  inverter: { maxDcAc: 1.3, maxClipping: 0.01 },
+  battery: {
+    usableFraction: 0.9,
+    roundTrip: 0.9,
+    cRate: 0.5,
+    target: 0.9,
+  },
+  planningRates: (["UK", "EU", "CA", "JP"] as const).map(region => ({
+    region,
+    bipvPerM2: PLANNING_COST_RATES[region].perM2,
+    batteryPerKwh: PLANNING_COST_RATES[region].batteryPerKwh,
+    conventionalMaterialPerM2: CONVENTIONAL_ROOF_COST_RATES[region].materialPerM2,
+    conventionalLabourPerM2: CONVENTIONAL_ROOF_COST_RATES[region].labourPerM2,
+  })),
+};

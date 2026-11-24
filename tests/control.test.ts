@@ -35,10 +35,18 @@ import {
 import {
   technicalSchema,
   pricingSchema,
+  systemSchema,
   type Technical,
   type Pricing,
+  type SystemConfig,
 } from "../shared/control";
-import { PROFILES, pv } from "../lib/customer-energy-core";
+import { PROFILES, pv, runWithSystemAssumptions, batterySize } from "../lib/customer-energy-core";
+import {
+  planningRateOverrideFromConfig,
+  publishedSystemConfig,
+  systemAssumptionsFromConfig,
+} from "../server/control/system-config";
+import { planningCosts } from "../lib/studio-calculation";
 
 let store: ControlStore;
 const configuration = {
@@ -106,6 +114,59 @@ describe("administration and customer security", () => {
         p => p.cost === null && p.sale === null
       )
     ).toBe(true);
+  });
+  it("seeds system domain with inverter/battery assumptions and regional planning rates", () => {
+    const config = systemSchema.parse(store.current("system").data);
+    expect(config.inverter).toEqual({ maxDcAc: 1.3, maxClipping: 0.01 });
+    expect(config.battery.cRate).toBe(0.5);
+    expect(config.planningRates.map(row => row.region).sort()).toEqual([
+      "CA",
+      "EU",
+      "JP",
+      "UK",
+    ]);
+    expect(publishedSystemConfig(store)).toEqual(config);
+    const { author, reviewer } = actors();
+    const next: SystemConfig = {
+      ...config,
+      battery: { ...config.battery, cRate: 0.75 },
+      planningRates: config.planningRates.map(row =>
+        row.region === "UK" ? { ...row, batteryPerKwh: 999 } : row
+      ),
+    };
+    const submission = submitRelease(store, author, {
+      domain: "system",
+      data: next,
+      baseId: store.current("system").id,
+      reason: "Raise UK battery planning rate",
+      source: "Supplier quote sheet",
+    });
+    transition(store, reviewer, submission.id, "approve");
+    const approved = store.current("system").data as SystemConfig;
+    expect(approved.battery.cRate).toBe(0.75);
+    expect(
+      planningRateOverrideFromConfig(approved, "UK")?.batteryPerKwh
+    ).toBe(999);
+    expect(
+      planningCosts("UK", 10, { batteryMode: "solar-battery", batteryCapacityKwh: 10 }, planningRateOverrideFromConfig(approved, "UK")).batteryPrice
+    ).toBe(10000);
+    const assumptions = systemAssumptionsFromConfig(approved);
+    const inverterKw = 20;
+    const sized = runWithSystemAssumptions(assumptions, () =>
+      batterySize(
+        Array.from({ length: 24 }, (_, hour) => ({
+          t: Date.UTC(2024, 0, 1, hour),
+          pv: hour < 12 ? 2 : 0,
+          load: hour < 12 ? 0.5 : 1.5,
+        })),
+        inverterKw
+      )
+    );
+    expect(sized.nominal).toBeGreaterThan(0);
+    expect(sized.power).toBeCloseTo(
+      Math.min(inverterKw, sized.nominal * assumptions.cRate),
+      5
+    );
   });
   it("keeps confidential fields out of public product responses", () => {
     const body = JSON.stringify(publicCatalogue(store));

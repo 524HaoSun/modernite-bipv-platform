@@ -352,8 +352,38 @@ function simulateBase(p: Parameters, surfaces: Surface[], weather: Weather, loca
   };
 }
 
-/* V24 preliminary AC-coupled PV + storage sizing. Generic assumptions, not a product catalogue. */
-export const SYSTEM_ASSUMPTIONS = { maxDcAc: 1.3, maxClipping: 0.01, usableFraction: 0.9, roundTrip: 0.9, cRate: 0.5, target: 0.9 } as const;
+/* V24 preliminary AC-coupled PV + storage sizing. Defaults match the admin System baseline. */
+export type SystemAssumptions = {
+  maxDcAc: number;
+  maxClipping: number;
+  usableFraction: number;
+  roundTrip: number;
+  cRate: number;
+  target: number;
+};
+export const DEFAULT_SYSTEM_ASSUMPTIONS: SystemAssumptions = {
+  maxDcAc: 1.3,
+  maxClipping: 0.01,
+  usableFraction: 0.9,
+  roundTrip: 0.9,
+  cRate: 0.5,
+  target: 0.9,
+};
+/** @deprecated Prefer getSystemAssumptions(); kept as the published default snapshot. */
+export const SYSTEM_ASSUMPTIONS = DEFAULT_SYSTEM_ASSUMPTIONS;
+let activeSystemAssumptions: SystemAssumptions = { ...DEFAULT_SYSTEM_ASSUMPTIONS };
+export function getSystemAssumptions(): SystemAssumptions {
+  return activeSystemAssumptions;
+}
+export function runWithSystemAssumptions<T>(next: SystemAssumptions, fn: () => T): T {
+  const previous = activeSystemAssumptions;
+  activeSystemAssumptions = next;
+  try {
+    return fn();
+  } finally {
+    activeSystemAssumptions = previous;
+  }
+}
 const sum = (rows: HourlyRow[], key: string) => rows.reduce((a, r) => a + r[key], 0), roundUp = (x: number, stepSize: number) => Math.ceil((x - 1e-10) / stepSize) * stepSize;
 
 export type SystemSettings = { inverterMode: "auto" | "manual"; inverter: number; batteryEnabled: boolean; batteryMode: "auto" | "manual"; batteryKWh: number; batteryKW: number };
@@ -361,7 +391,7 @@ export type SystemSizing = SystemSettings & {
   recommendedInverterKW: number; inverterKW: number; dcAcRatio: number; clippingKWh: number; clippingFraction: number; rawGenerationKWh: number;
   batteryNominalKWh: number; batteryUsableKWh: number; batteryPowerKW: number; recommendedBatteryKWh: number; recommendedBatteryKW: number;
   benchmarkDischargeKWh: number; targetDischargeKWh: number; sizingUpperKWh: number; storedEndKWh: number; initialUsableKWh: number;
-  assumptions: typeof SYSTEM_ASSUMPTIONS; topology: "AC-coupled"; partial: boolean;
+  assumptions: SystemAssumptions; topology: "AC-coupled"; partial: boolean;
 };
 
 export function systemSettings(p: Partial<Parameters>): SystemSettings {
@@ -376,13 +406,13 @@ export function validateSystem(s: SystemSettings) {
 
 export function inverterSize(rows: HourlyRow[], kwp: number) {
   if (kwp <= 0) return 0;
-  let lo = kwp / SYSTEM_ASSUMPTIONS.maxDcAc, hi = Math.max(lo, ...rows.map((r) => r.pv)); const energy = sum(rows, "pv");
-  for (let i = 0; i < 32; i++) { const mid = (lo + hi) / 2, loss = rows.reduce((a, r) => a + Math.max(0, r.pv - mid), 0); if (energy && loss / energy > SYSTEM_ASSUMPTIONS.maxClipping) lo = mid; else hi = mid; }
+  let lo = kwp / getSystemAssumptions().maxDcAc, hi = Math.max(lo, ...rows.map((r) => r.pv)); const energy = sum(rows, "pv");
+  for (let i = 0; i < 32; i++) { const mid = (lo + hi) / 2, loss = rows.reduce((a, r) => a + Math.max(0, r.pv - mid), 0); if (energy && loss / energy > getSystemAssumptions().maxClipping) lo = mid; else hi = mid; }
   return +roundUp(hi, hi < 2 ? 0.1 : hi < 20 ? 0.5 : hi < 100 ? 1 : 5).toFixed(2);
 }
 
 export function dispatch(rows: HourlyRow[], nominal: number, power: number, collect = false) {
-  const a = SYSTEM_ASSUMPTIONS, eta = Math.sqrt(a.roundTrip), usable = nominal * a.usableFraction; let stored = 0, delivered = 0; const out: Record<string, number>[] = [];
+  const a = getSystemAssumptions(), eta = Math.sqrt(a.roundTrip), usable = nominal * a.usableFraction; let stored = 0, delivered = 0; const out: Record<string, number>[] = [];
   for (const row of rows) {
     const direct = Math.min(row.pv, row.load), surplus = row.pv - direct, deficit = row.load - direct, charge = Math.max(0, Math.min(surplus, power, (usable - stored) / eta)); stored += charge * eta;
     const discharge = Math.max(0, Math.min(deficit, power, stored * eta)); stored -= discharge / eta; stored = Math.max(0, Math.min(usable, stored)); delivered += discharge;
@@ -449,7 +479,7 @@ function futureGridStorageNeed(rows: HourlyRow[], startIndex: number, timezone: 
 }
 
 function runTariffDispatch(rows: HourlyRow[], nominal: number, power: number, options: TariffDispatchOptions, initialSolar: number, initialGrid: number) {
-  const a = SYSTEM_ASSUMPTIONS, eta = Math.sqrt(a.roundTrip), usable = nominal * a.usableFraction;
+  const a = getSystemAssumptions(), eta = Math.sqrt(a.roundTrip), usable = nominal * a.usableFraction;
   const offPeakHours = Math.max(0, Math.min(24, Math.round(options.offPeakHours ?? 0)));
   const offPeakStartHour = Math.max(0, Math.min(23, Math.round(options.offPeakStartHour ?? 0)));
   const peakHours = Math.max(0, Math.min(24, Math.round(options.peakHours ?? 0)));
@@ -541,7 +571,7 @@ export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, pow
   let initialSolar = Math.max(0, options.initialSolarKwh ?? 0);
   let initialGrid = Math.max(0, options.initialGridKwh ?? 0);
   if (options.cyclic && nominal > 0 && rows.length > 0) {
-    const usable = nominal * SYSTEM_ASSUMPTIONS.usableFraction;
+    const usable = nominal * getSystemAssumptions().usableFraction;
     const toleranceKwh = Math.max(1e-7, nominal * 1e-9);
     const requestedSolar = Math.min(usable, initialSolar);
     const requestedGrid = Math.min(usable - requestedSolar, initialGrid);
@@ -580,7 +610,7 @@ export function dispatchWithGridCharging(rows: HourlyRow[], nominal: number, pow
 }
 
 export function batterySize(rows: HourlyRow[], inverter: number, offsetHours = 0) {
-  const a = SYSTEM_ASSUMPTIONS, eta = Math.sqrt(a.roundTrip), days = new Map<number, { surplus: number; deficit: number }>();
+  const a = getSystemAssumptions(), eta = Math.sqrt(a.roundTrip), days = new Map<number, { surplus: number; deficit: number }>();
   for (const r of rows) { const day = Math.floor((r.t + offsetHours * 3600000) / 86400000), d = days.get(day) || { surplus: 0, deficit: 0 }; d.surplus += Math.max(0, r.pv - r.load); d.deficit += Math.max(0, r.load - r.pv); days.set(day, d); }
   const maxSurplus = Math.max(0, ...Array.from(days.values()).map((d) => d.surplus)), maxDeficit = Math.max(0, ...Array.from(days.values()).map((d) => d.deficit));
   const upper = Math.min(maxSurplus * eta, maxDeficit / eta) / a.usableFraction, power = (n: number) => Math.min(inverter, n * a.cRate);
@@ -609,8 +639,8 @@ function applySystem(base: SimulationResult, p: Partial<Parameters>, offsetHours
   base.hourly = rows; base.peak = Math.max(0, ...rows.map((r) => r.pv)); base.selfConsumption = base.totals.pv ? base.totals.self / base.totals.pv : 0; base.selfSufficiency = base.totals.load ? base.totals.self / base.totals.load : 0;
   base.systemSizing = {
     ...s, recommendedInverterKW: recommendedInverter, inverterKW: inverter, dcAcRatio: inverter ? base.kwp / inverter : 0, clippingKWh: Math.max(0, rawEnergy - base.totals.pv), clippingFraction: rawEnergy ? Math.max(0, rawEnergy - base.totals.pv) / rawEnergy : 0, rawGenerationKWh: rawEnergy,
-    batteryNominalKWh: nominal, batteryUsableKWh: nominal * SYSTEM_ASSUMPTIONS.usableFraction, batteryPowerKW: power, recommendedBatteryKWh: recommendation.nominal, recommendedBatteryKW: recommendation.power, benchmarkDischargeKWh: recommendation.benchmark, targetDischargeKWh: recommendation.target, sizingUpperKWh: recommendation.upper,
-    storedEndKWh: actual.stored, initialUsableKWh: 0, assumptions: { ...SYSTEM_ASSUMPTIONS }, topology: "AC-coupled", partial: !base.fullYear,
+    batteryNominalKWh: nominal, batteryUsableKWh: nominal * getSystemAssumptions().usableFraction, batteryPowerKW: power, recommendedBatteryKWh: recommendation.nominal, recommendedBatteryKW: recommendation.power, benchmarkDischargeKWh: recommendation.benchmark, targetDischargeKWh: recommendation.target, sizingUpperKWh: recommendation.upper,
+    storedEndKWh: actual.stored, initialUsableKWh: 0, assumptions: { ...getSystemAssumptions() }, topology: "AC-coupled", partial: !base.fullYear,
   };
   return base;
 }

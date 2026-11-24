@@ -12,8 +12,9 @@ export const roles = [
   "super",
 ] as const;
 export type Role = (typeof roles)[number];
-export const domains = ["catalogue", "technical", "pricing"] as const;
+export const domains = ["catalogue", "technical", "pricing", "system"] as const;
 export type Domain = (typeof domains)[number];
+export const systemRegions = ["UK", "EU", "CA", "JP"] as const;
 export const profileIds = [
   "windsor_black",
   "windsor_colour",
@@ -168,9 +169,44 @@ export const priceSchema = z
 export const pricingSchema = z
   .array(priceSchema)
   .refine(complete, "Include each of the 17 product groups once");
+/** Inverter/battery sizing assumptions and indicative regional planning rates. */
+export const systemSchema = z
+  .object({
+    inverter: z.object({
+      maxDcAc: n(1, 2),
+      maxClipping: n(0, 0.2),
+    }),
+    battery: z.object({
+      usableFraction: n(0.5, 1),
+      roundTrip: n(0.5, 1),
+      cRate: n(0.1, 2),
+      target: n(0.5, 1),
+    }),
+    planningRates: z
+      .array(
+        z.object({
+          region: z.enum(systemRegions),
+          bipvPerM2: n(0.01, 1e7),
+          batteryPerKwh: n(0.01, 1e7),
+          conventionalMaterialPerM2: n(0, 1e7),
+          conventionalLabourPerM2: n(0, 1e7),
+        })
+      )
+      .length(systemRegions.length)
+      .superRefine((rows, ctx) => {
+        const seen = new Set(rows.map(row => row.region));
+        if (seen.size !== systemRegions.length) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Include planning rates for UK, EU, CA and JP once each",
+          });
+        }
+      }),
+  });
 export type Catalogue = z.infer<typeof catalogueSchema>;
 export type Technical = z.infer<typeof technicalSchema>;
 export type Pricing = z.infer<typeof pricingSchema>;
+export type SystemConfig = z.infer<typeof systemSchema>;
 export type ControlUser = {
   id: string;
   email: string;
@@ -198,5 +234,6 @@ export function parseDomain(domain: Domain, data: unknown) {
     catalogue: catalogueSchema,
     technical: technicalSchema,
     pricing: pricingSchema,
+    system: systemSchema,
   }[domain].parse(data);
 }
