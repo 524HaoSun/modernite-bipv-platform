@@ -100,7 +100,19 @@ export function Auth({
       setBusy(false);
     }
   }
-  const showPasswordForm = passwordMode || Boolean(availability?.preview);
+  async function previewSignIn(account: "admin" | "reviewer") {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api("/preview/login", { account });
+      onLogin(result.user);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const showPasswordForm = passwordMode && !availability?.preview;
   return (
     <div className="control-auth">
       <a className="control-brand" href="/">
@@ -128,6 +140,34 @@ export function Auth({
             style={{ marginTop: 20 }}
           >
             {availability.message}
+          </div>
+        )}
+        {availability?.preview && (
+          <div style={{ marginTop: 20, display: "grid", gap: 12 }}>
+            <div role="status" className="control-banner">
+              {availability.message}
+            </div>
+            {error && (
+              <div role="alert" className="control-error">
+                {error}
+              </div>
+            )}
+            <button
+              className="control-primary"
+              type="button"
+              disabled={busy}
+              onClick={() => void previewSignIn("admin")}
+            >
+              {busy ? "Opening…" : "Open as demo editor"}
+              <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void previewSignIn("reviewer")}
+            >
+              Open as demo reviewer
+            </button>
           </div>
         )}
         {showPasswordForm && (
@@ -294,7 +334,7 @@ export function Auth({
         )}
         <small>
           {availability?.preview
-            ? "Use the assigned staff username and password. No direct preview access is available."
+            ? "Local demo only. Sample data opens without email. Never enable CONTROL_PREVIEW on a public production host."
             : "We use your email for account access and project services. Signing in does not subscribe you to marketing."}
         </small>
         <a className="control-back" href="/">
