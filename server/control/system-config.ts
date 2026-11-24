@@ -39,3 +39,21 @@ export function publishedSystemConfig(store: ControlStore): SystemConfig {
   }
   return baselineSystem;
 }
+
+/** Public projection of the approved System domain for customer Studio / Energy UI SSOT. */
+export function publicSystemConfig(store: ControlStore) {
+  const config = publishedSystemConfig(store);
+  let systemVersion = "baseline-system";
+  try {
+    const release = store.current("system");
+    if (release.status === "approved") systemVersion = release.id;
+  } catch {
+    // Keep the baseline id when the domain is not yet seeded.
+  }
+  return {
+    systemVersion,
+    inverter: config.inverter,
+    battery: config.battery,
+    planningRates: config.planningRates,
+  };
+}

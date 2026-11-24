@@ -261,7 +261,7 @@ export function ledgerValue(entry: LedgerEntry, f: Fmt) {
     case "building": return lt.building(num("width", 1), num("depth", 1), Number(p.floors), lt.heat[String(p.heat)] ?? String(p.heat));
     case "demand": return `${num("kwh")} kWh`;
     case "inverter": return lt.inverter(num("kw", 1), num("ratio", 2), num("clipping", 2));
-    case "battery": return lt.battery(num("kwh", 1), num("kw", 2), num("recommended", 1));
+    case "battery": return lt.battery(num("kwh", 1), num("kw", 2), num("recommended", 1), num("usablePct"), num("roundTripPct"));
     case "costs": return lt.costs(f.money(Number(p.solar)), typeof p.battery === "number" ? f.money(p.battery) : null, p.estimated === 1);
     case "google-solar": return [
       lt.google(Number(p.segments), num("area")),
@@ -598,7 +598,7 @@ function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; regi
     <section className="result-section system-recommendation">
       <div className="result-section-heading"><div><p className="mini-label">{t.systemLabel}</p><h2>{t.systemTitle}</h2></div><Cpu size={20} /></div>
       <dl className="result-facts">
-        <div><dt>{t.inverter}</dt><dd>{t.inverterValue(rec.inverterKw)}</dd></div>
+        <div><dt>{t.inverter}</dt><dd>{t.inverterValue(rec.inverterKw, study.simulation.assumptions)}</dd></div>
         <div><dt>{t.peakAc}</dt><dd>{f.n(sim.peakAcKw, 2)} kW</dd></div>
         <div><dt>{t.mppt}</dt><dd>{split ? t.mpptSplit : t.mpptShared}</dd></div>
         <div><dt>{t.battery}</dt><dd>{f.n(rec.batteryCapacityKwh, 1)} kWh</dd></div>

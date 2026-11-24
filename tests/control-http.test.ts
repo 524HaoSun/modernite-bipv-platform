@@ -138,6 +138,24 @@ describe("control HTTP boundaries", () => {
     expect(JSON.stringify(body)).not.toContain('"markup"');
   });
 
+  it("exposes public system assumptions and planning rates for frontend SSOT", async () => {
+    const response = await req("/system");
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.systemVersion).toEqual(expect.any(String));
+    expect(body.inverter).toEqual({ maxDcAc: 1.3, maxClipping: 0.01 });
+    expect(body.battery.cRate).toBe(0.5);
+    expect(body.planningRates).toHaveLength(4);
+    expect(body.planningRates.map((row: { region: string }) => row.region).sort()).toEqual([
+      "CA",
+      "EU",
+      "JP",
+      "UK",
+    ]);
+    expect(JSON.stringify(body)).not.toContain('"cost"');
+    expect(JSON.stringify(body)).not.toContain('"sale"');
+  });
+
   it("keeps Google OAuth start disabled until credentials are configured", async () => {
     delete process.env.GOOGLE_OAUTH_CLIENT_ID;
     delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
@@ -183,7 +201,7 @@ describe("control HTTP boundaries", () => {
     const result = await (
       await req("/admin/current", undefined, cookie)
     ).json();
-    expect(Object.keys(result)).toEqual(["technical"]);
+    expect(Object.keys(result).sort()).toEqual(["system", "technical"]);
     expect(
       JSON.stringify(
         await (await req("/admin/releases", undefined, cookie)).json()

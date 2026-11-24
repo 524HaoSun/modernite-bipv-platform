@@ -59,6 +59,8 @@ export type SimulationSummary = {
   inverterKw: number;
   clippingKwh: number;
   recommendedBatteryKwh: number;
+  /** Published system/storage assumptions used for this study (admin SSOT). */
+  assumptions?: core.SystemAssumptions;
   battery: {
     nominalKwh: number;
     powerKw: number;
@@ -518,7 +520,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     { id: "building", label: "Building energy model", value: `${building.width} × ${building.depth} m, ${building.floors} storeys · one-node hourly RC model · ${heatingLabel}`, provenance: "assumed", stepNumber: 4, fieldKey: "building", params: { width: building.width, depth: building.depth, floors: building.floors, heat: p.heatMode } },
     { id: "demand", label: "Annual electricity demand", value: `${Math.round(annualDemand).toLocaleString("en")} kWh`, provenance: demandTarget !== null ? "user" : "assumed", stepNumber: 4, fieldKey: "demand", params: { kwh: Math.round(annualDemand) }, note: calibrationNote },
     { id: "inverter", label: "Inverter sizing", value: `${sizing.inverterKW} kW AC · DC/AC ${sizing.dcAcRatio.toFixed(2)} · clipping ${(sizing.clippingFraction * 100).toFixed(2)}%`, provenance: "assumed", stepNumber: 5, fieldKey: "inverter", params: { kw: sizing.inverterKW, ratio: Math.round(sizing.dcAcRatio * 100) / 100, clipping: Math.round(sizing.clippingFraction * 10000) / 100 } },
-    { id: "battery", label: "Battery comparison", value: `${batteryNominal} kWh / ${batteryPower.toFixed(2)} kW AC-coupled (90% usable, 90% round trip) · recommended ${sizing.recommendedBatteryKWh} kWh`, provenance: "assumed", stepNumber: 5, fieldKey: "battery", params: { kwh: batteryNominal, kw: Math.round(batteryPower * 100) / 100, recommended: sizing.recommendedBatteryKWh } },
+    { id: "battery", label: "Battery comparison", value: `${batteryNominal} kWh / ${batteryPower.toFixed(2)} kW AC-coupled (${Math.round(core.getSystemAssumptions().usableFraction * 100)}% usable, ${Math.round(core.getSystemAssumptions().roundTrip * 100)}% round trip) · recommended ${sizing.recommendedBatteryKWh} kWh`, provenance: "assumed", stepNumber: 5, fieldKey: "battery", params: { kwh: batteryNominal, kw: Math.round(batteryPower * 100) / 100, recommended: sizing.recommendedBatteryKWh, usablePct: Math.round(core.getSystemAssumptions().usableFraction * 100), roundTripPct: Math.round(core.getSystemAssumptions().roundTrip * 100) } },
     { id: "costs", label: "Planning cost", value: `${currency.currency} ${Math.round(prices.projectPrice).toLocaleString("en")} solar${prices.batteryPrice !== null ? ` + ${Math.round(prices.batteryPrice).toLocaleString("en")} battery` : ""}`, provenance: prices.projectPriceSource === "user" ? "user" : "assumed", stepNumber: 5, fieldKey: "costs", params: { currency: currency.currency, solar: Math.round(prices.projectPrice), battery: prices.batteryPrice !== null ? Math.round(prices.batteryPrice) : null, estimated: prices.projectPriceSource === "estimate" || prices.batteryPriceSource === "estimate" ? 1 : 0 }, note: prices.projectPriceSource === "estimate" ? "Indicative installed price from the active product area; enter a quote on the energy page to replace it." : undefined },
   ];
   if (input.googleSolar?.status === "ok") {
@@ -537,7 +539,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
     recommendedScenarioId: bestScenario.id,
     recommendation: {
       inverterKw: sizing.inverterKW,
-      inverterType: `${sizing.inverterKW} kW AC-coupled inverter (≤1% clipping, DC/AC ≤ 1.3)`,
+      inverterType: `${sizing.inverterKW} kW AC-coupled inverter (≤${Math.round(core.getSystemAssumptions().maxClipping * 100)}% clipping, DC/AC ≤ ${core.getSystemAssumptions().maxDcAc})`,
       mpptArrangement: azimuthRange > 45 ? "Separate MPPT inputs per orientation group are recommended." : "A shared MPPT arrangement is appropriate for the selected orientations.",
       batteryCapacityKwh: sizing.recommendedBatteryKWh,
       installerNotes: ["CdTe string design must be confirmed by the installer.", "A site survey must confirm shading, structure and electrical connection."],
@@ -607,6 +609,7 @@ export function runCustomerStudy(input: CustomerStudyInput): CustomerStudy {
       inverterKw: sizing.inverterKW,
       clippingKwh: sizing.clippingKWh,
       recommendedBatteryKwh: sizing.recommendedBatteryKWh,
+      assumptions: { ...(sizing.assumptions ?? core.getSystemAssumptions()) },
       battery: {
         nominalKwh: batteryNominal,
         powerKw: batteryPower,
