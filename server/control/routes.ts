@@ -55,6 +55,7 @@ import {
   publicCatalogue,
   impact,
 } from "./releases";
+import { publicSystemConfig } from "./system-config";
 import {
   savePrivateProject,
   projectVersion,
@@ -267,6 +268,10 @@ export function registerControlRoutes(
   router.get(
     "/catalogue",
     endpoint((_req, res, store) => res.json(publicCatalogue(store)), false)
+  );
+  router.get(
+    "/system",
+    endpoint((_req, res, store) => res.json(publicSystemConfig(store)), false)
   );
   router.get(
     "/admin/releases",

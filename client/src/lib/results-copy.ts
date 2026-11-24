@@ -103,7 +103,8 @@ const en = {
   systemLabel: "System recommendation",
   systemTitle: "Inverter, strings and storage",
   inverter: "Inverter",
-  inverterValue: (kw: number) => `${kw} kW AC-coupled · ≤1% clipping · DC/AC ≤ 1.3`,
+  inverterValue: (kw: number, limits?: { maxClipping?: number; maxDcAc?: number }) =>
+    `${kw} kW AC-coupled · ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% clipping · DC/AC ≤ ${limits?.maxDcAc ?? 1.3}`,
   mppt: "MPPT arrangement",
   mpptSplit: "Separate MPPT inputs per orientation group are recommended.",
   mpptShared: "A shared MPPT arrangement suits the selected orientations.",
@@ -182,7 +183,8 @@ const en = {
     building: (w: string, d: string, floors: number, heat: string) => `${w} × ${d} m, ${floors} storeys · one-node hourly RC model · ${heat}`,
     heat: { gas: "Gas boiler (90% efficiency)", pump: "Heat pump (COP 3)", direct: "Direct electric heating" } as Record<string, string>,
     inverter: (kw: string, ratio: string, clip: string) => `${kw} kW AC · DC/AC ${ratio} · clipping ${clip}%`,
-    battery: (kwh: string, kw: string, rec: string) => `${kwh} kWh / ${kw} kW AC-coupled (90% usable, 90% round trip) · recommended ${rec} kWh`,
+    battery: (kwh: string, kw: string, rec: string, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW AC-coupled (${usablePct}% usable, ${roundTripPct}% round trip) · recommended ${rec} kWh`,
     costs: (solar: string, battery: string | null, est: boolean) => `${solar} solar${battery ? ` + ${battery} battery` : ""}${est ? " · indicative estimate from the product area" : ""}`,
     google: (n: number, area: string) => `${n} roof geometry segments · reference roof area ${area} m²`,
     googleTop: (area: string, pitch: string, az: string) => `largest ${area} m² at ${pitch}° pitch / ${az}° azimuth`,
@@ -295,7 +297,8 @@ const zh: ResultsCopy = {
   systemLabel: "系统建议",
   systemTitle: "逆变器、组串与储能",
   inverter: "逆变器",
-  inverterValue: (kw) => `${kw} kW 交流耦合 · 削峰 ≤1% · 容配比 ≤ 1.3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW 交流耦合 · 削峰 ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · 容配比 ≤ ${limits?.maxDcAc ?? 1.3}`,
   mppt: "MPPT 配置",
   mpptSplit: "建议按朝向分组使用独立 MPPT 输入。",
   mpptShared: "所选朝向可共用 MPPT。",
@@ -374,7 +377,8 @@ const zh: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m，${floors} 层 · 单节点逐时 RC 模型 · ${heat}`,
     heat: { gas: "燃气锅炉（效率 90%）", pump: "热泵（COP 3）", direct: "直接电采暖" },
     inverter: (kw, ratio, clip) => `${kw} kW 交流 · 直交比 ${ratio} · 削峰 ${clip}%`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW 交流耦合（可用 90%，往返效率 90%）· 建议 ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW 交流耦合（可用 ${usablePct}%，往返效率 ${roundTripPct}%）· 建议 ${rec} kWh`,
     costs: (solar, battery, est) => `光伏 ${solar}${battery ? ` + 电池 ${battery}` : ""}${est ? " · 按产品面积估算" : ""}`,
     google: (n, area) => `${n} 个屋顶几何分段 · 参考屋面面积 ${area} m²`,
     googleTop: (area, pitch, az) => `最大面 ${area} m²，坡度 ${pitch}° / 方位 ${az}°`,
@@ -479,7 +483,8 @@ const zhHant: ResultsCopy = {
   systemLabel: "系統建議",
   systemTitle: "逆變器、組串與儲能",
   inverter: "逆變器",
-  inverterValue: (kw) => `${kw} kW 交流耦合 · 削峰 ≤1% · 容配比 ≤ 1.3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW 交流耦合 · 削峰 ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · 容配比 ≤ ${limits?.maxDcAc ?? 1.3}`,
   mppt: "MPPT 配置",
   mpptSplit: "建議依朝向分組使用獨立 MPPT 輸入。",
   mpptShared: "所選朝向可共用 MPPT。",
@@ -551,7 +556,8 @@ const zhHant: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m，${floors} 層 · 單節點逐時 RC 模型 · ${heat}`,
     heat: { gas: "燃氣鍋爐（效率 90%）", pump: "熱泵（COP 3）", direct: "直接電暖" },
     inverter: (kw, ratio, clip) => `${kw} kW 交流 · 直交比 ${ratio} · 削峰 ${clip}%`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW 交流耦合（可用 90%，往返效率 90%）· 建議 ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW 交流耦合（可用 ${usablePct}%，往返效率 ${roundTripPct}%）· 建議 ${rec} kWh`,
     costs: (solar, battery, est) => `光伏 ${solar}${battery ? ` + 電池 ${battery}` : ""}${est ? " · 依產品面積估算" : ""}`,
     google: (n, area) => `${n} 個屋頂幾何分段 · 參考屋面面積 ${area} m²`,
     googleTop: (area, pitch, az) => `最大面 ${area} m²，坡度 ${pitch}° / 方位 ${az}°`,
@@ -663,7 +669,8 @@ const fr: ResultsCopy = {
   systemLabel: "Recommandation système",
   systemTitle: "Onduleur, chaînes et stockage",
   inverter: "Onduleur",
-  inverterValue: (kw) => `${kw} kW couplage AC · écrêtage ≤1% · DC/AC ≤ 1,3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW couplage AC · écrêtage ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · DC/AC ≤ ${String(limits?.maxDcAc ?? 1.3).replace(".", ",")}`,
   mppt: "Configuration MPPT",
   mpptSplit: "Des entrées MPPT séparées par groupe d'orientation sont recommandées.",
   mpptShared: "Une entrée MPPT commune convient aux orientations choisies.",
@@ -742,7 +749,8 @@ const fr: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} niveaux · modèle RC horaire à un nœud · ${heat}`,
     heat: { gas: "Chaudière gaz (rendement 90 %)", pump: "Pompe à chaleur (COP 3)", direct: "Chauffage électrique direct" },
     inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · écrêtage ${clip} %`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW couplage CA (90 % utilisable, 90 % aller-retour) · recommandé ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW couplage CA (${usablePct} % utilisable, ${roundTripPct} % aller-retour) · recommandé ${rec} kWh`,
     costs: (solar, battery, est) => `${solar} solaire${battery ? ` + ${battery} batterie` : ""}${est ? " · estimation indicative selon la surface produit" : ""}`,
     google: (n, area) => `${n} segments de géométrie toiture · surface PV de référence ${area} m²`,
     googleTop: (area, pitch, az) => `le plus grand : ${area} m², pente ${pitch}° / azimut ${az}°`,
@@ -854,7 +862,8 @@ const ja: ResultsCopy = {
   systemLabel: "システム提案",
   systemTitle: "パワコン・ストリング・蓄電",
   inverter: "パワコン",
-  inverterValue: (kw) => `${kw} kW AC 連系 · ピークカット ≤1% · 過積載率 ≤ 1.3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW AC 連系 · ピークカット ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · 過積載率 ≤ ${limits?.maxDcAc ?? 1.3}`,
   mppt: "MPPT 構成",
   mpptSplit: "方位グループごとに独立 MPPT を推奨します。",
   mpptShared: "選択した方位は共通 MPPT で対応できます。",
@@ -933,7 +942,8 @@ const ja: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m、${floors} 階 · 1 ノード時刻別 RC モデル · ${heat}`,
     heat: { gas: "ガスボイラー（効率 90%）", pump: "ヒートポンプ（COP 3）", direct: "電気直接暖房" },
     inverter: (kw, ratio, clip) => `${kw} kW AC · DC/AC ${ratio} · クリッピング ${clip}%`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW AC 結合（利用可能 90%、往復効率 90%）· 推奨 ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW AC 結合（利用可能 ${usablePct}%、往復効率 ${roundTripPct}%）· 推奨 ${rec} kWh`,
     costs: (solar, battery, est) => `太陽光 ${solar}${battery ? ` + 蓄電池 ${battery}` : ""}${est ? " · 製品面積からの参考推定" : ""}`,
     google: (n, area) => `屋根形状セグメント ${n} 件 · 参考屋根面積 ${area} m²`,
     googleTop: (area, pitch, az) => `最大面 ${area} m²、勾配 ${pitch}° / 方位 ${az}°`,
@@ -1045,7 +1055,8 @@ const es: ResultsCopy = {
   systemLabel: "Recomendación del sistema",
   systemTitle: "Inversor, strings y almacenamiento",
   inverter: "Inversor",
-  inverterValue: (kw) => `${kw} kW acoplado en AC · recorte ≤1% · DC/AC ≤ 1,3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW acoplado en AC · recorte ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · DC/AC ≤ ${String(limits?.maxDcAc ?? 1.3).replace(".", ",")}`,
   mppt: "Configuración MPPT",
   mpptSplit: "Se recomiendan entradas MPPT separadas por grupo de orientación.",
   mpptShared: "Una entrada MPPT compartida es adecuada para estas orientaciones.",
@@ -1124,7 +1135,8 @@ const es: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} plantas · modelo RC horario de un nodo · ${heat}`,
     heat: { gas: "Caldera de gas (rendimiento 90 %)", pump: "Bomba de calor (COP 3)", direct: "Calefacción eléctrica directa" },
     inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · recorte ${clip} %`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW acoplada en CA (90 % útil, 90 % ida y vuelta) · recomendado ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW acoplada en CA (${usablePct} % útil, ${roundTripPct} % ida y vuelta) · recomendado ${rec} kWh`,
     costs: (solar, battery, est) => `${solar} solar${battery ? ` + ${battery} batería` : ""}${est ? " · estimación orientativa según la superficie" : ""}`,
     google: (n, area) => `${n} segmentos geométricos de cubierta · área de cubierta de referencia ${area} m²`,
     googleTop: (area, pitch, az) => `el mayor: ${area} m², pendiente ${pitch}° / acimut ${az}°`,
@@ -1236,7 +1248,8 @@ const it: ResultsCopy = {
   systemLabel: "Raccomandazione di sistema",
   systemTitle: "Inverter, stringhe e accumulo",
   inverter: "Inverter",
-  inverterValue: (kw) => `${kw} kW accoppiato in AC · clipping ≤1% · DC/AC ≤ 1,3`,
+  inverterValue: (kw, limits) =>
+    `${kw} kW accoppiato in AC · clipping ≤${Math.round((limits?.maxClipping ?? 0.01) * 100)}% · DC/AC ≤ ${String(limits?.maxDcAc ?? 1.3).replace(".", ",")}`,
   mppt: "Configurazione MPPT",
   mpptSplit: "Si consigliano ingressi MPPT separati per gruppo di orientamento.",
   mpptShared: "Un ingresso MPPT condiviso è adatto agli orientamenti scelti.",
@@ -1315,7 +1328,8 @@ const it: ResultsCopy = {
     building: (w, d, floors, heat) => `${w} × ${d} m, ${floors} piani · modello RC orario a un nodo · ${heat}`,
     heat: { gas: "Caldaia a gas (rendimento 90%)", pump: "Pompa di calore (COP 3)", direct: "Riscaldamento elettrico diretto" },
     inverter: (kw, ratio, clip) => `${kw} kW CA · CC/CA ${ratio} · clipping ${clip}%`,
-    battery: (kwh, kw, rec) => `${kwh} kWh / ${kw} kW accoppiata in CA (90% utilizzabile, 90% andata e ritorno) · consigliata ${rec} kWh`,
+    battery: (kwh, kw, rec, usablePct = "90", roundTripPct = "90") =>
+      `${kwh} kWh / ${kw} kW accoppiata in CA (${usablePct}% utilizzabile, ${roundTripPct}% andata e ritorno) · consigliata ${rec} kWh`,
     costs: (solar, battery, est) => `${solar} solare${battery ? ` + ${battery} batteria` : ""}${est ? " · stima indicativa dalla superficie" : ""}`,
     google: (n, area) => `${n} segmenti geometrici del tetto · area tetto di riferimento ${area} m²`,
     googleTop: (area, pitch, az) => `la più grande: ${area} m², pendenza ${pitch}° / azimut ${az}°`,

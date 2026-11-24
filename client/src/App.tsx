@@ -64,6 +64,13 @@ const PrintReport = lazy(() => import("@/components/PrintReport").then((module) 
 import { publicPath } from "@/lib/paths";
 import { trpc } from "@/lib/trpc";
 import { applyCatalogueToStudio, fetchPublicCatalogue } from "@/lib/control-catalogue";
+import {
+  applySystemToStudio,
+  fetchPublicSystem,
+  getCachedPublicSystem,
+  planningRateOverrideFromPublic,
+  type PublicSystemConfig,
+} from "@/lib/control-system";
 import type { ProjectCalculation } from "../../server/estimate-service";
 import { runCustomerStudy, syntheticWeatherFor } from "../../lib/customer-study";
 import type { Weather } from "../../lib/customer-energy-core";
@@ -154,6 +161,9 @@ type StudioWindow = Window & {
   };
   ModerniteEnergyCore?: {
     PROFILES: Record<string, [string, number, number, number]>;
+  };
+  ModerniteSystemCore?: {
+    ASSUMPTIONS?: Record<string, number>;
   };
   ModerniteLocationCore?: { timezone?: (lat: number, lng: number, year: number) => { zone?: string; tz?: number } };
 };
@@ -1589,7 +1599,13 @@ const ENERGY_USE_COPY: Record<StudioLanguage, {
   it: { title: "Il vostro consumo elettrico", included: "Incluso", general: "Elettricità generale domestica", heatPump: "Pompa di calore", airConditioner: "Climatizzatore", underfloor: "Riscaldamento elettrico a pavimento", radiators: "Radiatori / stufe elettriche", waterHeating: "Acqua calda elettrica", ev: "Ricarica veicolo elettrico", annualDistance: "Distanza annua percorsa", distanceUnitKm: "km / anno", distanceUnitMiles: "miglia / anno", heatPumpOptions: { "space-heating": "Solo riscaldamento", "hot-water": "Solo acqua calda", "space-heating-hot-water": "Riscaldamento e acqua calda" }, airConditionerOptions: { cooling: "Solo raffrescamento", heating: "Solo riscaldamento", "heating-cooling": "Riscaldamento e raffrescamento" } },
 };
 
-function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLanguage, marketKey: MarketKey, solarAreaM2: number) {
+function estimateEnergyPreview(
+  settings: HomeEnergySettings,
+  language: StudioLanguage,
+  marketKey: MarketKey,
+  solarAreaM2: number,
+  systemConfig: PublicSystemConfig | null,
+) {
   const text = outerCopy(language);
   const useText = ENERGY_USE_COPY[language];
   const services = [
@@ -1604,7 +1620,12 @@ function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLan
   const annualDemand = settings.demandMode === "bill" && settings.annualDemandKwh ? Math.round(settings.annualDemandKwh) : estimatedDemand;
   const directUse = settings.daytimeOccupancy === "usually" ? 46 : settings.daytimeOccupancy === "rarely" ? 30 : 38;
   const region = regionForMarket(marketKey);
-  const costs = planningCosts(region, solarAreaM2, settings);
+  const costs = planningCosts(
+    region,
+    solarAreaM2,
+    settings,
+    planningRateOverrideFromPublic(systemConfig, region),
+  );
   const money = new Intl.NumberFormat(language, { style: "currency", currency: REGION_CONFIG[region].currency, maximumFractionDigits: 0 });
   return {
     annualDemand,
@@ -1620,7 +1641,17 @@ function estimateEnergyPreview(settings: HomeEnergySettings, language: StudioLan
 
 function EnergyPlanningPreview({ settings, language, marketKey, solarAreaM2 }: { settings: HomeEnergySettings; language: StudioLanguage; marketKey: MarketKey; solarAreaM2: number }) {
   const text = outerCopy(language);
-  const preview = estimateEnergyPreview(settings, language, marketKey, solarAreaM2);
+  const [systemConfig, setSystemConfig] = useState<PublicSystemConfig | null>(() => getCachedPublicSystem());
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPublicSystem().then(config => {
+      if (!cancelled && config) setSystemConfig(config);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const preview = estimateEnergyPreview(settings, language, marketKey, solarAreaM2, systemConfig);
   return (
     <aside className="energy-planning-preview" aria-label={MISC_COPY[language].planningAria}>
       <div className="energy-preview-heading">
@@ -1902,6 +1933,22 @@ function StudioPage({
         const result = applyCatalogueToStudio(live.ModerniteEnergyCore, catalogue);
         root.dataset.hostCatalogue = "applied";
         root.dataset.hostCatalogueVersion = catalogue.catalogueVersion;
+        if (result.updated > 0) {
+          live.dispatchEvent(new Event("modernite-model-change"));
+        }
+      });
+    }
+    if (root.dataset.hostSystem !== "pending" && root.dataset.hostSystem !== "applied") {
+      root.dataset.hostSystem = "pending";
+      void fetchPublicSystem().then((system) => {
+        if (!system || !frameRef.current?.contentWindow) {
+          root.dataset.hostSystem = "";
+          return;
+        }
+        const live = frameRef.current.contentWindow as StudioWindow;
+        const result = applySystemToStudio(live.ModerniteSystemCore, system);
+        root.dataset.hostSystem = "applied";
+        root.dataset.hostSystemVersion = system.systemVersion;
         if (result.updated > 0) {
           live.dispatchEvent(new Event("modernite-model-change"));
         }

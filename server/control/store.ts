@@ -6,7 +6,7 @@ const loadSqlite = () =>
 import { mkdirSync, chmodSync } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { catalogue, technical, pricing } from "./baseline";
+import { catalogue, technical, pricing, system } from "./baseline";
 import type { ControlUser, Release, Domain, Role } from "../../shared/control";
 
 export class ControlError extends Error {
@@ -65,6 +65,7 @@ export class ControlStore {
         catalogue,
         technical,
         pricing,
+        system,
       })) {
         if (
           !this.db.prepare("SELECT id FROM releases WHERE domain=?").get(domain)
@@ -77,7 +78,9 @@ export class ControlStore {
             .run(
               `baseline-${domain}`,
               domain,
-              "V31 migration reference; technical approval pending",
+              domain === "system"
+                ? "Inverter/battery sizing and indicative planning rates"
+                : "V31 migration reference; technical approval pending",
               "Modernite report, 2026-09-30",
               now,
               now,
@@ -89,6 +92,7 @@ export class ControlStore {
         catalogue,
         technical,
         pricing,
+        system,
       })) {
         this.db
           .prepare(

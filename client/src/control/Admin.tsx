@@ -3,6 +3,7 @@ import {
   Package,
   SlidersHorizontal,
   Banknote,
+  BatteryCharging,
   GitPullRequest,
   Users,
   ClipboardList,
@@ -15,7 +16,8 @@ import {
   Plus,
   BarChart3,
 } from "lucide-react";
-import type { ControlUser, Domain, Release } from "../../../shared/control";
+import type { ControlUser, Domain, Release, SystemConfig } from "../../../shared/control";
+import { systemRegions } from "../../../shared/control";
 import { BrandLogo } from "@/components/BrandLogo";
 import { api } from "./api";
 import { Auth } from "./Auth";
@@ -24,6 +26,7 @@ const titles: Record<string, string> = {
   catalogue: "Product catalogue",
   technical: "Technical parameters",
   pricing: "Pricing & costs",
+  system: "System / storage",
   releases: "Submitted changes",
   inquiries: "Customer inquiries",
   users: "People & access",
@@ -35,6 +38,7 @@ const icons: Record<string, any> = {
   catalogue: Package,
   technical: SlidersHorizontal,
   pricing: Banknote,
+  system: BatteryCharging,
   releases: GitPullRequest,
   inquiries: MessageSquare,
   users: Users,
@@ -69,6 +73,22 @@ const labels: Record<string, string> = {
   areaBasis: "Power area basis",
   taxBasis: "Tax basis",
   wastageIncluded: "Wastage already included in cost",
+  maxDcAc: "Maximum DC/AC ratio",
+  maxClipping: "Maximum clipping loss · fraction",
+  usableFraction: "Usable battery fraction",
+  roundTrip: "Round-trip efficiency · fraction",
+  cRate: "C-rate",
+  target: "Storage target fraction of surplus",
+  bipvPerM2: "Indicative BIPV rate · /m²",
+  batteryPerKwh: "Indicative battery rate · /kWh",
+  conventionalMaterialPerM2: "Conventional material · /m²",
+  conventionalLabourPerM2: "Conventional labour · /m²",
+};
+const regionCurrency: Record<(typeof systemRegions)[number], string> = {
+  UK: "GBP",
+  EU: "EUR",
+  CA: "CAD",
+  JP: "JPY",
 };
 const catalogueTypes = [
   {
@@ -257,6 +277,7 @@ export default function Admin() {
     ...(has("product", "editor", "approval", "super") ? ["catalogue"] : []),
     ...(has("product", "technical", "editor", "approval", "super") ? ["technical"] : []),
     ...(has("pricing", "editor", "approval", "super") ? ["pricing"] : []),
+    ...(has("technical", "pricing", "editor", "approval", "super") ? ["system"] : []),
     ...(has("product", "technical", "pricing", "editor", "approval", "super") ? ["releases"] : []),
     ...(has("sales", "editor", "approval", "super") ? ["inquiries", "projects", "analytics"] : []),
     ...(has("super") ? ["users"] : []),
@@ -384,11 +405,14 @@ export default function Admin() {
         </div>
       </div>
     );
-  const isDomain = ["catalogue", "technical", "pricing"].includes(tab),
-    list = edit ? (tab === "technical" ? edit.products : edit) : [],
+  const isProductDomain = ["catalogue", "technical", "pricing"].includes(tab),
+    isSystemDomain = tab === "system",
+    isDomain = isProductDomain || isSystemDomain,
+    list = edit && isProductDomain ? (tab === "technical" ? edit.products : edit) : [],
     item = Array.isArray(list)
       ? list.find((p: any) => p.id === selected)
       : null;
+  const systemEdit = isSystemDomain ? (edit as SystemConfig | null) : null;
   const name = (id: string) =>
     ((current.catalogue?.data as any[]) || []).find(p => p.id === id)?.name ||
     id.replaceAll("_", " ");
@@ -409,26 +433,50 @@ export default function Admin() {
           }
         : old.map((p: any) => (p.id === selected ? { ...p, [key]: value } : p))
     );
+  const updateSystem = (
+    path: "inverter" | "battery",
+    key: string,
+    value: number
+  ) =>
+    setEdit((old: SystemConfig) => ({
+      ...old,
+      [path]: { ...old[path], [key]: value },
+    }));
+  const updatePlanningRate = (
+    region: (typeof systemRegions)[number],
+    key: string,
+    value: number
+  ) =>
+    setEdit((old: SystemConfig) => ({
+      ...old,
+      planningRates: old.planningRates.map(row =>
+        row.region === region ? { ...row, [key]: value } : row
+      ),
+    }));
+  const domainRole = (domain: Domain) =>
+    domain === "catalogue"
+      ? (["product"] as const)
+      : domain === "technical"
+        ? (["technical"] as const)
+        : domain === "pricing"
+          ? (["pricing"] as const)
+          : (["technical", "pricing"] as const);
   const canReview = (domain: Domain) =>
-    has(
-      "super",
-      "approval",
-      domain === "catalogue"
-        ? "product"
-        : domain === "technical"
-          ? "technical"
-          : "pricing"
-    );
+    has("super", "approval", ...domainRole(domain));
   const canEditDomain = (domain: Domain) =>
-    has(
-      "editor",
-      "super",
-      domain === "catalogue"
-        ? "product"
-        : domain === "technical"
-          ? "technical"
-          : "pricing"
-    );
+    has("editor", "super", ...domainRole(domain));
+  const submitDomainChange = () =>
+    action(async () => {
+      await api("/admin/submissions", {
+        domain: tab,
+        data: edit,
+        baseId: current[tab].id,
+        reason,
+        source,
+      });
+      setReason("");
+      setSource("");
+    }, "Change submitted for approval.");
   const pending = releases.filter(r => r.status === "submitted").length;
   return (
     <div className="control control-app">
@@ -480,11 +528,13 @@ export default function Admin() {
               <div className="control-kicker">SOLAR STUDIO OPERATIONS</div>
               <h1>{titles[tab]}</h1>
               <p>
-                {isDomain
-                  ? "Keep every product accurate. Review every change before it reaches a customer."
-                  : tab === "releases"
-                    ? "A clear record of what changed, who reviewed it, and when it went live."
-                    : "Manage your authorized records and follow-up activity."}
+                {isSystemDomain
+                  ? "Review inverter and battery sizing assumptions and indicative planning rates before they affect customer studies."
+                  : isProductDomain
+                    ? "Keep every product accurate. Review every change before it reaches a customer."
+                    : tab === "releases"
+                      ? "A clear record of what changed, who reviewed it, and when it went live."
+                      : "Manage your authorized records and follow-up activity."}
               </p>
             </div>
             <button
@@ -515,12 +565,33 @@ export default function Admin() {
           {isDomain && (
             <>
               <div className="control-metrics">
-                <div>
-                  <small>PRODUCT TYPES</small>
-                  <strong>
-                    8 <span>with 17 style profiles</span>
-                  </strong>
-                </div>
+                {isSystemDomain ? (
+                  <>
+                    <div>
+                      <small>INVERTER</small>
+                      <strong>
+                        {systemEdit?.inverter.maxDcAc ?? "—"}
+                        <span>max DC/AC</span>
+                      </strong>
+                    </div>
+                    <div>
+                      <small>BATTERY</small>
+                      <strong>
+                        {systemEdit
+                          ? `${Math.round(systemEdit.battery.usableFraction * 100)}%`
+                          : "—"}
+                        <span>usable · C-rate {systemEdit?.battery.cRate ?? "—"}</span>
+                      </strong>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <small>PRODUCT TYPES</small>
+                    <strong>
+                      8 <span>with 17 style profiles</span>
+                    </strong>
+                  </div>
+                )}
                 <div>
                   <small>ACTIVE VERSION</small>
                   <strong>
@@ -542,14 +613,156 @@ export default function Admin() {
               </div>
               {current[tab]?.author === "migration" && (
                 <div className="control-banner">
-                  V31 migration reference · Technical values, thermal basis and
-                  pricing require internal confirmation.
+                  {isSystemDomain
+                    ? "Migration baseline · Inverter/battery sizing and indicative planning rates require internal confirmation before commercial use."
+                    : "V31 migration reference · Technical values, thermal basis and pricing require internal confirmation."}
                 </div>
               )}
               {loading ? (
-                <p className="control-loading">Loading product records…</p>
+                <p className="control-loading">
+                  {isSystemDomain
+                    ? "Loading system parameters…"
+                    : "Loading product records…"}
+                </p>
+              ) : isSystemDomain && systemEdit ? (
+                <div className="control-editor control-system-editor">
+                  <section className="control-detail">
+                    <div className="control-detail-head">
+                      <div>
+                        <div className="control-kicker">system / storage</div>
+                        <h2>Battery, inverter & planning rates</h2>
+                      </div>
+                      <span className="control-pill">Ready to submit</span>
+                    </div>
+                    <p className="control-help">
+                      These values drive automatic inverter and battery sizing
+                      in project studies, and the indicative BIPV / storage
+                      planning costs shown before a formal quotation. Product
+                      catalogue prices remain under Pricing &amp; costs.
+                    </p>
+                    <fieldset
+                      className="control-fields"
+                      disabled={!canEditDomain("system")}
+                    >
+                      <h3 className="control-wide">Inverter sizing</h3>
+                      {(
+                        [
+                          ["maxDcAc", systemEdit.inverter.maxDcAc],
+                          ["maxClipping", systemEdit.inverter.maxClipping],
+                        ] as const
+                      ).map(([key, value]) => (
+                        <Field
+                          key={key}
+                          name={key}
+                          value={value}
+                          onChange={v =>
+                            updateSystem("inverter", key, Number(v))
+                          }
+                        />
+                      ))}
+                      <h3 className="control-wide">Battery sizing</h3>
+                      {(
+                        [
+                          ["usableFraction", systemEdit.battery.usableFraction],
+                          ["roundTrip", systemEdit.battery.roundTrip],
+                          ["cRate", systemEdit.battery.cRate],
+                          ["target", systemEdit.battery.target],
+                        ] as const
+                      ).map(([key, value]) => (
+                        <Field
+                          key={key}
+                          name={key}
+                          value={value}
+                          onChange={v =>
+                            updateSystem("battery", key, Number(v))
+                          }
+                        />
+                      ))}
+                      <p className="control-wide control-help">
+                        Enter fractions as decimals: 0.9 = 90%. C-rate is the
+                        continuous charge/discharge power relative to usable
+                        capacity.
+                      </p>
+                    </fieldset>
+                    {systemRegions.map(region => {
+                      const row = systemEdit.planningRates.find(
+                        item => item.region === region
+                      );
+                      if (!row) return null;
+                      return (
+                        <fieldset
+                          key={region}
+                          className="control-fields"
+                          disabled={!canEditDomain("system")}
+                        >
+                          <h3 className="control-wide">
+                            Planning rates · {region} ({regionCurrency[region]})
+                          </h3>
+                          {(
+                            [
+                              "bipvPerM2",
+                              "batteryPerKwh",
+                              "conventionalMaterialPerM2",
+                              "conventionalLabourPerM2",
+                            ] as const
+                          ).map(key => (
+                            <Field
+                              key={key}
+                              name={key}
+                              value={row[key]}
+                              onChange={v =>
+                                updatePlanningRate(region, key, Number(v))
+                              }
+                            />
+                          ))}
+                        </fieldset>
+                      );
+                    })}
+                    <fieldset
+                      className="control-change"
+                      disabled={!canEditDomain("system")}
+                    >
+                      <h3>Give this change context</h3>
+                      <label>
+                        Reason for change
+                        <textarea
+                          placeholder="What changed, and why?"
+                          value={reason}
+                          onChange={e => setReason(e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Source or technical reference
+                        <input
+                          placeholder="Cost sheet, supplier quote or approved policy"
+                          value={source}
+                          onChange={e => setSource(e.target.value)}
+                        />
+                      </label>
+                      <div className="control-row">
+                        <button
+                          className="control-primary"
+                          disabled={
+                            busy ||
+                            reason.trim().length < 8 ||
+                            source.trim().length < 3
+                          }
+                          onClick={() => void submitDomainChange()}
+                        >
+                          <Plus size={16} />
+                          Submit change
+                        </button>
+                      </div>
+                      <small>
+                        Submitting sends the change to an authorized reviewer.
+                        It does not change live values until approval.
+                      </small>
+                    </fieldset>
+                  </section>
+                </div>
               ) : (
-                edit && (
+                edit &&
+                isProductDomain && (
                   <div className="control-editor">
                     <section className="control-product-list">
                       <div className="control-search">
@@ -870,19 +1083,7 @@ export default function Admin() {
                                   reason.trim().length < 8 ||
                                   source.trim().length < 3
                                 }
-                                onClick={() =>
-                                  action(async () => {
-                                    await api("/admin/submissions", {
-                                      domain: tab,
-                                      data: edit,
-                                      baseId: current[tab].id,
-                                      reason,
-                                      source,
-                                    });
-                                    setReason("");
-                                    setSource("");
-                                  }, "Change submitted for approval.")
-                                }
+                                onClick={() => void submitDomainChange()}
                               >
                                 <Plus size={16} />
                                 Submit change

@@ -157,9 +157,27 @@ export type PlanningCosts = {
   batteryPriceSource: "user" | "estimate" | null;
 };
 
-export function planningCosts(region: Region, solarAreaM2: number, settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">): PlanningCosts {
-  const rates = PLANNING_COST_RATES[region];
-  const conventionalRates = CONVENTIONAL_ROOF_COST_RATES[region];
+export type PlanningCostRateOverride = {
+  perM2?: number;
+  batteryPerKwh?: number;
+  materialPerM2?: number;
+  labourPerM2?: number;
+};
+
+export function planningCosts(
+  region: Region,
+  solarAreaM2: number,
+  settings?: Pick<HomeEnergySettings, "projectPriceGbp" | "batteryPriceGbp" | "batteryMode" | "batteryCapacityKwh">,
+  rateOverride?: PlanningCostRateOverride
+): PlanningCosts {
+  const rates = {
+    perM2: rateOverride?.perM2 ?? PLANNING_COST_RATES[region].perM2,
+    batteryPerKwh: rateOverride?.batteryPerKwh ?? PLANNING_COST_RATES[region].batteryPerKwh,
+  };
+  const conventionalRates = {
+    materialPerM2: rateOverride?.materialPerM2 ?? CONVENTIONAL_ROOF_COST_RATES[region].materialPerM2,
+    labourPerM2: rateOverride?.labourPerM2 ?? CONVENTIONAL_ROOF_COST_RATES[region].labourPerM2,
+  };
   const round = (value: number) => Math.round(value / (region === "JP" ? 10000 : 100)) * (region === "JP" ? 10000 : 100);
   const userProject = settings?.projectPriceGbp && settings.projectPriceGbp > 0 ? settings.projectPriceGbp : null;
   const battery = settings?.batteryMode === "solar-battery";

@@ -13,11 +13,13 @@ const writers: Record<Domain, Role[]> = {
   catalogue: ["product", "editor", "super"],
   technical: ["product", "technical", "editor", "super"],
   pricing: ["pricing", "editor", "super"],
+  system: ["technical", "pricing", "editor", "super"],
 };
 const reviewers: Record<Domain, Role[]> = {
   catalogue: ["approval", "product", "super"],
   technical: ["approval", "technical", "super"],
   pricing: ["approval", "pricing", "super"],
+  system: ["approval", "technical", "pricing", "super"],
 };
 export function canReadDomain(user: ControlUser, domain: Domain) {
   return hasRole(user, ...writers[domain], "approval");

@@ -319,7 +319,7 @@ function SystemAndCarbon({ study, region, f }: { study: ProjectCalculation; regi
     <section className="pr-section">
       <Heading label={t.systemLabel} title={t.systemTitle} />
       <dl className="pr-facts is-stacked">
-        <div><dt>{t.inverter}</dt><dd>{t.inverterValue(rec.inverterKw)}</dd></div>
+        <div><dt>{t.inverter}</dt><dd>{t.inverterValue(rec.inverterKw, study.simulation.assumptions)}</dd></div>
         <div><dt>{t.peakAc}</dt><dd>{f.n(sim.peakAcKw, 2)} kW</dd></div>
         <div><dt>{t.mppt}</dt><dd>{split ? t.mpptSplit : t.mpptShared}</dd></div>
         <div><dt>{t.battery}</dt><dd>{f.n(rec.batteryCapacityKwh, 1)} kWh</dd></div>
