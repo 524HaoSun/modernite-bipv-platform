@@ -380,6 +380,16 @@
 .control-system-editor {
   grid-template-columns: 1fr;
 }
+.control-system-editor .control-fields {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.control-system-editor .control-fields:first-of-type {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
 .control-fields > h3.control-wide {
   margin: 8px 0 0;
   font-size: 13px;

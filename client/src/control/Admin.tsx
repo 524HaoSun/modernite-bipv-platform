@@ -528,11 +528,13 @@ export default function Admin() {
               <div className="control-kicker">SOLAR STUDIO OPERATIONS</div>
               <h1>{titles[tab]}</h1>
               <p>
-                {isDomain
-                  ? "Keep every product accurate. Review every change before it reaches a customer."
-                  : tab === "releases"
-                    ? "A clear record of what changed, who reviewed it, and when it went live."
-                    : "Manage your authorized records and follow-up activity."}
+                {isSystemDomain
+                  ? "Review inverter and battery sizing assumptions and indicative planning rates before they affect customer studies."
+                  : isProductDomain
+                    ? "Keep every product accurate. Review every change before it reaches a customer."
+                    : tab === "releases"
+                      ? "A clear record of what changed, who reviewed it, and when it went live."
+                      : "Manage your authorized records and follow-up activity."}
               </p>
             </div>
             <button
